@@ -23,7 +23,7 @@ BRANCH_GAP = 14
 WIRE_Y = 26
 ROW_H = 17
 LIVE_ROWS = {"TON": ["Accum"], "TOF": ["Accum"], "RTO": ["Accum"], "CTU": ["Accum"], "CTD": ["Accum"],
-             "SQO": [], "SQC": [], "SQL": []}
+             "SQO": [], "SQC": [], "SQL": [], "PID": ["SP", "Output"], "PID_Compact": ["Output"]}
 
 Tag = tuple[tuple, str]   # (path, "in" | "out")
 
@@ -69,7 +69,8 @@ def block_rows(ins: Instr, specs=None) -> int:
 
 def instr_size(ins: Instr, specs=None) -> tuple[float, float]:
     if is_block(ins, specs):
-        return BLOCK_W, 42 + ROW_H * block_rows(ins, specs)
+        longest = max((len(o) for o in ins.operands), default=0)
+        return max(BLOCK_W, 86 + CHAR_W * longest + 8), 42 + ROW_H * block_rows(ins, specs)
     text = ins.operands[0] if ins.operands else ""
     return max(CONTACT_W, CHAR_W * len(text) + 16), CONTACT_H
 

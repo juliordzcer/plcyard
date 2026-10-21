@@ -21,13 +21,15 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 ## Modern PLC models
 - [x] Phase 1: controller profiles on a shared scan engine, `.plcy` project files.
 - [x] Phase 2: Logix and S7 profiles in ladder, tag list, controller-aware editor and simulations.
-- [ ] **Next — Phase 3:** PID and an analog process (see docs/ROADMAP.md).
+- [x] Phase 3: PID (Logix PID, S7 PID_Compact), analog I/O, tank simulation with trend, exercises 11-12.
+- [ ] **Next — Phase 4:** structured text (ST / SCL), see docs/ROADMAP.md.
+- [ ] SLC 500 PID instruction (control block in an N file); a PID exercise for S7.
 - [ ] Forcing I/O from the tag list; arrays and user structures; Logix routines (JSR); S7 FBs/DBs.
 - [ ] Controller profiles beyond SLC 500: a Logix-style controller (tags instead of file addresses,
       as in Studio 5000) and an S7-1200/1500-style controller (Siemens TIA Portal).
 - [ ] New instruction blocks those controllers have: PID, scaling (SCP), ramps, edge detection
       (R_TRIG / F_TRIG), IEC timers and counters (TON/TOF/TP, CTU/CTD/CTUD), string and date/time.
-- [ ] PID exercise with a process simulation (tank level or temperature) to tune against.
+- [x] PID exercise with a process simulation (tank level) to tune against.
 
 ## Three programming languages (IEC 61131-3)
 - [x] Ladder (LD): done.

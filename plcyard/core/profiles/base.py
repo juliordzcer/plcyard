@@ -116,6 +116,10 @@ class Profile:
         """Name of an input ("I") or output ("O") point, or of the whole module when bit is None."""
         return f"{direction}:{slot}" + ("" if bit is None else f"/{bit}")
 
+    def analog_name(self, direction: str, channel: int) -> str:
+        """Name of an analog channel: AI0 tank level, AI1 setpoint knob, AO0 inlet valve."""
+        return f"{direction}A{channel}"
+
     def io_image(self, memory) -> list[tuple[str, int]]:
         """Module words shown on the PLC panel."""
         return []

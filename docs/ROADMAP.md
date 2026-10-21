@@ -47,7 +47,7 @@ Split what is shared from what belongs to a controller family:
   IEC_TIMER/IEC_COUNTER instances, boxes passing ENO/Q). Left for later: forcing from the tag list,
   arrays and user structures, routines (JSR) on Logix, function blocks/DBs on S7.
 
-## Phase 3 — PID and analog process (M)
+## Phase 3 — PID and analog process (M) — done
 
 - Analog I/O in the scan (raw counts → engineering units with SCP / NORM_X+SCALE_X).
 - PID block per profile: Logix `PIDE`-like (simplified), S7 `PID_Compact`-like; Kp, Ti, Td,
@@ -57,6 +57,9 @@ Split what is shared from what belongs to a controller family:
 - Trend chart: setpoint, process value, output over time.
 - Exercises: on/off control with hysteresis, then PID tuning with checks on overshoot and
   settling time.
+- Done as: shared `core/pid.py` (dependent form, derivative on PV, anti-windup, bumpless manual),
+  Logix `PID` (PID tag) and S7 `PID_Compact` (instance), SLC without PID for now (on/off with
+  analog compares). Exercises 11 (on/off, SLC) and 12 (PID, Logix).
 
 ## Phase 4 — Structured text (L)
 

@@ -13,12 +13,20 @@ import struct
 from dataclasses import dataclass
 
 AREA_BYTES = 128
-TYPES = ("Bool", "Int", "DInt", "Real", "Time", "IEC_TIMER", "IEC_COUNTER")
+TYPES = ("Bool", "Int", "DInt", "Real", "Time", "IEC_TIMER", "IEC_COUNTER", "PID_Compact")
 STRUCTS = {
     "IEC_TIMER": {"PT": "Time", "ET": "Time", "IN": "Bool", "Q": "Bool"},
     "IEC_COUNTER": {"PV": "Int", "CV": "Int", "CU": "Bool", "CD": "Bool", "R": "Bool", "LD": "Bool",
                     "Q": "Bool", "QU": "Bool", "QD": "Bool"},
+    # simplified PID_Compact: Gain, Ti/Td in seconds, output limits in %, manual mode, inverted action
+    "PID_Compact": {"Gain": "Real", "Ti": "Real", "Td": "Real", "OutputUpperLimit": "Real",
+                    "OutputLowerLimit": "Real", "ManualEnable": "Bool", "ManualValue": "Real",
+                    "InvertControl": "Bool", "Setpoint": "Real", "Input": "Real", "Output": "Real"},
 }
+STRUCT_START = {"PID_Compact": {"Gain": 1.0, "OutputUpperLimit": 100.0}}
+ANALOG_IN = {0: 64, 1: 66}          # channel → %IW byte
+ANALOG_OUT = {0: 64}                # channel → %QW byte
+FULL_SCALE = 27648                  # 10 V
 WIDTH = {"B": 1, "W": 2, "D": 4}
 RANGE = {"Int": 16, "DInt": 32, "Time": 32}
 SYSTEM = {"FirstScan": "Bool"}
@@ -91,7 +99,14 @@ class S7Memory:
         self._canon[name.lower()] = name
         self.decls[name] = d
         if t in STRUCTS:
-            self.values[name] = {m: (False if mt == "Bool" else 0) for m, mt in STRUCTS[t].items()}
+            el = {m: (False if mt == "Bool" else (0.0 if mt == "Real" else 0)) for m, mt in STRUCTS[t].items()}
+            el.update(STRUCT_START.get(t, {}))
+            for m, v in (d.get("value") or {}).items() if isinstance(d.get("value"), dict) else ():
+                key = next((k for k in el if k.lower() == m.lower()), None)
+                if key is None:
+                    raise S7Error(f"tag {name}: {t} has no member {m}")
+                el[key] = bool(v) if STRUCTS[t][key] == "Bool" else (float(v) if STRUCTS[t][key] == "Real" else int(v))
+            self.values[name] = el
         elif not d.get("address"):
             v = d.get("value", 0)
             self.values[name] = bool(v) if t == "Bool" else (float(v) if t == "Real" else int(v))
@@ -227,7 +242,7 @@ class S7Memory:
     def element(self, text: str) -> dict:
         r = self.ref(text)
         if r.type not in STRUCTS or r.member:
-            raise S7Error(f"{text} is not an IEC_TIMER or IEC_COUNTER instance")
+            raise S7Error(f"{text} is not an IEC_TIMER, IEC_COUNTER or PID_Compact instance")
         return self.values[r.tag]
 
     def type_of(self, text: str) -> str:

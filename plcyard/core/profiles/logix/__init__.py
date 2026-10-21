@@ -7,7 +7,8 @@ from ... import isa
 from ...program import Program, walk
 from ..base import Diagnostic, IODevice, Profile
 from .instructions import KINDS, SPECS, LogixContext, check_operand
-from .tags import _REF as REF, INPUT_SLOTS, OUTPUT_SLOTS, STRUCTS, TYPES, TagError, TagTable
+from .tags import (_REF as REF, ANALOG_IN_SLOT, ANALOG_OUT_SLOT, INPUT_SLOTS, OUTPUT_SLOTS, STRUCTS, TYPES,
+                   TagError, TagTable)
 
 MEMORY_FAULT = 0x0414        # major fault type 4 (program) code 20: bad reference at run time
 
@@ -31,6 +32,9 @@ class Logix(Profile):
 
     def tag_value(self, tags: TagTable, name: str) -> str:
         t = tags.types[name]
+        if t == "PID":
+            el = tags.values[name]
+            return f"SP {el['SP']:g}  PV {el['PV']:.1f}  CV {el['CV']:.1f}" + ("  MAN" if el["MO"] else "")
         if t in STRUCTS:
             el = tags.values[name]
             return f"ACC {el['ACC']} / PRE {el['PRE']}" + ("  DN" if el["DN"] else "")
@@ -101,6 +105,9 @@ class Logix(Profile):
     # -- live display ------------------------------------------------------------
     def live(self, tags: TagTable, ins):
         m, ops = ins.mnemonic, ins.operands
+        if m == "PID":
+            el = tags.element(ops[0])
+            return [("SP", f"{el['SP']:g}"), ("Output", f"{el['CV']:.1f} %")], [("MAN", bool(el["MO"]))]
         if m in ("TON", "TOF", "RTO", "CTU", "CTD"):
             el = tags.element(ops[0])
             bits = ("EN", "TT", "DN") if m in ("TON", "TOF", "RTO") else (("CU" if m == "CTU" else "CD"), "DN")
@@ -110,6 +117,9 @@ class Logix(Profile):
     def io_name(self, direction: str, slot: int, bit: int | None = None) -> str:
         return f"Local:{slot}:{direction}" + ("" if bit is None else f".Data.{bit}")
 
+    def analog_name(self, direction: str, channel: int) -> str:
+        return f"Local:{ANALOG_IN_SLOT if direction == 'I' else ANALOG_OUT_SLOT}:{direction}.Ch{channel}Data"
+
     def io_image(self, tags: TagTable) -> list[tuple[str, int]]:
         return [(f"Local:{s}:{d}", tags.module_data(s, d) & 0xFFFF) for s, d in ((1, "I"), (3, "I"), (2, "O"), (4, "O"))]
 
@@ -118,12 +128,20 @@ class Logix(Profile):
         for slot, word in device.input_words().items():
             if slot in INPUT_SLOTS:
                 tags.set_module_data(slot, "I", word)
+        if hasattr(device, "analog_inputs"):
+            for ch, volts in device.analog_inputs().items():
+                if ch in (0, 1):
+                    tags.set_analog(ANALOG_IN_SLOT, "I", ch, volts)
 
     def write_outputs(self, tags: TagTable, device: IODevice) -> None:
         device.set_output_words({s: tags.module_data(s, "O") & 0xFFFF for s in OUTPUT_SLOTS})
+        if hasattr(device, "set_analog_outputs"):
+            device.set_analog_outputs({0: tags.analog(ANALOG_OUT_SLOT, "O", 0)})
 
     def outputs_off(self, tags: TagTable, device: IODevice) -> None:
         device.set_output_words({s: 0 for s in OUTPUT_SLOTS})
+        if hasattr(device, "set_analog_outputs"):
+            device.set_analog_outputs({0: 0.0})
 
 
 def _syntax_only(kind: str, op: str) -> str | None:

@@ -424,3 +424,24 @@ keys:      Logix, Studio 5000, tags, TIMER, ms, Local:1:I.Data
   (S7 coils show S and R). Block values use the full width except next to status pins.
 - Tests: `tests/test_s7.py` (26), e2e F11.
 keys:      S7, TIA Portal, Siemens, %I0.0, IEC_TIMER, ENO, big endian
+
+## C-021 — Phase 3: PID, analog I/O, tank simulation, exercises 11-12
+2026-10-21 · commit: 5714c17
+- `core/pid.py`: CV = Kc·(e + 1/Ti·∫e − Td·dPV/dt), seconds, derivative on PV (no setpoint kick),
+  conditional-integration anti-windup, bumpless manual, reverse action.
+- Logix: `PID` tag type (SP, PV, CV, KP, TI, TD, MAXO, MINO, SO, MO, CA) and `PID` instruction;
+  analog modules `Local:7:I.Ch0Data/Ch1Data`, `Local:8:O.Ch0Data` in volts. Struct tags accept start
+  values for members (`{"type": "PID", "value": {"KP": 4}}`).
+- S7: `PID_Compact` instance (Gain, Ti, Td, limits, ManualEnable/ManualValue, InvertControl) and
+  box; analog `%IW64/%IW66`, `%QW64` raw 0-27648.
+- SLC: analog `I:7` (level) and `I:6` (knob) 0-16383, `O:7` (valve) 0-32767; no PID yet.
+- `sims/tank.py`: level 0-100 %, pump (on/off) and proportional inlet valve, 1 s pipe dead time,
+  outlet as disturbance (√level), high/low switches, setpoint knob, overflow event, 2-minute trend.
+  `ui/tank_view.py`: drawing, sliders, trend chart (setpoint dashed, level, valve).
+- Profiles name analog channels (`Profile.analog_name`); devices with `analog_inputs` /
+  `set_analog_outputs` are wired by the profile in the I/O scan.
+- Exercises: 11 on/off with hysteresis (SLC), 12 PID tuning (Logix, `controller:` header in the
+  exercise file, solution as .plcy). Checks: band 35-65 %, no chattering, ±2 % in 60 s, overshoot
+  ≤ 5 %, disturbance rejection, new setpoint, no overflow.
+- Blocks widen for long operands; live rows for PID blocks.
+keys:      PID, PID_Compact, analog, tank, level, trend, hysteresis, Ch0Data, %IW64

@@ -11,6 +11,7 @@ from .core.processor import Processor
 from .core.program import Program
 from .sims.io_panel import IoPanelModel
 from .sims.silo import SiloModel
+from .sims.tank import TankModel
 from .sims.traffic import TrafficModel
 
 
@@ -43,7 +44,7 @@ class Rig:
     def __init__(self, program: Program, simulation: str, symbols: dict[str, str]):
         prog = copy.deepcopy(program)
         prog.symbols = {**prog.symbols, **symbols}
-        self.sim = {"io": IoPanelModel, "silo": SiloModel, "traffic": TrafficModel}[simulation]()
+        self.sim = {"io": IoPanelModel, "silo": SiloModel, "traffic": TrafficModel, "tank": TankModel}[simulation]()
         if isinstance(self.sim, IoPanelModel):
             self.sim.configure_from_symbols(prog.symbols)
         self.plc = Processor()
@@ -257,8 +258,73 @@ def _10(new, out):
         and phases.get(("R", "R")) in (99, 100, 101))
 
 
+def _start_tank(r):
+    r.sim.start_pressed = True
+    r.ms(50)
+    r.sim.start_pressed = False
+    r.ms(20)
+
+
+def _11(new, out):
+    r = new()
+    r.sim.level = 20.0
+    _start_tank(r)
+    out("Start lights the Run light", r.sim.lamp(1))
+    r.ms(500)
+    out("Below 40 % the pump runs", r.sim.pump)
+    lo, hi, switched = 100.0, 0.0, 0
+    last = r.sim.pump
+    r.ms(60000)
+    for _ in range(9000):
+        r.ms(10)
+        lo, hi = min(lo, r.sim.level), max(hi, r.sim.level)
+        switched += r.sim.pump != last
+        last = r.sim.pump
+    held = 33 <= lo and hi <= 67 and switched >= 2
+    out("The level stays between about 35 % and 65 %", held, f"level went from {lo:.0f} % to {hi:.0f} %")
+    out("The pump does not chatter (hysteresis)", held and switched < 30, f"{switched} pump switchings in 90 s")
+    r.sim.stop_pressed = True
+    r.ms(50)
+    r.sim.stop_pressed = False
+    r.ms(500)
+    out("Stop turns the pump and the Run light off", held and not r.sim.pump and not r.sim.lamp(1), NEEDS_RUN)
+    r.sim.level = 95.0
+    r.ms(30)
+    out("High alarm light follows the high level switch", r.sim.lamp(2))
+    r.sim.level = 50.0
+    r.ms(30)
+    out("High alarm light off below the switch", r.sim.lamp(2) is False and held, "the alarm stays on")
+
+
+def _12(new, out):
+    r = new()
+    r.sim.level, r.sim.setpoint_knob = 20.0, 60.0
+    peak, inside_from = 0.0, None
+    for k in range(9000):
+        r.ms(10)
+        peak = max(peak, r.sim.level)
+        inside = abs(r.sim.level - 60.0) <= 2.0
+        inside_from = (inside_from if inside_from is not None else k / 100) if inside else None
+    reached = inside_from is not None and inside_from <= 60.0
+    out("Level within ±2 % of the setpoint in 60 s", reached,
+        f"level {r.sim.level:.1f} % after 90 s" if inside_from is None else f"settled after {inside_from:.0f} s")
+    out("Overshoot no more than 5 %", reached and peak - 60.0 <= 5.0, f"peak {peak:.1f} %")
+    r.sim.outlet = 85.0
+    worst = 0.0
+    for k in range(6000):
+        r.ms(10)
+        if k > 6000 - 500:
+            worst = max(worst, abs(r.sim.level - 60.0))
+    out("Back within ±2 % 60 s after the outlet opens wider", reached and worst <= 2.0,
+        f"still {worst:.1f} % away")
+    r.sim.setpoint_knob = 40.0
+    r.ms(60000)
+    out("Follows a new setpoint (40 %)", abs(r.sim.level - 40.0) <= 2.0, f"level {r.sim.level:.1f} %")
+    out("The tank never overflows", r.sim.overflowed == 0 and reached)
+
+
 CHECKS = {"01": _01, "02": _02, "03": _03, "04": _04, "05": _05,
-          "06": _06, "07": _07, "08": _08, "09": _09, "10": _10}
+          "06": _06, "07": _07, "08": _08, "09": _09, "10": _10, "11": _11, "12": _12}
 
 
 def grade(lab, program: Program) -> Report:

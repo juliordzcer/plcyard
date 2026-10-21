@@ -438,3 +438,32 @@ def test_F11_N1_s7_bad_address_in_tag_list_is_rejected(win):
     tv.add_tag()
     tv.table.item(0, tv.col("Address")).setText("%MW0")      # Bool needs a bit
     assert "needs a bit address" in tv.message.text() and "address" not in win.program.tags["Tag1"]
+
+
+# -- F12 analog tank and PID -----------------------------------------------------------------------
+def test_F12_H1_tank_pid_exercise(win, qtbot):
+    win.labs_dock.show()
+    lv = win.labs_view
+    i = next(k for k, lab in enumerate(lv.items) if lab.id == "12")
+    lv.list.setCurrentRow(i)
+    qtbot.mouseClick(lv.start_btn, Qt.LeftButton)
+    assert win.program.profile == "logix" and win.sim_kind == "tank"
+    assert "Local:7:I.Ch0Data" in win.sim_view.canvas.a("I", 0)
+    win.open(str(LABS["12"].solution))
+    qtbot.mouseClick(lv.check_btn, Qt.LeftButton)
+    assert "All requirements met" in lv.result.toPlainText()
+    win.download()
+    go(win, "RUN")
+    win.sim.setpoint_knob = 50.0
+    run(win, 60000)
+    assert abs(win.sim.level - 50.0) < 2.0
+    assert len(win.sim.trend) > 100
+
+
+def test_F12_N1_empty_program_fails_tank_checks(win, qtbot):
+    win.labs_dock.show()
+    lv = win.labs_view
+    lv.list.setCurrentRow(next(k for k, lab in enumerate(lv.items) if lab.id == "11"))
+    qtbot.mouseClick(lv.start_btn, Qt.LeftButton)
+    qtbot.mouseClick(lv.check_btn, Qt.LeftButton)
+    assert "✘" in lv.result.toPlainText() and "✔" not in lv.result.toPlainText()

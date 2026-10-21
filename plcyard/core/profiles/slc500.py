@@ -13,6 +13,9 @@ INPUT_FILE, OUTPUT_FILE = 1, 0
 FIRST_PASS = "S:1/15"
 MAJOR_FAULT, FAULT_CODE = "S:1/13", "S:6"
 TABLE_FILES = (("BTBL", 3), ("NTBL", 7), ("FTBL", 8))
+ANALOG_IN = {0: 7, 1: 6}         # channel → input word I:<slot> (1746-NI4 style, 0-10 V = 0-16383)
+ANALOG_OUT = {0: 7}              # channel → output word O:<slot> (1746-NO4V style, 0-10 V = 0-32767)
+AI_FULL, AO_FULL = 16383, 32767
 
 
 class Slc500(Profile):
@@ -126,6 +129,9 @@ class Slc500(Profile):
             return [], [(b, dt.read_bit(f"{ctl}/{b}")) for b in bits]
         return [], []
 
+    def analog_name(self, direction: str, channel: int) -> str:
+        return f"{direction}:{(ANALOG_IN if direction == 'I' else ANALOG_OUT)[channel]}"
+
     def io_image(self, dt: DataTable) -> list[tuple[str, int]]:
         return [("I:1", dt.read_slot(1, 1)), ("I:3", dt.read_slot(1, 3)),
                 ("O:2", dt.read_slot(0, 2)), ("O:4", dt.read_slot(0, 4))]
@@ -134,12 +140,21 @@ class Slc500(Profile):
     def read_inputs(self, dt: DataTable, device: IODevice) -> None:
         for slot, word in device.input_words().items():
             dt.write_slot(INPUT_FILE, slot, word)
+        if hasattr(device, "analog_inputs"):
+            for ch, volts in device.analog_inputs().items():
+                if ch in ANALOG_IN:
+                    dt.write_slot(INPUT_FILE, ANALOG_IN[ch], round(min(max(volts, 0.0), 10.0) / 10.0 * AI_FULL))
 
     def write_outputs(self, dt: DataTable, device: IODevice) -> None:
         device.set_output_words({s: dt.read_slot(OUTPUT_FILE, s) for s in range(1, len(dt.files[0].words))})
+        if hasattr(device, "set_analog_outputs"):
+            raw = to_int16(dt.read_slot(OUTPUT_FILE, ANALOG_OUT[0]))
+            device.set_analog_outputs({0: min(max(raw, 0), AO_FULL) / AO_FULL * 10.0})
 
     def outputs_off(self, dt: DataTable, device: IODevice) -> None:
         device.set_output_words({s: 0 for s in range(1, len(dt.files[0].words))})
+        if hasattr(device, "set_analog_outputs"):
+            device.set_analog_outputs({0: 0.0})
 
 
 SLC500 = Slc500()

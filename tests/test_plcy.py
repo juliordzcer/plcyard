@@ -12,13 +12,14 @@ BUNDLED = sorted(labs.SAMPLES.glob("*.rsl")) + [lab.solution for lab in labs.loa
 
 
 @pytest.mark.parametrize("path", BUNDLED, ids=[p.stem for p in BUNDLED])
-def test_every_bundled_program_survives_rsl_to_plcy_and_back(path, tmp_path):
-    prog = rsl.load(path)
+def test_every_bundled_program_survives_a_plcy_round_trip(path, tmp_path):
+    prog = formats.load(path)
     out = tmp_path / "p.plcy"
     formats.save(prog, out)
     back = formats.load(out)
-    assert back.profile == "slc500"
-    assert rsl.dumps(back) == rsl.dumps(prog)
+    assert back.profile == prog.profile and plcy.dumps(back) == plcy.dumps(prog)
+    if prog.profile == "slc500":
+        assert rsl.dumps(back) == rsl.dumps(prog)
     assert Processor().download(back) == []
 
 

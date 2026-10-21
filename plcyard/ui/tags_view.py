@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QHeaderView, QLabel, QPus
 from ..core import profiles
 from . import theme
 
-STRUCT_WORDS = ("TIMER", "COUNTER")        # types whose value is a structure (not editable as a number)
+STRUCT_WORDS = ("TIMER", "COUNTER", "PID")        # types whose value is a structure (not editable as a number)
 
 
 class TagsView(QWidget):

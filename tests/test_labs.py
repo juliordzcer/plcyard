@@ -4,7 +4,7 @@ import itertools
 
 import pytest
 
-from plcyard import labs
+from plcyard import formats, labs
 from plcyard.core.processor import Processor
 from plcyard.formats import rsl
 from plcyard.sims.io_panel import IoPanelModel
@@ -16,7 +16,7 @@ LABS = {lab.id: lab for lab in labs.load_all()}
 
 def rig(lab_id: str):
     lab = LABS[lab_id]
-    prog = rsl.load(lab.solution)
+    prog = formats.load(lab.solution)
     prog.symbols = dict(lab.symbols)
     sim = {"io": IoPanelModel, "silo": SiloModel, "traffic": TrafficModel}[lab.simulation]()
     if isinstance(sim, IoPanelModel):
@@ -42,9 +42,9 @@ def press(plc, sim, bit, hold_ms=50):
 
 
 def test_all_labs_have_header_and_solution():
-    assert len(LABS) == 10
+    assert len(LABS) == 12
     for lab in LABS.values():
-        assert lab.title and lab.simulation in ("io", "silo", "traffic")
+        assert lab.title and lab.simulation in ("io", "silo", "traffic", "tank")
         assert lab.solution.exists()
         assert Processor().download(lab.starter()) == []
 

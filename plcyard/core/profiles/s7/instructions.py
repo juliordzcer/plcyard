@@ -8,7 +8,7 @@ IEC timers and counters keep their state in an instance tag (IEC_TIMER / IEC_COU
 
 from __future__ import annotations
 
-from ... import isa
+from ... import isa, pid
 from .memory import STRUCTS, S7Error, S7Memory, parse_time
 
 SPECS: dict[str, isa.Spec] = {}
@@ -33,6 +33,7 @@ class S7Context:
         self.dt = mem
         self.now_ms = 0.0
         self.timer_marks: dict[str, float] = {}
+        self.pid_state: dict[str, dict] = {}
         self.call = lambda n: None
 
     def bit(self, op: str) -> bool:
@@ -296,6 +297,34 @@ def scale_x(ctx, ops, cond):
     return not ctx.store(ops[3], v * (hi - lo) + lo)
 
 
+# -- PID ----------------------------------------------------------------------------------------------------------
+def _pid_prescan(ctx, ops):
+    ctx.timer_marks.pop("pid:" + ops[0].lower(), None)
+    ctx.pid_state.pop(ops[0].lower(), None)
+
+
+@instruction("PID_Compact", "Universal PID controller", "Process", ["pid", "value", "value", "dest"],
+             ["Instance", "Setpoint", "Input", "Out"], on_prescan=_pid_prescan)
+def pid_compact(ctx, ops, cond):
+    """Simplified PID_Compact: dependent gains (Gain, Ti, Td in seconds), Output in %. Runs every scan
+    the box is enabled (on a real CPU it sits in a cyclic interrupt OB)."""
+    el, key = ctx.element(ops[0]), ops[0].lower()
+    mark_key = "pid:" + key
+    if not cond:
+        ctx.timer_marks.pop(mark_key, None)
+        return False
+    last = ctx.timer_marks.get(mark_key)
+    ctx.timer_marks[mark_key] = ctx.now_ms
+    dt = 0.0 if last is None else (ctx.now_ms - last) / 1000.0
+    el["Setpoint"], el["Input"] = float(ctx.value(ops[1])), float(ctx.value(ops[2]))
+    state = ctx.pid_state.setdefault(key, {"CV": el["Output"], "I": el["Output"]})
+    el["Output"] = pid.step(state, el["Setpoint"], el["Input"], dt, kc=el["Gain"], ti=el["Ti"], td=el["Td"],
+                            out_min=el["OutputLowerLimit"], out_max=el["OutputUpperLimit"],
+                            manual=el["ManualEnable"], manual_value=el["ManualValue"], reverse=el["InvertControl"])
+    ctx.store(ops[3], el["Output"])
+    return True
+
+
 # -- operand checks ---------------------------------------------------------------------------------------------
 KINDS = {
     "bool": "a Bool tag or a bit, like Start or %I0.0",
@@ -305,10 +334,11 @@ KINDS = {
     "timer": "an IEC_TIMER instance tag, like Delay",
     "counter": "an IEC_COUNTER instance tag, like Parts",
     "element": "an IEC_TIMER or IEC_COUNTER instance",
+    "pid": "a PID_Compact instance tag, like LevelPID",
 }
 WANT = {"bool": ("Bool",), "value": ("Bool", "Int", "DInt", "Real", "Time"), "time": ("Time", "DInt", "Int"),
         "dest": ("Int", "DInt", "Real", "Time"), "timer": ("IEC_TIMER",), "counter": ("IEC_COUNTER",),
-        "element": tuple(STRUCTS)}
+        "element": ("IEC_TIMER", "IEC_COUNTER"), "pid": ("PID_Compact",)}
 
 
 def check_operand(mem: S7Memory, kind: str, op: str) -> str | None:

@@ -3,7 +3,7 @@
 
 import pytest
 
-from plcyard import grader, labs
+from plcyard import formats, grader, labs
 from plcyard.formats import rsl
 
 LABS = labs.load_all()
@@ -11,7 +11,7 @@ LABS = labs.load_all()
 
 @pytest.mark.parametrize("lab", LABS, ids=[lab.id for lab in LABS])
 def test_reference_solution_passes(lab):
-    report = grader.grade(lab, rsl.load(lab.solution))
+    report = grader.grade(lab, formats.load(lab.solution))
     assert report.error == "" and report.passed, [c for c in report.checks if not c.passed]
 
 

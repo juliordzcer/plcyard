@@ -16,22 +16,27 @@ SAMPLES = DATA / "samples"
 class Lab:
     id: str
     title: str
-    simulation: str          # io | silo | traffic
+    simulation: str          # io | silo | traffic | tank
     level: int
     body: str
     symbols: dict[str, str] = field(default_factory=dict)
     path: Path | None = None
+    controller: str = "slc500"
 
     def starter(self) -> Program:
-        """Empty program with the exercise's symbols, so switches come wired (NC, pushbuttons)."""
-        p = Program.new()
+        """Empty program for the exercise's controller with its symbols, so switches come wired."""
+        p = Program.new(self.controller)
         p.symbols = dict(self.symbols)
         return p
 
     @property
     def solution(self) -> Path | None:
-        """Reference solution: labs/solutions/<same name as the exercise>.rsl."""
-        return self.path.parent.parent / "solutions" / f"{self.path.stem}.rsl" if self.path else None
+        """Reference solution: labs/solutions/<same name as the exercise>.rsl or .plcy."""
+        if not self.path:
+            return None
+        base = self.path.parent.parent / "solutions" / self.path.stem
+        plcy = base.with_suffix(".plcy")
+        return plcy if plcy.exists() else base.with_suffix(".rsl")
 
 
 def parse(text: str, lab_id: str = "") -> Lab:
@@ -49,7 +54,7 @@ def parse(text: str, lab_id: str = "") -> Lab:
                 key = key.strip()
                 head[key] = val.strip()
     return Lab(lab_id, head.get("title", lab_id), head.get("simulation", "io"),
-               int(head.get("level", 1)), body.strip(), symbols)
+               int(head.get("level", 1)), body.strip(), symbols, controller=head.get("controller", "slc500"))
 
 
 def load_all(lang: str = "en", root: Path = ROOT) -> list[Lab]:

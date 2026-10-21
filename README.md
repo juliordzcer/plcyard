@@ -30,10 +30,13 @@ no licence key.
 
 ## Features
 
-- **Check my program**: 10 exercises, from logic gates to a traffic light without crashes, each
+- **Check my program**: 12 exercises, from logic gates to tuning a PID level loop, each
   with automatic checks of every written requirement. Runs faster than real time.
 - **Simulations**: I/O panel (16 inputs, 16 outputs per card, thumbwheels and a 7-segment BCD
-  display), a filling line (silo) and a road crossing (traffic lights).
+  display), a filling line (silo), a road crossing (traffic lights) and an analog **tank level**
+  process with a live trend of setpoint, level and valve.
+- **PID and analog I/O**: Logix `PID` and S7 `PID_Compact` blocks, analog channels in each
+  controller's own units (SLC counts, Logix volts, S7 0-27648) and scaling instructions.
 - **Three controller styles**, chosen with File → New for controller:
   - **SLC 500**: data table addresses (`I:1/0`, `T4:0`, `N7:5`), 45 instructions including
     sequencers, bit shift and subroutines.
@@ -56,6 +59,7 @@ no licence key.
 | | |
 | --- | --- |
 | ![Silo filling line](docs/screenshots/silo.png) | ![Traffic light crossing](docs/screenshots/traffic.png) |
+| ![PID level loop on the tank with its trend](docs/screenshots/tank-pid.png) | |
 
 ## Install
 
@@ -85,7 +89,6 @@ Open a sample from **File → Open example**, or press **Ctrl+E** for the exerci
 ## Roadmap
 
 - More simulations (door, elevator, batch mixing, bottle line) and exercises.
-- PID and an analog process (tank level) to tune.
 - Function block diagram and structured text (ST / SCL), next to ladder.
 - A wiki. Full list in [TODO.md](TODO.md).
 - More UI languages.

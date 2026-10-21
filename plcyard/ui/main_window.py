@@ -18,9 +18,11 @@ from .. import formats
 from ..sims.io_panel import IoPanelModel
 from . import theme
 from ..sims.silo import SiloModel
+from ..sims.tank import TankModel
 from ..sims.traffic import TrafficModel
 from .io_panel_view import IoPanelView
 from .sim_views import SiloView, TrafficView
+from .tank_view import TankView
 from .datatable_view import DataTableView
 from .tags_view import TagsView
 from .instruction_bar import InstructionBar
@@ -217,7 +219,8 @@ class MainWindow(QMainWindow):
         s = mb.addMenu("&Simulations")
         group = QActionGroup(self)
         self.sim_actions = {}
-        for key, label in (("io", "&I/O panel"), ("silo", "&Silo"), ("traffic", "&Traffic lights")):
+        for key, label in (("io", "&I/O panel"), ("silo", "&Silo"), ("traffic", "&Traffic lights"),
+                           ("tank", "Tank level (&analog)")):
             a = act(s, label, lambda _=False, k=key: self.select_sim(k))
             a.setCheckable(True)
             a.setChecked(key == self.sim_kind)
@@ -315,8 +318,12 @@ class MainWindow(QMainWindow):
     def _rebuild_sim(self) -> None:
         """Fresh simulation of the selected kind. The I/O panel is wired from the program's
         symbols (NC stops, pushbuttons)."""
-        name = profiles.get(self.program.profile).io_name
-        if self.sim_kind == "silo":
+        prof = profiles.get(self.program.profile)
+        name = prof.io_name
+        if self.sim_kind == "tank":
+            self.sim = TankModel()
+            self.sim_view = TankView(self.sim, name, prof.analog_name)
+        elif self.sim_kind == "silo":
             self.sim = SiloModel()
             self.sim_view = SiloView(self.sim, name)
         elif self.sim_kind == "traffic":

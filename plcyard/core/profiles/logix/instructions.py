@@ -7,7 +7,7 @@ S:V (a minor fault on a real controller, not a stop).
 
 from __future__ import annotations
 
-from ... import isa
+from ... import isa, pid
 from .tags import TagError, TagTable
 
 SPECS: dict[str, isa.Spec] = {}
@@ -26,6 +26,7 @@ class LogixContext:
         self.dt = tags
         self.now_ms = 0.0
         self.timer_marks: dict[str, float] = {}
+        self.pid_state: dict[str, dict] = {}
         self.call = lambda n: None
 
     def bit(self, op: str) -> bool:
@@ -323,6 +324,32 @@ def scp(ctx, ops, cond):
     return cond
 
 
+def _pid_prescan(ctx, ops):
+    ctx.timer_marks.pop("pid:" + ops[0].lower(), None)
+    ctx.pid_state.pop(ops[0].lower(), None)
+
+
+@instruction("PID", "Proportional integral derivative", "Process", ["pid", "value", "dest"],
+             ["PID", "PV", "CV"], output=True, on_prescan=_pid_prescan)
+def pid_(ctx, ops, cond):
+    """Simplified Logix PID (dependent gains, TI/TD in seconds): runs every scan the rung is true."""
+    el, key = ctx.element(ops[0]), ops[0].lower()
+    mark_key = "pid:" + key
+    if not cond:
+        ctx.timer_marks.pop(mark_key, None)
+        return cond
+    last = ctx.timer_marks.get(mark_key)
+    ctx.timer_marks[mark_key] = ctx.now_ms
+    dt = 0.0 if last is None else (ctx.now_ms - last) / 1000.0
+    el["PV"] = float(ctx.value(ops[1]))
+    state = ctx.pid_state.setdefault(key, {"CV": el["CV"], "I": el["CV"]})
+    el["CV"] = pid.step(state, el["SP"], el["PV"], dt, kc=el["KP"], ti=el["TI"], td=el["TD"],
+                        out_min=el["MINO"], out_max=el["MAXO"], manual=el["MO"], manual_value=el["SO"],
+                        reverse=el["CA"])
+    ctx.store(ops[2], el["CV"])
+    return cond
+
+
 @instruction("NOP", "No operation", "Program Control", [], [])
 def nop(ctx, ops, cond):
     return cond
@@ -336,9 +363,10 @@ KINDS = {
     "timer": "a TIMER tag, like Delay",
     "counter": "a COUNTER tag, like Parts",
     "element": "a TIMER or COUNTER tag",
+    "pid": "a PID tag, like LevelPID",
 }
 WANT = {"bool": ("BOOL",), "value": ("BOOL", "INT", "DINT", "REAL"), "dest": ("INT", "DINT", "REAL"),
-        "timer": ("TIMER",), "counter": ("COUNTER",), "element": ("TIMER", "COUNTER")}
+        "timer": ("TIMER",), "counter": ("COUNTER",), "element": ("TIMER", "COUNTER"), "pid": ("PID",)}
 
 
 def check_operand(tags: TagTable, kind: str, op: str) -> str | None:

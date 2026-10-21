@@ -9,7 +9,7 @@ from ... import isa
 from ...program import Program, walk
 from ..base import Diagnostic, IODevice, Profile
 from .instructions import KINDS, SPECS, S7Context, check_operand, literal
-from .memory import STRUCTS, TYPES, S7Error, S7Memory, _BIT, _SYM, _WORD
+from .memory import ANALOG_IN, ANALOG_OUT, FULL_SCALE, STRUCTS, TYPES, S7Error, S7Memory, _BIT, _SYM, _WORD
 
 INPUT_BYTES = {1: 0, 3: 2, 5: 4}       # slot → first byte
 OUTPUT_BYTES = {2: 0, 4: 2, 6: 4}
@@ -63,6 +63,9 @@ class S7(Profile):
             return f"ET {el['ET']} / PT {el['PT']} ms" + ("  Q" if el["Q"] else "")
         if t == "IEC_COUNTER":
             return f"CV {el['CV']} / PV {el['PV']}" + ("  Q" if el["Q"] else "")
+        if t == "PID_Compact":
+            return (f"SP {el['Setpoint']:g}  PV {el['Input']:.1f}  Out {el['Output']:.1f}"
+                    + ("  MAN" if el["ManualEnable"] else ""))
         v = mem.read_word(name)
         return f"{v:g}" if isinstance(v, float) else str(v)
 
@@ -121,6 +124,9 @@ class S7(Profile):
         if m in ("CTU", "CTD"):
             el = mem.element(ops[0])
             return [("CV", str(el["CV"]))], [("Q", bool(el["Q"]))]
+        if m == "PID_Compact":
+            el = mem.element(ops[0])
+            return [("Output", f"{el['Output']:.1f} %")], [("MAN", bool(el["ManualEnable"]))]
         return [], []
 
     # -- naming of the simulated rack ---------------------------------------------
@@ -131,6 +137,9 @@ class S7(Profile):
             return f"%{area}W{base}"
         return f"%{area}{base + bit // 8}.{bit % 8}"
 
+    def analog_name(self, direction: str, channel: int) -> str:
+        return f"%{'I' if direction == 'I' else 'Q'}W{(ANALOG_IN if direction == 'I' else ANALOG_OUT)[channel]}"
+
     def io_image(self, mem: S7Memory) -> list[tuple[str, int]]:
         return [(f"%IW{b}", mem.word("I", b)) for b in (0, 2)] + [(f"%QW{b}", mem.word("Q", b)) for b in (0, 2)]
 
@@ -139,6 +148,10 @@ class S7(Profile):
         for slot, word in device.input_words().items():
             if slot in INPUT_BYTES:
                 mem.set_word("I", INPUT_BYTES[slot], word if slot in WORD_SLOTS else _slot_to_bytes(word))
+        if hasattr(device, "analog_inputs"):
+            for ch, volts in device.analog_inputs().items():
+                if ch in ANALOG_IN:
+                    mem.set_word("I", ANALOG_IN[ch], round(min(max(volts, 0.0), 10.0) / 10.0 * FULL_SCALE))
 
     def write_outputs(self, mem: S7Memory, device: IODevice) -> None:
         words = {}
@@ -146,9 +159,14 @@ class S7(Profile):
             w = mem.word("Q", b)
             words[slot] = w if slot in WORD_SLOTS else _slot_to_bytes(w)
         device.set_output_words(words)
+        if hasattr(device, "set_analog_outputs"):
+            raw = int.from_bytes(mem.areas["Q"][ANALOG_OUT[0]:ANALOG_OUT[0] + 2], "big", signed=True)
+            device.set_analog_outputs({0: min(max(raw, 0), FULL_SCALE) / FULL_SCALE * 10.0})
 
     def outputs_off(self, mem: S7Memory, device: IODevice) -> None:
         device.set_output_words({s: 0 for s in OUTPUT_BYTES})
+        if hasattr(device, "set_analog_outputs"):
+            device.set_analog_outputs({0: 0.0})
 
 
 def _syntax_only(kind: str, op: str) -> str | None:

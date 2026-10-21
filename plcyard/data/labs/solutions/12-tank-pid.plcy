@@ -1,0 +1,53 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "logix",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "MainRoutine",
+      "language": "LD",
+      "rungs": [
+        {
+          "text": "XIC,S:FS MOV,4.0,LevelPID.KP MOV,15.0,LevelPID.TI",
+          "comment": "Tuning, set once on the first scan: gain 4, integral time 15 s."
+        },
+        {
+          "text": "MUL,Local:7:I.Ch0Data,10.0,Level",
+          "comment": "Level: 0-10 V to 0-100 %."
+        },
+        {
+          "text": "MUL,Local:7:I.Ch1Data,10.0,LevelPID.SP",
+          "comment": "Setpoint from the knob."
+        },
+        {
+          "text": "PID,LevelPID,Level,ValveOut",
+          "comment": ""
+        },
+        {
+          "text": "DIV,ValveOut,10.0,Local:8:O.Ch0Data",
+          "comment": "Valve: 0-100 % to 0-10 V."
+        }
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "LevelPID": {
+      "type": "PID"
+    },
+    "Level": {
+      "type": "REAL"
+    },
+    "ValveOut": {
+      "type": "REAL"
+    }
+  },
+  "symbols": {
+    "LevelPID": "Level controller",
+    "Level": "Tank level in %",
+    "ValveOut": "Valve command in %"
+  },
+  "tables": {}
+}
