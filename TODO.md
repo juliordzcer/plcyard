@@ -1,6 +1,7 @@
 # TODO
 
 Planned after the first release. The current SLC 500-style ladder trainer stays as it is until then.
+How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Before announcing
 - [ ] Trademark screening for "PLCYard": USPTO (classes 9 and 42), EUIPO/TMview, WIPO.
@@ -9,6 +10,7 @@ Planned after the first release. The current SLC 500-style ladder trainer stays 
 - [ ] Final icon and wordmark (draft: `plcyard/ui/assets/icon.svg`): SVG, 1024 px PNG, favicons,
       1200x630 social image.
 - [ ] Upload `site/` to juliordz.com.
+- [ ] Open exercise solutions read-only (Save asks for a new name): one was overwritten by accident.
 - [ ] GitHub release v0.1.0 with notes and screenshots; issue templates (bug, exercise idea).
 - [ ] Ship `labs/` and `samples/` inside the package so a non-editable install (and PyPI
       `plcyard`) works; then publish to PyPI.
