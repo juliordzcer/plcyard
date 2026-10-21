@@ -26,6 +26,11 @@ class Lab:
         p.symbols = dict(self.symbols)
         return p
 
+    @property
+    def solution(self) -> Path | None:
+        """Reference solution: labs/solutions/<same name as the exercise>.rsl."""
+        return self.path.parent.parent / "solutions" / f"{self.path.stem}.rsl" if self.path else None
+
 
 def parse(text: str, lab_id: str = "") -> Lab:
     head, body = {}, text

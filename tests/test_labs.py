@@ -1,7 +1,6 @@
 """Every exercise is solvable: its reference solution meets each written requirement."""
 
 import itertools
-from pathlib import Path
 
 import pytest
 
@@ -12,13 +11,12 @@ from plcyard.sims.io_panel import IoPanelModel
 from plcyard.sims.silo import SiloModel
 from plcyard.sims.traffic import TrafficModel
 
-SOL = Path(__file__).resolve().parent.parent / "labs" / "solutions"
 LABS = {lab.id: lab for lab in labs.load_all()}
 
 
 def rig(lab_id: str):
     lab = LABS[lab_id]
-    prog = rsl.load(SOL / f"{lab_id}.rsl")
+    prog = rsl.load(lab.solution)
     prog.symbols = dict(lab.symbols)
     sim = {"io": IoPanelModel, "silo": SiloModel, "traffic": TrafficModel}[lab.simulation]()
     if isinstance(sim, IoPanelModel):
@@ -47,7 +45,7 @@ def test_all_labs_have_header_and_solution():
     assert len(LABS) == 10
     for lab in LABS.values():
         assert lab.title and lab.simulation in ("io", "silo", "traffic")
-        assert (SOL / f"{lab.id}.rsl").exists()
+        assert lab.solution.exists()
         assert Processor().download(lab.starter()) == []
 
 

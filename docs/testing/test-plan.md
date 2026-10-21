@@ -31,7 +31,7 @@ Scans are driven by the test (`plc.tick`), not by the wall clock.
 | F05-E1 | | edge: accents and emoji | comment "Válvula ñ 🚀", save | accents kept, emoji reported and saved as ? (BUG-001) | e2e | pass |
 | F05-N1 | | negative: unwritable path | save to missing folder | "Could not save", still dirty | e2e | pass |
 | F06-H1 | clear data table | happy | write N7, C5 ACC, B3 bit, clear | all zero | e2e | pass |
-| F07-H1 | silo / traffic exercises | happy | solutions 08 (silo), 10 (traffic), RUN 5 s | no fault | e2e | pass |
+| F07-H1 | silo / traffic exercises | happy | solutions 08-silo-continuous, 10-traffic-light, RUN 5 s | no fault | e2e | pass |
 | F07-H2 | | happy: new program for exercise | Exercises panel, silo lab, "New program" | sim switches, lab symbols loaded | e2e | pass |
 | F07-H3 | | happy: every written requirement | tests/test_labs.py | all 10 labs meet their spec | unit | pass |
 | F08-H1 | subroutines | happy | JSR U:3, SBR drives O:2/3 | lamp on | e2e | pass |

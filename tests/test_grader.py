@@ -1,19 +1,17 @@
 """The exercise checker: reference solutions pass every check, an empty program fails."""
 
-from pathlib import Path
 
 import pytest
 
 from plcyard import grader, labs
 from plcyard.formats import rsl
 
-SOL = Path(__file__).resolve().parent.parent / "labs" / "solutions"
 LABS = labs.load_all()
 
 
 @pytest.mark.parametrize("lab", LABS, ids=[lab.id for lab in LABS])
 def test_reference_solution_passes(lab):
-    report = grader.grade(lab, rsl.load(SOL / f"{lab.id}.rsl"))
+    report = grader.grade(lab, rsl.load(lab.solution))
     assert report.error == "" and report.passed, [c for c in report.checks if not c.passed]
 
 

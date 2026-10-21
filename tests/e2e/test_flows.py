@@ -8,12 +8,14 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtWidgets import QMessageBox
 
 from plcyard.core.processor import Processor
+from plcyard import labs
 from plcyard.formats import rsl
 from plcyard.ui import theme
 from plcyard.ui.main_window import MainWindow
 
 ROOT = Path(__file__).resolve().parents[2]
 SAMPLES = ROOT / "samples"
+LABS = {lab.id: lab for lab in labs.load_all()}
 
 
 @pytest.fixture
@@ -230,7 +232,7 @@ def test_F06_H1_clear_data_table(win):
 @pytest.mark.parametrize("lab_no,kind", [("08", "silo"), ("10", "traffic")])
 def test_F07_H1_reference_solution_runs_on_its_simulation(win, lab_no, kind):
     win.select_sim(kind)
-    win.open(str(ROOT / "labs" / "solutions" / f"{lab_no}.rsl"))
+    win.open(str(LABS[lab_no].solution))
     assert win.sim_kind == kind
     win.download()
     assert win.warnings == []
@@ -279,7 +281,7 @@ def test_F09_H1_check_reference_solution(win, qtbot):
     win.labs_dock.show()
     lv = win.labs_view
     lv.list.setCurrentRow(1)                                   # 02 start/stop
-    win.open(str(ROOT / "labs" / "solutions" / "02.rsl"))
+    win.open(str(LABS["02"].solution))
     plc_mode = win.plc.mode
     qtbot.mouseClick(lv.check_btn, Qt.LeftButton)
     assert lv.result.isVisible() and "All requirements met" in lv.result.toPlainText()

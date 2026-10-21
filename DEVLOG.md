@@ -298,7 +298,7 @@ keys:      download, clear, outputs, RUN, counter
 - `labs/en/NN-*.md`: logic gates, start/stop, reversing, one button (OSR), blinker, batch counter
   with BCD display, comparators with thumbwheels, continuous silo, silo with selector, traffic
   light without crashes. Header with title, simulation, level and symbols.
-- `labs/solutions/NN.rsl`: reference solution. `tests/test_labs.py` checks every written
+- `labs/solutions/NN-*.rsl` (same name as the exercise): reference solution. `tests/test_labs.py` checks every written
   requirement (truth table, timing, no spills, no crashes…).
 - Exercises dock (Ctrl+E): list, text, "Load simulation" and "New program for this exercise"
   (empty program with the symbols, so NC/pushbutton switches come configured).
