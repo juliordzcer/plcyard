@@ -23,6 +23,10 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [x] Phase 2: Logix and S7 profiles in ladder, tag list, controller-aware editor and simulations.
 - [x] Phase 3: PID (Logix PID, S7 PID_Compact), analog I/O, tank simulation with trend, exercises 11-12.
 - [x] Phase 4: structured text (ST / SCL) for Logix and S7, editor with live watch list.
+- [ ] **Before Phase 5 — several routines per program, mixed languages:** add, rename and delete
+      routines from the UI, each in LD or ST (later FBD); call them with `JSR` on Logix and as FC
+      calls on S7, from ladder and from ST (e.g. a ladder main routine calling an ST calculation).
+      The project format and the engine already hold several files with their own language.
 - [ ] **Next — Phase 5:** function block diagram (FBD), see docs/ROADMAP.md.
 - [ ] SLC 500 PID instruction (control block in an N file); a PID exercise for S7.
 - [ ] Forcing I/O from the tag list; arrays and user structures; Logix routines (JSR); S7 FBs/DBs.
