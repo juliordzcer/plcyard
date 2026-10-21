@@ -1,7 +1,6 @@
 """End-to-end flows F01-F08 (docs/testing/test-plan.md), driven through the main window like a user.
 Case ids match that plan."""
 
-from pathlib import Path
 
 import pytest
 from PySide6.QtCore import QPoint, Qt
@@ -13,8 +12,7 @@ from plcyard.formats import rsl
 from plcyard.ui import theme
 from plcyard.ui.main_window import MainWindow
 
-ROOT = Path(__file__).resolve().parents[2]
-SAMPLES = ROOT / "samples"
+SAMPLES = labs.SAMPLES
 LABS = {lab.id: lab for lab in labs.load_all()}
 
 
@@ -298,3 +296,24 @@ def test_F09_N1_check_empty_program_lists_failures(win, qtbot):
     assert "requirements met" in text and "✘" in text
     lv.list.setCurrentRow(2)
     assert not lv.result.isVisible(), "results belong to the exercise they were run for"
+
+
+def test_F05_E2_bundled_files_are_never_overwritten(win, monkeypatch):
+    from PySide6.QtWidgets import QFileDialog
+    asked = []
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (asked.append(1), ("", ""))[1])
+    sol = LABS["10"].solution
+    before = sol.read_bytes()
+    win.open(str(sol))
+    win.program = labs.load_all()[0].starter()
+    win.save()
+    assert asked and sol.read_bytes() == before
+
+
+def test_F02_H2_open_example_menu(win):
+    menu = next(a.menu() for a in win.menuBar().actions() if a.text() == "&File")
+    examples = next(a.menu() for a in menu.actions() if a.menu() and "example" in a.text())
+    names = [a.text() for a in examples.actions()]
+    assert "Start stop" in names
+    examples.actions()[names.index("Start stop")].trigger()
+    assert win.path == SAMPLES / "start-stop.rsl"

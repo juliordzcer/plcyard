@@ -1,0 +1,15 @@
+name: Exercise or simulation idea
+description: A problem you would like to practise
+labels: [exercise]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The exercise
+      description: The machine or process, the inputs and outputs, and what the program must do.
+    validations: {required: true}
+  - type: dropdown
+    id: sim
+    attributes:
+      label: Simulation
+      options: [I/O panel, Silo, Traffic lights, A new one]

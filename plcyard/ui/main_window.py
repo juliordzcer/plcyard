@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QApplication, QDockWidget, QFileDialog, QFrame, Q
                                QMessageBox, QPushButton, QScrollArea, QSlider, QSplitter, QTabBar,
                                QVBoxLayout, QWidget)
 
-from .. import grader
+from .. import grader, labs
 from ..core.processor import Processor
 from ..core.program import Program
 from ..formats import rsl
@@ -180,6 +180,9 @@ class MainWindow(QMainWindow):
         f = mb.addMenu("&File")
         act(f, "&New", self.new, QKeySequence.New)
         act(f, "&Open…", lambda: self.open(), QKeySequence.Open)
+        ex = f.addMenu("Open &example")
+        for path in sorted(labs.SAMPLES.glob("*.rsl")):
+            act(ex, path.stem.replace("-", " ").capitalize(), lambda _=False, p=path: self.open(str(p)))
         act(f, "&Save", self.save, QKeySequence.Save)
         act(f, "Save &as…", self.save_as, QKeySequence.SaveAs)
         f.addSeparator()
@@ -320,8 +323,8 @@ class MainWindow(QMainWindow):
         self.sim_scroll.setWidget(self.sim_view)   # the scroll area deletes the old view
 
     def save(self) -> None:
-        if self.path is None:
-            return self.save_as()
+        if self.path is None or self.path.resolve().is_relative_to(labs.DATA):
+            return self.save_as()       # examples and exercise solutions are never overwritten
         try:
             replaced = rsl.save(self.program, self.path)
         except OSError as e:

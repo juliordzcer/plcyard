@@ -64,7 +64,7 @@ python3 -m venv .venv
 
 On Windows use `.venv\Scripts\pip` and `.venv\Scripts\plcyard`.
 
-Open a sample with `plcyard samples/start-stop.rsl`, or press **Ctrl+E** for the exercises.
+Open a sample from **File → Open example**, or press **Ctrl+E** for the exercises.
 
 ## Keyboard
 

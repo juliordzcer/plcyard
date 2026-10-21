@@ -7,7 +7,9 @@ from pathlib import Path
 
 from .core.program import Program
 
-ROOT = Path(__file__).resolve().parent.parent / "labs"
+DATA = Path(__file__).resolve().parent / "data"
+ROOT = DATA / "labs"
+SAMPLES = DATA / "samples"
 
 
 @dataclass

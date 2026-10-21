@@ -10,10 +10,11 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [ ] Final icon and wordmark (draft: `plcyard/ui/assets/icon.svg`): SVG, 1024 px PNG, favicons,
       1200x630 social image.
 - [ ] Upload `site/` to juliordz.com.
-- [ ] Open exercise solutions read-only (Save asks for a new name): one was overwritten by accident.
-- [ ] GitHub release v0.1.0 with notes and screenshots; issue templates (bug, exercise idea).
-- [ ] Ship `labs/` and `samples/` inside the package so a non-editable install (and PyPI
-      `plcyard`) works; then publish to PyPI.
+- [x] Open exercise solutions read-only (Save asks for a new name): one was overwritten by accident.
+- [x] GitHub release v0.1.0 with notes and screenshots; issue templates (bug, exercise idea).
+- [x] Ship `labs/` and `samples/` inside the package so a non-editable install works.
+- [ ] Publish to PyPI as `plcyard` (needs a PyPI account and API token: `python -m build`,
+      `twine upload dist/*`).
 - [ ] Post where learners ask how to practise without hardware (see the subreddit rules first),
       Show HN.
 

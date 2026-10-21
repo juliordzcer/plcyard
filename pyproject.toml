@@ -29,7 +29,7 @@ plcyard = "plcyard.__main__:main"
 include = ["plcyard*"]
 
 [tool.setuptools.package-data]
-plcyard = ["ui/assets/**/*"]
+plcyard = ["ui/assets/**/*", "data/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

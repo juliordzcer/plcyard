@@ -2,6 +2,7 @@
 
 import itertools
 
+from plcyard import labs
 from plcyard.core.processor import Processor
 from plcyard.formats import rsl
 from plcyard.sims.io_panel import IoPanelModel
@@ -222,8 +223,7 @@ def test_switch_types_from_symbols():
 
 
 def test_shipped_start_stop_sample():
-    from pathlib import Path
-    prog = rsl.load(Path(__file__).parent.parent / "samples" / "start-stop.rsl")
+    prog = rsl.load(labs.SAMPLES / "start-stop.rsl")
     panel = IoPanelModel()
     panel.configure_from_symbols(prog.symbols)
     plc = Processor()

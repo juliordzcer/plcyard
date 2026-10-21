@@ -354,3 +354,12 @@ keys:      download, clear, outputs, RUN, counter
 - Test plan and bug reports moved to `docs/testing/` (they ship publicly); `replica/` stays in the
   private development repository only.
 - Public repository juliordzcer/plcyard created from a clean export (no `replica/`, no history).
+
+## C-017 — Exercises and examples inside the package; bundled files protected
+2026-10-21 · commit: 8bd2efb
+- `labs/` → `plcyard/data/labs`, `samples/` → `plcyard/data/samples` (`labs.DATA`, `labs.SAMPLES`);
+  `package-data` includes them, so a wheel install has the exercises (checked with a built wheel).
+- File → Open example lists the bundled samples.
+- Save on a bundled file (example or exercise solution) opens Save as instead: a solution had been
+  overwritten with an empty program by accident.
+- GitHub issue templates: bug, exercise idea.

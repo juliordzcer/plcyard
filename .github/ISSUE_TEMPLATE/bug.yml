@@ -1,0 +1,21 @@
+name: Bug
+description: Something does not work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: What you did, one step per line. Attach the .rsl file if you can.
+    validations: {required: true}
+  - type: textarea
+    id: expected
+    attributes: {label: Expected}
+    validations: {required: true}
+  - type: textarea
+    id: actual
+    attributes: {label: What happened instead, description: Error text or a screenshot.}
+    validations: {required: true}
+  - type: input
+    id: env
+    attributes: {label: "PLCYard version and OS", placeholder: "0.1.0, Ubuntu 24.04"}
