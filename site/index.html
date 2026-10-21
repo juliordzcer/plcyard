@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PLCYard — free, open-source PLC trainer</title>
+<meta name="description" content="Write ladder logic, run it on simulated machines, and find out which requirement your program misses. Free and open source for Linux, macOS and Windows.">
+<meta property="og:title" content="PLCYard">
+<meta property="og:description" content="A free, open-source PLC trainer that checks your program.">
+<meta property="og:image" content="img/run-light.png">
+<link rel="icon" href="img/icon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f4f5f7; --border: #d9dde3; --text: #15181d; --muted: #59626e;
+    --accent: #2456d3; --on-accent: #ffffff; --energized: #12823b;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13161b; --surface: #1a1e25; --border: #323945; --text: #e7eaee; --muted: #a3acb8;
+      --accent: #7097ff; --on-accent: #0b1020; --energized: #3ddc84;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 17px/1.55 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 0 16px 64px; }
+  header { display: flex; align-items: center; gap: 10px; padding: 20px 0; }
+  header img { width: 32px; height: 32px; }
+  header b { font-size: 19px; }
+  header nav { margin-left: auto; display: flex; gap: 20px; }
+  a { color: var(--accent); }
+  header nav a { text-decoration: none; color: var(--muted); }
+  h1 { font-size: clamp(32px, 6vw, 52px); line-height: 1.1; margin: 40px 0 12px; letter-spacing: -0.02em; }
+  h2 { font-size: 28px; margin: 64px 0 16px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 0 0 6px; }
+  .lead { font-size: 20px; color: var(--muted); max-width: 640px; margin: 0 0 24px; }
+  .btn { display: inline-block; background: var(--accent); color: var(--on-accent); padding: 12px 22px;
+         border-radius: 8px; text-decoration: none; font-weight: 600; }
+  .btn.ghost { background: none; color: var(--accent); border: 1px solid var(--border); margin-left: 8px; }
+  .shot { width: 100%; height: auto; border: 1px solid var(--border); border-radius: 10px; margin-top: 40px; display: block; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .card p { margin: 0; color: var(--muted); }
+  .step { font-weight: 700; color: var(--energized); }
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .pair img { width: 100%; height: auto; border: 1px solid var(--border); border-radius: 10px; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+        overflow-x: auto; font: 14px/1.5 "JetBrains Mono", ui-monospace, monospace; }
+  details { border-bottom: 1px solid var(--border); padding: 14px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { color: var(--muted); margin: 8px 0 0; }
+  footer { margin-top: 64px; color: var(--muted); font-size: 14px; }
+  @media (max-width: 560px) { header nav { display: none; } .btn.ghost { margin: 8px 0 0; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="img/icon.svg" alt="">
+    <b>PLCYard</b>
+    <nav><a href="#how">How it works</a><a href="#features">Features</a><a href="#install">Install</a><a href="#faq">FAQ</a></nav>
+  </header>
+
+  <h1>Learn PLC programming.<br>Get told what's wrong.</h1>
+  <p class="lead">A free, open-source PLC trainer. Write ladder logic, run it on simulated machines,
+    and see which requirement your program misses, without a teacher.</p>
+  <a class="btn" href="https://github.com/juliordzcer/plcyard">Download on GitHub</a>
+  <a class="btn ghost" href="#install">How to install</a>
+  <picture>
+    <source srcset="img/run-dark.png" media="(prefers-color-scheme: dark)">
+    <img class="shot" src="img/run-light.png" width="1440" height="900"
+         alt="PLCYard running a start/stop program: the motor lamp is on and the energized path is green">
+  </picture>
+
+  <h2>Learning alone, you only find out when it fails</h2>
+  <div class="grid">
+    <div class="card"><h3>No one to check your work</h3><p>A program can look right and still miss
+      the case that matters: Stop held with Start, a broken wire, a box that overfills.</p></div>
+    <div class="card"><h3>Trainers that fight your computer</h3><p>Many run only on Windows, need a
+      licence key, and draw badly on modern high-resolution screens.</p></div>
+  </div>
+
+  <h2 id="how">How it works</h2>
+  <div class="grid">
+    <div class="card"><p><span class="step">1 Write.</span> Click an instruction, type its address,
+      or drag it where you want. Mistakes are caught before you run.</p></div>
+    <div class="card"><p><span class="step">2 Run.</span> Download, switch to RUN and flip the switches.
+      Energized paths turn green; timers and counters count live.</p></div>
+    <div class="card"><p><span class="step">3 Check.</span> Open an exercise and press
+      <i>Check my program</i>. Every requirement shows ✔ or ✘ with the reason.</p></div>
+  </div>
+  <img class="shot" src="img/check.png" width="1500" height="900" loading="lazy"
+       alt="Exercise panel listing requirements met and failed">
+
+  <h2 id="features">Features</h2>
+  <div class="grid">
+    <div class="card"><h3>Check my program</h3><p>10 exercises, from logic gates to a traffic light
+      without crashes, each checked automatically, faster than real time.</p></div>
+    <div class="card"><h3>Runs everywhere</h3><p>Linux, macOS and Windows, sharp on any screen.
+      No licence key, no trial.</p></div>
+    <div class="card"><h3>Mistakes caught early</h3><p>Wrong address types, addresses outside the
+      data table and unset operands are reported with a suggestion.</p></div>
+    <div class="card"><h3>Machines to drive</h3><p>I/O panel with thumbwheels and a BCD display,
+      a filling line and a road crossing.</p></div>
+    <div class="card"><h3>45 instructions</h3><p>Bits, latches, one-shot, timers, counters, compare,
+      math, BCD, bit shift, sequencers and subroutines, SLC 500 style.</p></div>
+    <div class="card"><h3>Real scan behaviour</h3><p>Prescan, first-pass bit, outputs off in program
+      mode, rung order, major faults with codes.</p></div>
+  </div>
+  <div class="pair" style="margin-top:16px">
+    <img src="img/silo.png" width="1500" height="900" loading="lazy" alt="Silo filling line simulation">
+    <img src="img/traffic.png" width="1500" height="900" loading="lazy" alt="Traffic light crossing simulation">
+  </div>
+
+  <h2 id="install">Install</h2>
+  <p>Python 3.11 or newer.</p>
+<pre>git clone https://github.com/juliordzcer/plcyard.git
+cd plcyard
+python3 -m venv .venv
+.venv/bin/pip install -e .
+.venv/bin/plcyard</pre>
+  <p>On Windows use <code>.venv\Scripts\pip</code> and <code>.venv\Scripts\plcyard</code>.</p>
+
+  <h2 id="faq">FAQ</h2>
+  <details><summary>Is it really free?</summary><p>Yes. PLCYard is open source under GPL-3.0: use it,
+    share it, change it. Changed versions you distribute stay open too.</p></details>
+  <details><summary>Is it the same as a real Allen-Bradley PLC?</summary><p>It follows the SLC 500
+    instruction set and scan rules closely, so what you learn carries over. It does not talk to real
+    hardware and is not a replacement for vendor software.</p></details>
+  <details><summary>Siemens? Function blocks? Structured text?</summary><p>Ladder in the SLC 500 style
+    today. Function block diagram and structured text, in Allen-Bradley and Siemens styles, are on
+    the roadmap.</p></details>
+  <details><summary>Can I open my .rsl files?</summary><p>Yes, the plain-text .rsl ladder format opens
+    and saves; unchanged programs are saved byte for byte.</p></details>
+  <details><summary>Can I add exercises or simulations?</summary><p>Exercises are Markdown files with
+    a reference solution and checks. Open an issue on GitHub with your idea.</p></details>
+
+  <h2>Start with exercise 1</h2>
+  <a class="btn" href="https://github.com/juliordzcer/plcyard">Download on GitHub</a>
+
+  <footer>
+    PLCYard is an independent project, not affiliated with or endorsed by Rockwell Automation,
+    Siemens or any PLC vendor. GPL-3.0-or-later. Made by <a href="https://juliordz.com">Julio Rodriguez</a>.
+  </footer>
+</main>
+</body>
+</html>

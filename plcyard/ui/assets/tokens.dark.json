@@ -1,0 +1,218 @@
+{
+  "_about": "Design tokens for PLCYard (dark theme). Same roles as tokens.json.",
+  "color": {
+    "bg": "#13161b",
+    "surface": "#1a1e25",
+    "surface-2": "#232831",
+    "border": "#323945",
+    "border-input": "#7c8693",
+    "text": "#e7eaee",
+    "text-muted": "#a3acb8",
+    "accent": "#7097ff",
+    "on-accent": "#0b1020",
+    "accent-soft": "#1f2b4d",
+    "danger": "#ff6d64",
+    "on-danger": "#1a0705",
+    "success": "#4cc47e",
+    "warning": "#f0b44c",
+    "rail": "#c4cbd4",
+    "wire": "#8a94a1",
+    "energized": "#3ddc84",
+    "energized-fill": "#163a26",
+    "unset": "#ff6d64",
+    "drop-target": "#7097ff",
+    "comment-text": "#8fc49d",
+    "lamp-off": "#7d8590",
+    "lamp-red": "#e3342b",
+    "lamp-amber": "#f2a51d",
+    "lamp-green": "#1fb455",
+    "lamp-generic": "#ffd23f",
+    "sim-bg": "#1d2229",
+    "sim-steel": "#6f7a87",
+    "sim-product": "#3a9ad6",
+    "display-bg": "#101317"
+  },
+  "pairs": [
+    [
+      "text",
+      "bg"
+    ],
+    [
+      "text",
+      "surface"
+    ],
+    [
+      "text",
+      "surface-2"
+    ],
+    [
+      "text",
+      "accent-soft"
+    ],
+    [
+      "text",
+      "energized-fill"
+    ],
+    [
+      "text-muted",
+      "bg"
+    ],
+    [
+      "text-muted",
+      "surface"
+    ],
+    [
+      "text-muted",
+      "surface-2"
+    ],
+    [
+      "on-accent",
+      "accent"
+    ],
+    [
+      "on-danger",
+      "danger"
+    ],
+    [
+      "accent",
+      "bg"
+    ],
+    [
+      "danger",
+      "bg"
+    ],
+    [
+      "success",
+      "bg"
+    ],
+    [
+      "warning",
+      "bg"
+    ],
+    [
+      "warning",
+      "surface"
+    ],
+    [
+      "comment-text",
+      "bg"
+    ],
+    [
+      "unset",
+      "bg"
+    ],
+    [
+      "energized",
+      "energized-fill",
+      "ui"
+    ],
+    [
+      "border-input",
+      "bg",
+      "ui"
+    ],
+    [
+      "accent",
+      "bg",
+      "ui"
+    ],
+    [
+      "wire",
+      "bg",
+      "ui"
+    ],
+    [
+      "rail",
+      "bg",
+      "ui"
+    ],
+    [
+      "energized",
+      "bg",
+      "ui"
+    ],
+    [
+      "drop-target",
+      "bg",
+      "ui"
+    ],
+    [
+      "lamp-off",
+      "sim-bg",
+      "ui"
+    ]
+  ],
+  "font": {
+    "sans": "Inter, Segoe UI, Noto Sans, sans-serif",
+    "mono": "JetBrains Mono, Cascadia Mono, DejaVu Sans Mono, monospace"
+  },
+  "type": {
+    "xs": {
+      "size": 11,
+      "line": 14,
+      "weight": 500
+    },
+    "sm": {
+      "size": 12,
+      "line": 16,
+      "weight": 400
+    },
+    "base": {
+      "size": 13,
+      "line": 18,
+      "weight": 400
+    },
+    "md": {
+      "size": 15,
+      "line": 20,
+      "weight": 600
+    },
+    "lg": {
+      "size": 18,
+      "line": 24,
+      "weight": 600
+    },
+    "xl": {
+      "size": 22,
+      "line": 28,
+      "weight": 700
+    }
+  },
+  "space": [
+    0,
+    2,
+    4,
+    8,
+    12,
+    16,
+    24,
+    32
+  ],
+  "radius": {
+    "sm": 4,
+    "md": 6,
+    "lg": 10,
+    "pill": 999
+  },
+  "shadow": {
+    "pop": "0 8px 24px rgba(16,24,40,.18)"
+  },
+  "motion": {
+    "fast": "100ms",
+    "base": "180ms"
+  },
+  "layout": {
+    "toolbar-h": 36,
+    "plc-strip-h": 64,
+    "statusbar-h": 24,
+    "file-tabs-h": 28,
+    "sim-pane-min-w": 480,
+    "ladder-pane-min-w": 420,
+    "dock-w": 360,
+    "rung-gutter-w": 44,
+    "instr-w": 56,
+    "instr-h": 40,
+    "block-w": 160,
+    "branch-gap": 12
+  }
+}

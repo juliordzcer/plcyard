@@ -1,0 +1,65 @@
+{
+  "_about": "Design tokens for PLCYard (light theme). Roles stay, values change. Dark theme in tokens.dark.json. Check: python3 contrast.py tokens.json",
+  "color": {
+    "bg": "#ffffff",
+    "surface": "#f4f5f7",
+    "surface-2": "#e9ecf0",
+    "border": "#d9dde3",
+    "border-input": "#7f8893",
+    "text": "#15181d",
+    "text-muted": "#59626e",
+    "accent": "#2456d3",
+    "on-accent": "#ffffff",
+    "accent-soft": "#e2eaff",
+    "danger": "#bf2f29",
+    "on-danger": "#ffffff",
+    "success": "#1a7444",
+    "warning": "#8f5b00",
+    "rail": "#2c333d",
+    "wire": "#6a737f",
+    "energized": "#12823b",
+    "energized-fill": "#dcf4e4",
+    "unset": "#bf2f29",
+    "drop-target": "#2456d3",
+    "comment-text": "#3f6b4a",
+    "lamp-off": "#4a5059",
+    "lamp-red": "#e3342b",
+    "lamp-amber": "#f2a51d",
+    "lamp-green": "#1fb455",
+    "lamp-generic": "#ffd23f",
+    "sim-bg": "#eef1f5",
+    "sim-steel": "#8b96a3",
+    "sim-product": "#3aa4e0",
+    "display-bg": "#101317"
+  },
+  "pairs": [
+    ["text", "bg"], ["text", "surface"], ["text", "surface-2"], ["text", "accent-soft"], ["text", "energized-fill"],
+    ["text-muted", "bg"], ["text-muted", "surface"], ["text-muted", "surface-2"],
+    ["on-accent", "accent"], ["on-danger", "danger"],
+    ["accent", "bg"], ["danger", "bg"], ["success", "bg"], ["warning", "bg"], ["warning", "surface"],
+    ["comment-text", "bg"], ["unset", "bg"], ["energized", "energized-fill", "ui"],
+    ["border-input", "bg", "ui"], ["accent", "bg", "ui"], ["wire", "bg", "ui"], ["rail", "bg", "ui"],
+    ["energized", "bg", "ui"], ["drop-target", "bg", "ui"], ["lamp-off", "sim-bg", "ui"]
+  ],
+  "font": {
+    "sans": "Inter, Segoe UI, Noto Sans, sans-serif",
+    "mono": "JetBrains Mono, Cascadia Mono, DejaVu Sans Mono, monospace"
+  },
+  "type": {
+    "xs": {"size": 11, "line": 14, "weight": 500},
+    "sm": {"size": 12, "line": 16, "weight": 400},
+    "base": {"size": 13, "line": 18, "weight": 400},
+    "md": {"size": 15, "line": 20, "weight": 600},
+    "lg": {"size": 18, "line": 24, "weight": 600},
+    "xl": {"size": 22, "line": 28, "weight": 700}
+  },
+  "space": [0, 2, 4, 8, 12, 16, 24, 32],
+  "radius": {"sm": 4, "md": 6, "lg": 10, "pill": 999},
+  "shadow": {"pop": "0 8px 24px rgba(16,24,40,.18)"},
+  "motion": {"fast": "100ms", "base": "180ms"},
+  "layout": {
+    "toolbar-h": 36, "plc-strip-h": 64, "statusbar-h": 24, "file-tabs-h": 28,
+    "sim-pane-min-w": 480, "ladder-pane-min-w": 420, "dock-w": 360,
+    "rung-gutter-w": 44, "instr-w": 56, "instr-h": 40, "block-w": 160, "branch-gap": 12
+  }
+}
