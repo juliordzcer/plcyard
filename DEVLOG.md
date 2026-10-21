@@ -379,3 +379,48 @@ keys:      download, clear, outputs, RUN, counter
   download, memory error → fault with the profile's code, switch back to SLC), `tests/test_plcy.py`
   (every bundled program rsl → plcy → rsl identical and downloadable), e2e F05-H2/N2.
 keys:      profile, controller, plcy, project, json, Logix, S7
+
+## F-029 — Test suite grew from 2 to 7 minutes
+2026-10-21 · area: tests · commit: 9b996d1
+symptom:   UI test setup took 4 s alone and ~20 s late in the full run; growing with test order.
+cause:     fixtures called `deleteLater()` then `processEvents()`, which does not run deferred
+           deletes: every MainWindow stayed alive, and each `theme.apply` restyled all of them.
+fix:       `QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)` after `deleteLater()`.
+prevent:   `pytest --durations=5`; full suite should stay under a minute.
+keys:      slow, setup, deleteLater, DeferredDelete, leak, theme, pytest-qt
+
+## C-019 — Phase 2a/2b: editor per controller, Logix profile, tag list
+2026-10-21 · commit: 9b996d1
+- `isa.Spec.shape/letter` (contact, contact_nc, coil, small, block): the ladder draws by shape, so
+  any profile can reuse the glyphs. `Profile.validate/normalize/kinds/is_output/live/io_name/io_image`;
+  `core/edit.py`, `ui/ladder_layout.py`, `ui/ladder_view.py` take the program's profile.
+- `core/profiles/logix/`: `TagTable` (BOOL, INT, DINT, REAL, TIMER, COUNTER; `Tag.Member`,
+  `Tag.5` bits, `Local:<slot>:I/O.Data` module tags, `S:FS`, `S:V`; names case-insensitive),
+  instructions XIC XIO OTE OTL OTU ONS OSR OSF TON TOF RTO CTU CTD RES EQU NEQ LES LEQ GRT GEQ LIM
+  ADD SUB MUL DIV MOV CLR SCP NOP. Timers in ms; integer math wraps and sets S:V; DIV by 0 stores
+  the extreme value and sets S:V (minor fault on a real controller, no stop); negative timer
+  preset → major fault 0422h. JSR/routines not yet.
+- `Program.tags` (saved in .plcy). File → New for controller. Tags dock (add, rename, retype,
+  description, live values, live edit). Simulations and the I/O panel name points per controller
+  (`Local:1:I.Data.0`); NC/pushbutton wiring reads descriptions of those names.
+- Long operands widen contacts instead of being cut; Logix TON/CTU show the live Accum in the
+  Accum operand row.
+- Tests: `tests/test_logix.py` (23), e2e F10 (new Logix program from scratch to a lit lamp,
+  unknown tag, back to SLC).
+keys:      Logix, Studio 5000, tags, TIMER, ms, Local:1:I.Data
+
+## C-020 — Phase 2c: S7-1200/1500 profile
+2026-10-21 · commit: ab4e60a
+- `core/profiles/s7/`: `S7Memory` (areas I, Q, M of 128 bytes, big-endian words like the real CPU,
+  `%I0.0` / `%MW10` / `%MD20`, symbolic tags with or without an address, `"Quoted"` names,
+  IEC_TIMER/IEC_COUNTER instances, `FirstScan`), time literals `T#1m30s`, `T#500ms`.
+- Instructions: contacts and coils (S/R), P/N edge contacts, TON/TOF/TP, CTU (R)/CTD (LD),
+  RESET_TIMER, CMP== <> < <= > >=, IN_RANGE, ADD SUB MUL DIV MOD, MOVE, NORM_X, SCALE_X. Boxes return
+  ENO or Q so a coil can follow them; overflow or divide by zero gives ENO = 0 (no stop).
+- Rack: input slots 1/3 = %IB0-1/%IB2-3 (channel 8 = %I1.0), thumbwheels %IW4; outputs %QB0-3, BCD
+  display %QW4.
+- Tag list is per profile (`Profile.tag_types/tag_fields/check_tags/tag_value`): S7 adds an Address
+  column; bad addresses are refused with the reason. Instruction bar glyphs come from the shape
+  (S7 coils show S and R). Block values use the full width except next to status pins.
+- Tests: `tests/test_s7.py` (26), e2e F11.
+keys:      S7, TIA Portal, Siemens, %I0.0, IEC_TIMER, ENO, big endian

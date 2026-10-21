@@ -44,9 +44,14 @@ class Program:
     tables: dict[str, list[str]] = field(default_factory=dict)   # BTBL/NTBL/FTBL raw values
     symbols_section: bool = True                                   # write SYMBOLS even when empty
     profile: str = "slc500"                                        # controller family, see core/profiles
+    tags: dict[str, dict] = field(default_factory=dict)            # tag-based controllers: {name: {type, value}}
 
     @classmethod
-    def new(cls) -> "Program":
+    def new(cls, profile: str = "slc500") -> "Program":
+        if profile != "slc500":             # tag-based controllers: one main routine, tags instead of tables
+            p = cls(profile=profile, symbols_section=False)
+            p.files[2] = ProgramFile(2, "LAD", "MainRoutine")
+            return p
         p = cls()
         p.files[2] = ProgramFile(2, "LAD")
         p.tables = {"BTBL": [], "NTBL": [], "FTBL": []}

@@ -46,9 +46,14 @@ class _EventBar(QFrame):
 
 # -- Silo ------------------------------------------------------------------------
 
+def slc_name(direction: str, slot: int, bit: int | None = None) -> str:
+    return f"{direction}:{slot}" + ("" if bit is None else f"/{bit}")
+
+
 class SiloCanvas(QWidget):
-    def __init__(self, model: S.SiloModel):
+    def __init__(self, model: S.SiloModel, io_name=slc_name):
         super().__init__()
+        self.n = io_name
         self.model = model
         self.setMinimumSize(320, 200)
         self.setAccessibleName("Silo filling line")
@@ -78,13 +83,13 @@ class SiloCanvas(QWidget):
         if m.solenoid:
             p.setBrush(theme.color("sim-product"))
             p.drawRect(QRectF(hx - 4, 136, 8, belt_y - 136 - 4))
-        self._label(p, hx + 20, 132, "Solenoid O:2/1")
+        self._label(p, hx + 20, 132, f"Solenoid {self.n('O', 2, 1)}")
         # belt and motor
         p.setBrush(steel)
         p.drawRoundedRect(QRectF(ox, belt_y, S.CONVEYOR_LEN, 18), 9, 9)
         p.setBrush(theme.color("energized") if m.motor else theme.color("lamp-off"))
         p.drawEllipse(QPointF(ox + S.CONVEYOR_LEN - 10, belt_y + 32), 16, 16)
-        self._label(p, ox + S.CONVEYOR_LEN - 120, belt_y + 60, "Motor O:2/0")
+        self._label(p, ox + S.CONVEYOR_LEN - 120, belt_y + 60, f"Motor {self.n('O', 2, 0)}")
         # boxes
         for b in m.boxes:
             r = QRectF(ox + b.x, belt_y - 56, S.BOX_W, 56)
@@ -100,10 +105,10 @@ class SiloCanvas(QWidget):
         p.setPen(Qt.NoPen)
         p.setBrush(theme.color("energized") if prox_on else theme.color("lamp-off"))
         p.drawRect(QRectF(ox + S.SENSOR_X - 5, belt_y + 22, 10, 22))
-        self._label(p, ox + S.SENSOR_X - 50, belt_y + 60, "Prox I:1/3")
+        self._label(p, ox + S.SENSOR_X - 50, belt_y + 60, f"Prox {self.n('I', 1, 3)}")
         p.setBrush(theme.color("energized") if level_on else theme.color("lamp-off"))
         p.drawRect(QRectF(hx + 40, belt_y - 100, 10, 26))
-        self._label(p, hx + 56, belt_y - 82, "Level I:1/4")
+        self._label(p, hx + 56, belt_y - 82, f"Level {self.n('I', 1, 4)}")
         if m.spill:
             p.setBrush(theme.color("sim-product"))
             p.drawEllipse(QRectF(ox + S.SENSOR_X - 40, belt_y + 70, 80 + min(m.spill, 200), 12))
@@ -118,8 +123,9 @@ class SiloCanvas(QWidget):
 class SiloView(QWidget):
     reset_requested = Signal()
 
-    def __init__(self, model: S.SiloModel):
+    def __init__(self, model: S.SiloModel, io_name=slc_name):
         super().__init__()
+        self.n = io_name
         self.model = model
         lay = QVBoxLayout(self)
         lay.setContentsMargins(12, 12, 12, 12)
@@ -130,27 +136,27 @@ class SiloView(QWidget):
         self.stop = SimSwitch(normally_closed=True, momentary=True)
         self.start.changed.connect(lambda _s: setattr(model, "start_pressed", self.start.pressed))
         self.stop.changed.connect(lambda _s: setattr(model, "stop_pressed", self.stop.pressed))
-        for w, t in ((self.start, "Start I:1/0"), (self.stop, "Stop I:1/1")):
+        for w, t in ((self.start, f"Start {self.n('I', 1, 0)}"), (self.stop, f"Stop {self.n('I', 1, 1)}")):
             w.setToolTip(t)
             w.setAccessibleName(t)
         g.addWidget(self.start, 0, 0)
-        g.addWidget(_mono("Start I:1/0"), 0, 1)
+        g.addWidget(_mono(f"Start {self.n('I', 1, 0)}"), 0, 1)
         g.addWidget(self.stop, 1, 0)
-        g.addWidget(_mono("Stop I:1/1 (NC)"), 1, 1)
+        g.addWidget(_mono(f"Stop {self.n('I', 1, 1)} (NC)"), 1, 1)
         sel = QHBoxLayout()
         self.sel_group = QButtonGroup(self)
         for i, name in enumerate("ABC"):
             b = QPushButton(name)
             b.setCheckable(True)
             b.setChecked(name == model.selector)
-            b.setToolTip(f"Selector {name} → I:1/{5 + i}")
+            b.setToolTip(f"Selector {name} → {self.n('I', 1, 5 + i)}")
             b.clicked.connect(lambda _=False, n=name: setattr(model, "selector", n))
             self.sel_group.addButton(b)
             sel.addWidget(b)
         g.addLayout(sel, 2, 0, 1, 2)
-        g.addWidget(_mono("Selector I:1/5..7", muted=True), 3, 0, 1, 2)
+        g.addWidget(_mono(f"Selector {self.n('I', 1, 5)}..7", muted=True), 3, 0, 1, 2)
         self.lamps = {}
-        for row, (bit, name) in enumerate(((2, "Run O:2/2"), (3, "Fill O:2/3"), (4, "Full O:2/4"))):
+        for row, (bit, name) in enumerate(((2, f"Run {self.n('O', 2, 2)}"), (3, f"Fill {self.n('O', 2, 3)}"), (4, f"Full {self.n('O', 2, 4)}"))):
             lamp = Lamp({2: "lamp-green", 3: "lamp-amber", 4: "lamp-red"}[bit])
             self.lamps[bit] = lamp
             g.addWidget(lamp, row, 2)
@@ -159,7 +165,7 @@ class SiloView(QWidget):
         top.addWidget(panel)
         top.addStretch(1)
         lay.addLayout(top)
-        self.canvas = SiloCanvas(model)
+        self.canvas = SiloCanvas(model, io_name)
         lay.addWidget(self.canvas, 1)
         self.events = _EventBar()
         self.events.reset.connect(self.reset_requested.emit)
@@ -176,8 +182,9 @@ class SiloView(QWidget):
 # -- Traffic ---------------------------------------------------------------------
 
 class TrafficCanvas(QWidget):
-    def __init__(self, model: T.TrafficModel):
+    def __init__(self, model: T.TrafficModel, io_name=slc_name):
         super().__init__()
+        self.n = io_name
         self.model = model
         self.setMinimumSize(320, 320)
         self.setAccessibleName("Traffic intersection")
@@ -200,10 +207,10 @@ class TrafficCanvas(QWidget):
         p.setPen(QPen(theme.color("bg"), 3, Qt.DashLine))
         p.drawLine(QPointF(T.STOP_LINE, jc - w / 2), QPointF(T.STOP_LINE, jc + w / 2))
         p.drawLine(QPointF(jc - w / 2, T.STOP_LINE), QPointF(jc + w / 2, T.STOP_LINE))
-        self._head(p, QPointF(T.STOP_LINE - 45, jc + w / 2 + 26), "A", "O:2/0..2")
-        self._head(p, QPointF(jc + w / 2 + 12, T.STOP_LINE - 80), "B", "O:2/4..6")
-        self._walk(p, QPointF(T.STOP_LINE - 200, jc + w / 2 + 40), m.walk("A"), "Walk O:2/3")
-        self._walk(p, QPointF(jc - w / 2 - 150, T.STOP_LINE - 60), m.walk("B"), "Walk O:2/7")
+        self._head(p, QPointF(T.STOP_LINE - 45, jc + w / 2 + 26), "A", f"{self.n('O', 2, 0)}..2")
+        self._head(p, QPointF(jc + w / 2 + 12, T.STOP_LINE - 80), "B", f"{self.n('O', 2, 4)}..6")
+        self._walk(p, QPointF(T.STOP_LINE - 200, jc + w / 2 + 40), m.walk("A"), f"Walk {self.n('O', 2, 3)}")
+        self._walk(p, QPointF(jc - w / 2 - 150, T.STOP_LINE - 60), m.walk("B"), f"Walk {self.n('O', 2, 7)}")
         for name, car in m.cars.items():
             if car.parked or car.wait > 0:
                 continue
@@ -217,8 +224,8 @@ class TrafficCanvas(QWidget):
             p.drawRoundedRect(r, 6, 6)
         p.setPen(theme.color("text"))
         p.setFont(theme.font("mono", "xs"))
-        p.drawText(QPointF(4, jc - w / 2 - 12), "Car waiting A → I:1/2")
-        p.drawText(QPointF(jc + w / 2 + 8, 30), "Car waiting B → I:1/3")
+        p.drawText(QPointF(4, jc - w / 2 - 12), f"Car waiting A → {self.n('I', 1, 2)}")
+        p.drawText(QPointF(jc + w / 2 + 8, 30), f"Car waiting B → {self.n('I', 1, 3)}")
 
     def _head(self, p, at: QPointF, road: str, label: str):
         p.setPen(QPen(theme.color("rail"), 2))
@@ -245,8 +252,9 @@ class TrafficCanvas(QWidget):
 class TrafficView(QWidget):
     reset_requested = Signal()
 
-    def __init__(self, model: T.TrafficModel):
+    def __init__(self, model: T.TrafficModel, io_name=slc_name):
         super().__init__()
+        self.n = io_name
         self.model = model
         lay = QVBoxLayout(self)
         lay.setContentsMargins(12, 12, 12, 12)
@@ -254,10 +262,10 @@ class TrafficView(QWidget):
         for road, bit in (("A", 0), ("B", 1)):
             sw = SimSwitch(momentary=True)
             sw.changed.connect(lambda _s, r=road, w=sw: model.buttons.__setitem__(r, w.pressed))
-            sw.setToolTip(f"Crosswalk button {road} → I:1/{bit}")
+            sw.setToolTip(f"Crosswalk button {road} → {self.n('I', 1, bit)}")
             sw.setAccessibleName(sw.toolTip())
             row.addWidget(sw)
-            row.addWidget(_mono(f"Walk button {road} I:1/{bit}"))
+            row.addWidget(_mono(f"Walk button {road} {self.n('I', 1, bit)}"))
             row.addSpacing(16)
         for road in "AB":
             cb = QCheckBox(f"Park car {road}")
@@ -266,7 +274,7 @@ class TrafficView(QWidget):
             row.addWidget(cb)
         row.addStretch(1)
         lay.addLayout(row)
-        self.canvas = TrafficCanvas(model)
+        self.canvas = TrafficCanvas(model, io_name)
         lay.addWidget(self.canvas, 1)
         self.events = _EventBar()
         self.events.reset.connect(self.reset_requested.emit)

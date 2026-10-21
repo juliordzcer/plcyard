@@ -32,13 +32,16 @@ class IoPanelModel:
     def switch(self, slot: int, bit: int) -> SwitchConfig:
         return self.config.setdefault((slot, bit), SwitchConfig())
 
-    def configure_from_symbols(self, symbols: dict[str, str]) -> None:
-        """Wire switches as the program expects: 'Stop (NC)', 'Open - NO,PB', 'Stop (NC, pushbutton)'."""
+    def configure_from_symbols(self, symbols: dict[str, str], io_name=None) -> None:
+        """Wire switches as the program expects: 'Stop (NC)', 'Open - NO,PB', 'Stop (NC, pushbutton)'.
+        `io_name(direction, slot, bit)` names an input point (SLC "I:1/0" by default)."""
+        io_name = io_name or (lambda d, s, b: f"{d}:{s}/{b}")
+        points = {io_name("I", s, b).upper(): (s, b) for s in INPUT_SLOTS for b in range(16)}
         for addr, desc in symbols.items():
-            m = re.fullmatch(r"I:(\d+)/(\d+)", addr.strip().upper())
-            if not m or int(m[1]) not in INPUT_SLOTS:
+            point = points.get(addr.strip().upper())
+            if point is None:
                 continue
-            cfg = self.switch(int(m[1]), int(m[2]))
+            cfg = self.switch(*point)
             cfg.normally_closed = bool(_NC.search(desc))
             cfg.momentary = bool(_PB.search(desc))
 

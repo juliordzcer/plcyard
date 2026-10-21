@@ -24,8 +24,8 @@ class Slot:
     index: int
 
 
-def new_instr(mnemonic: str) -> Instr:
-    spec = isa.SPECS[mnemonic]
+def new_instr(mnemonic: str, specs: dict[str, isa.Spec] | None = None) -> Instr:
+    spec = (isa.SPECS if specs is None else specs)[mnemonic]
     return Instr(mnemonic, ["?"] * (len(spec.operands) - spec.optional))
 
 
@@ -55,17 +55,17 @@ def parent_slot(path: tuple) -> tuple[tuple, int]:
     return path[:-1], path[-1]
 
 
-def _has_output(series: Series) -> bool:
-    return any(isinstance(i, Instr) and isa.is_output(i.mnemonic) for i in series.items)
+def _has_output(series: Series, specs=None) -> bool:
+    return any(isinstance(i, Instr) and isa.is_output(i.mnemonic, specs) for i in series.items)
 
 
-def default_slot(body: Series, mnemonic: str) -> Slot:
+def default_slot(body: Series, mnemonic: str, specs: dict[str, isa.Spec] | None = None) -> Slot:
     """Where a new instruction goes when the whole rung is selected: inputs before the
     first output, outputs at the end."""
-    if isa.is_output(mnemonic) or mnemonic in ("BST",):
+    if isa.is_output(mnemonic, specs) or mnemonic in ("BST",):
         return Slot((), len(body.items))
     for k, item in enumerate(body.items):
-        if isinstance(item, Instr) and isa.is_output(item.mnemonic):
+        if isinstance(item, Instr) and isa.is_output(item.mnemonic, specs):
             return Slot((), k)
     return Slot((), len(body.items))
 
@@ -162,12 +162,15 @@ def toggle_contact(body: Series, path: tuple) -> None:
     node.mnemonic = "XIO" if node.mnemonic == "XIC" else "XIC"
 
 
-def set_operands(body: Series, path: tuple, operands: list[str]) -> list[str]:
+def set_operands(body: Series, path: tuple, operands: list[str], profile=None, program=None) -> list[str]:
+    """Store the typed operands; returns their problems. `profile` defaults to SLC 500."""
+    from .profiles import SLC500
+    profile = profile or SLC500
     node = node_at(body, path)
     if not isinstance(node, Instr):
         raise EditError("not an instruction")
-    node.operands = [o.strip().upper() if o.strip() else "?" for o in operands]
-    return isa.validate(node.mnemonic, node.operands)
+    node.operands = [profile.normalize(o) if o.strip() else "?" for o in operands]
+    return profile.validate(node.mnemonic, node.operands, program)
 
 
 def instructions_in_order(body: Series) -> list[tuple]:

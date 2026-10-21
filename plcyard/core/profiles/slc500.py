@@ -22,6 +22,9 @@ class Slc500(Profile):
     memory_errors = (DataTableError,)
     memory_fault_code = 0x0024
 
+    def normalize(self, operand: str) -> str:
+        return operand.strip().upper()
+
     def new_memory(self) -> DataTable:
         return DataTable()
 
@@ -106,6 +109,26 @@ class Slc500(Profile):
         dt.write_bit(MAJOR_FAULT, False)
         dt.write_word(FAULT_CODE, 0)
         dt.write_bit(isa.OVERFLOW_TRAP, False)
+
+    # -- live display ------------------------------------------------------------
+    def live(self, dt: DataTable, ins: Instr):
+        m, ops = ins.mnemonic, ins.operands
+        if m in ("TON", "TOF", "RTO"):
+            return ([("Accum", str(dt.read_word(ops[0] + ".ACC")))],
+                    [(b, dt.read_bit(f"{ops[0]}/{b}")) for b in ("EN", "TT", "DN")])
+        if m in ("CTU", "CTD"):
+            edge = "CU" if m == "CTU" else "CD"
+            return ([("Accum", str(dt.read_word(ops[0] + ".ACC")))],
+                    [(edge, dt.read_bit(f"{ops[0]}/{edge}")), ("DN", dt.read_bit(f"{ops[0]}/DN"))])
+        ctl = next((o for o in ops if o.upper().startswith("R")), None)
+        if ctl and m in ("BSL", "BSR", "SQO", "SQC", "SQL"):
+            bits = ("EN", "DN", "FD") if m == "SQC" else ("EN", "DN")
+            return [], [(b, dt.read_bit(f"{ctl}/{b}")) for b in bits]
+        return [], []
+
+    def io_image(self, dt: DataTable) -> list[tuple[str, int]]:
+        return [("I:1", dt.read_slot(1, 1)), ("I:3", dt.read_slot(1, 3)),
+                ("O:2", dt.read_slot(0, 2)), ("O:4", dt.read_slot(0, 4))]
 
     # -- I/O image -------------------------------------------------------------
     def read_inputs(self, dt: DataTable, device: IODevice) -> None:

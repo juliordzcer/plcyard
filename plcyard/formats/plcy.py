@@ -34,6 +34,7 @@ def dumps(prog: Program) -> str:
             }
             for _, f in sorted(prog.files.items())
         ],
+        "tags": prog.tags,
         "symbols": prog.symbols,
         "tables": prog.tables,
     }
@@ -55,6 +56,7 @@ def loads(text: str) -> Program:
         raise PlcyError(str(e)) from None
     prog = Program(profile=doc.get("profile", profiles.DEFAULT))
     prog.symbols = dict(doc.get("symbols", {}))
+    prog.tags = {k: dict(v) for k, v in doc.get("tags", {}).items()}
     prog.tables = {k: list(v) for k, v in doc.get("tables", {}).items()}
     for d in doc.get("programs", []):
         if d.get("language", "LD") != "LD":

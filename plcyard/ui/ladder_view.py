@@ -12,7 +12,7 @@ from PySide6.QtGui import QDrag, QFontMetrics, QKeySequence, QPainter, QPen, QUn
 from PySide6.QtWidgets import (QCompleter, QFormLayout, QFrame, QInputDialog, QLabel, QLineEdit,
                                QMenu, QScrollArea, QVBoxLayout, QWidget)
 
-from ..core import edit, isa
+from ..core import edit, profiles
 from ..core.datatable import DataTable
 from ..core.program import Instr, Parallel, Program, ProgramFile, walk
 from . import theme
@@ -59,7 +59,7 @@ class OperandEditor(QFrame):
         self.canvas, self.rung, self.path, self.ins = canvas, rung, path, ins
         self.setFrameShape(QFrame.StyledPanel)
         self.setAutoFillBackground(True)
-        spec = isa.SPECS[ins.mnemonic]
+        spec = canvas.specs[ins.mnemonic]
         lay = QVBoxLayout(self)
         lay.setContentsMargins(8, 8, 8, 8)
         title = QLabel(f"{ins.mnemonic} — {spec.title}")
@@ -72,7 +72,7 @@ class OperandEditor(QFrame):
             val = ins.operands[k] if k < len(ins.operands) else ""
             f = QLineEdit("" if val == "?" else val)
             f.setFont(theme.font("mono", "base"))
-            f.setPlaceholderText(isa.KINDS[kind])
+            f.setPlaceholderText(canvas.profile.kinds.get(kind, ""))
             f.setCompleter(QCompleter(known, f))
             f.textChanged.connect(self._validate)
             f.returnPressed.connect(self.commit)
@@ -99,15 +99,15 @@ class OperandEditor(QFrame):
         self._validate()
 
     def _values(self) -> list[str]:
-        spec = isa.SPECS[self.ins.mnemonic]
-        vals = [f.text().strip().upper() for f in self.fields]
+        spec = self.canvas.specs[self.ins.mnemonic]
+        vals = [self.canvas.profile.normalize(f.text()) for f in self.fields]
         need = len(spec.operands) - spec.optional
         while len(vals) > need and not vals[-1]:
             vals.pop()
         return [v or "?" for v in vals]
 
     def _validate(self) -> None:
-        problems = isa.validate(self.ins.mnemonic, self._values())
+        problems = self.canvas.profile.validate(self.ins.mnemonic, self._values(), self.canvas.program)
         self.error.setText("\n".join(problems))
         self.error.setVisible(bool(problems))
         for f in self.fields:
@@ -118,7 +118,7 @@ class OperandEditor(QFrame):
 
     def commit(self) -> None:
         self.canvas.apply_edit("Edit operands",
-                               lambda body: edit.set_operands(body, self.path, self._values()),
+                               lambda body: edit.set_operands(body, self.path, self._values(), self.canvas.profile, self.canvas.program),
                                self.rung, select=self.path)
         self.close_editor()
 
@@ -160,6 +160,14 @@ class LadderCanvas(QWidget):
     @property
     def file(self) -> ProgramFile | None:
         return self.program.files.get(self.file_no) if self.program else None
+
+    @property
+    def profile(self):
+        return profiles.get(self.program.profile if self.program else profiles.DEFAULT)
+
+    @property
+    def specs(self):
+        return self.profile.specs
 
     def set_program(self, program: Program | None) -> None:
         self.program = program
@@ -232,12 +240,12 @@ class LadderCanvas(QWidget):
         if self.sel is None or self.sel[1] >= len(self.file.rungs):
             self.new_rung()
         kind, n = self.sel[0], self.sel[1]
-        node = edit.new_instr(mnemonic)
+        node = edit.new_instr(mnemonic, self.specs)
         if kind == "instr":
             sp, k = edit.parent_slot(self.sel[2])
             slot = edit.Slot(sp, k + 1)
         else:
-            slot = edit.default_slot(self.file.rungs[n].body, mnemonic)
+            slot = edit.default_slot(self.file.rungs[n].body, mnemonic, self.specs)
         self.apply_edit(f"Add {mnemonic}", lambda body: edit.insert(body, slot, node), n,
                         select=lambda path: ("instr", n, path))
 
@@ -363,7 +371,7 @@ class LadderCanvas(QWidget):
 
     def open_operand_editor(self) -> None:
         ins = self.selected_instr()
-        if ins is None or not isa.SPECS.get(ins.mnemonic) or not isa.SPECS[ins.mnemonic].operands:
+        if ins is None or not self.specs.get(ins.mnemonic) or not self.specs[ins.mnemonic].operands:
             return
         rect = self._instr_rect(self.sel[1], self.sel[2])
         if self.editor:
@@ -392,7 +400,7 @@ class LadderCanvas(QWidget):
         f = self.file
         if f:
             for r in f.rungs:
-                w = max(w, natural_width(r.body))
+                w = max(w, natural_width(r.body, self.specs))
         return max(w, 300)
 
     def _compute_rows(self) -> float:
@@ -402,7 +410,7 @@ class LadderCanvas(QWidget):
         y = MARGIN
         for n, r in enumerate(f.rungs if f else []):
             ch = self._comment_h(r.comment, rails)
-            g = layout_rung(r.body, rails)
+            g = layout_rung(r.body, rails, self.specs)
             self.rows.append(Row(n, y, y + ch, g.height, g))
             y += ch + g.height + RUNG_GAP
         self.rows.append(Row(len(f.rungs) if f else 0, y, y, 52, None))
@@ -448,16 +456,14 @@ class LadderCanvas(QWidget):
         return (n, None, None, None)
 
     # -- painting ---------------------------------------------------------
-    def _energized(self, mnemonic: str, operands: list[str]) -> bool:
-        if not (self.live and self.dt and operands):
+    def _energized(self, spec, operands: list[str]) -> bool:
+        if not (self.live and self.dt and operands and spec) or spec.shape not in ("contact", "contact_nc", "coil"):
             return False
         try:
             on = self.dt.read_bit(operands[0])
         except Exception:
             return False
-        if mnemonic == "XIO":
-            return not on
-        return on if mnemonic in ("XIC", "OTE", "OTL", "OTU") else False
+        return not on if spec.shape == "contact_nc" else on
 
     def _wire_on(self, rung_no: int, tag) -> bool:
         if not self.live:
@@ -466,27 +472,13 @@ class LadderCanvas(QWidget):
         return bool(hit and hit[0 if tag[1] == "in" else 1])
 
     def _block_extras(self, ins):
-        """Live rows (Accum) and status pins for timers, counters and sequencers."""
+        """Live rows (Accum) and status pins, as the controller profile reports them."""
         if not self.dt or not ins.operands:
             return [], []
-        m = ins.mnemonic
         try:
-            if m in ("TON", "TOF", "RTO"):
-                el = ins.operands[0]
-                return ([("Accum", str(self.dt.read_word(el + ".ACC")))],
-                        [(b, self.dt.read_bit(f"{el}/{b}")) for b in ("EN", "TT", "DN")])
-            if m in ("CTU", "CTD"):
-                el = ins.operands[0]
-                edge = "CU" if m == "CTU" else "CD"
-                return ([("Accum", str(self.dt.read_word(el + ".ACC")))],
-                        [(edge, self.dt.read_bit(f"{el}/{edge}")), ("DN", self.dt.read_bit(f"{el}/DN"))])
-            ctl = next((o for o in ins.operands if o.upper().startswith("R")), None)
-            if ctl and m in ("BSL", "BSR", "SQO", "SQC", "SQL"):
-                bits = ("EN", "DN", "FD") if m == "SQC" else ("EN", "DN")
-                return [], [(b, self.dt.read_bit(f"{ctl}/{b}")) for b in bits]
+            return self.profile.live(self.dt, ins)
         except Exception:
-            pass
-        return [], []
+            return [], []
 
     def paintEvent(self, _):
         p = QPainter(self)
@@ -533,14 +525,16 @@ class LadderCanvas(QWidget):
                 ins = pl.instr
                 extra, pins = self._block_extras(ins)
                 hit = self.trace.get((self.file_no, n) + pl.path) if self.live else None
-                on_ = bool(hit and hit[1]) if is_block(ins) else self._energized(ins.mnemonic, ins.operands)
+                spec = self.specs.get(ins.mnemonic)
+                on_ = bool(hit and hit[1]) if is_block(ins, self.specs) else self._energized(spec, ins.operands)
                 sel = self.sel is not None and self.sel[0] == "instr" and self.sel[1] == n and self.sel[2] == pl.path
                 paint_instruction(
                     p, QRectF(left + pl.x, row.rung_y + pl.y, pl.w, pl.h), ins.mnemonic, ins.operands,
                     symbols.get(ins.operands[0], "") if ins.operands else "",
                     energized=on_, selected=sel,
-                    labels=list(isa.SPECS[ins.mnemonic].labels) if ins.mnemonic in isa.SPECS else None,
-                    extra=extra, pins=pins)
+                    labels=list(spec.labels) if spec else None,
+                    extra=extra, pins=pins, shape=spec.shape if spec else "block",
+                    letter=spec.letter if spec else "")
         self._paint_drop(p)
 
     def _paint_drop(self, p: QPainter) -> None:
@@ -617,7 +611,7 @@ class LadderCanvas(QWidget):
             return a
 
         if ins:
-            add("Edit operands…", self.open_operand_editor, isa.SPECS[ins.mnemonic].operands, "F2")
+            add("Edit operands…", self.open_operand_editor, self.specs.get(ins.mnemonic) and self.specs[ins.mnemonic].operands, "F2")
             add("Edit symbol…", self.edit_symbol, ins.operands and ins.operands[0] != "?")
             if ins.mnemonic in ("XIC", "XIO"):
                 add(f"Change to {'XIO' if ins.mnemonic == 'XIC' else 'XIC'}", self.toggle_contact)
@@ -731,9 +725,9 @@ class LadderCanvas(QWidget):
             if mnemonic == "RUNG":
                 return
         n, slot = (self.sel[1], None) if target[0] == "newrung" else (target[0], target[1])
-        node = edit.new_instr(mnemonic)
+        node = edit.new_instr(mnemonic, self.specs)
         if slot is None:
-            slot = edit.default_slot(self.file.rungs[n].body, mnemonic)
+            slot = edit.default_slot(self.file.rungs[n].body, mnemonic, self.specs)
         self.apply_edit(f"Add {mnemonic}", lambda body: edit.insert(body, slot, node), n,
                         select=lambda p: ("instr", n, p))
 
@@ -743,7 +737,7 @@ class LadderCanvas(QWidget):
         tn, slot = target[0], target[1]
         if slot is None:
             node = edit.node_at(self.file.rungs[n].body, src)
-            slot = edit.default_slot(self.file.rungs[tn].body, node.mnemonic if isinstance(node, Instr) else "XIC")
+            slot = edit.default_slot(self.file.rungs[tn].body, node.mnemonic if isinstance(node, Instr) else "XIC", self.specs)
         if tn == n:
             self.apply_edit("Move", lambda body: edit.move(body, src, slot), n,
                             select=lambda p: ("instr", n, p))

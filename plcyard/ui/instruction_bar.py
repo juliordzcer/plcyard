@@ -82,6 +82,7 @@ class InstructionBar(QWidget):
         while self.row.count():
             item = self.row.takeAt(0)
             if item.widget():
+                item.widget().hide()
                 item.widget().deleteLater()
         self._add("RUNG", "Rung +", "New rung below the selection (Insert)")
         self._add("BRANCH", "Branch", "Put the selected instruction in a branch")
@@ -89,8 +90,9 @@ class InstructionBar(QWidget):
             self.row.addStretch(1)
             return
         family = self.families[index]
-        glyph = {"XIC": "-] [-", "XIO": "-]/[-", "OTE": "-( )-", "OTL": "-(L)-", "OTU": "-(U)-"}
         for m, spec in self.specs.items():
             if spec.family == family:
-                self._add(m, glyph.get(m, m), f"{m} — {spec.title}")
+                glyph = {"contact": "-] [-", "contact_nc": "-]/[-", "coil": f"-({spec.letter or ' '})-"}.get(
+                    spec.shape, spec.letter if spec.shape == "small" and spec.letter else m)
+                self._add(m, glyph, f"{m} — {spec.title}")
         self.row.addStretch(1)

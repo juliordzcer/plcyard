@@ -12,8 +12,9 @@ from .primitives import DigitDisplay, Lamp, SimSwitch
 
 
 class IoPanelView(QWidget):
-    def __init__(self, model: IoPanelModel, symbols: dict[str, str] | None = None):
+    def __init__(self, model: IoPanelModel, symbols: dict[str, str] | None = None, io_name=None):
         super().__init__()
+        self.n = io_name or (lambda d, s, b=None: f"{d}:{s}" + ("" if b is None else f"/{b}"))
         self.model = model
         self.symbols = symbols or {}
         self.switches: dict[tuple[int, int], SimSwitch] = {}
@@ -38,12 +39,12 @@ class IoPanelView(QWidget):
         grid.setContentsMargins(8, 8, 8, 8)
         grid.setVerticalSpacing(2)
         is_input = slot in INPUT_SLOTS
-        title = QLabel(f"{'I' if is_input else 'O'}:{slot}")
+        title = QLabel(self.n("I" if is_input else "O", slot))
         title.setFont(theme.font("mono", "md"))
         grid.addWidget(title, 0, 0, 1, 2, Qt.AlignHCenter)
         grid.setRowMinimumHeight(0, 28)
         for bit in range(16):
-            addr = f"{'I' if is_input else 'O'}:{slot}/{bit}"
+            addr = self.n("I" if is_input else "O", slot, bit)
             label = QLabel(f"{bit:02d}")
             label.setFont(theme.font("mono", "sm"))
             label.setProperty("muted", "true")
@@ -71,7 +72,7 @@ class IoPanelView(QWidget):
         lay = QGridLayout(frame)
         lay.setContentsMargins(12, 8, 12, 8)
         lay.setHorizontalSpacing(12)
-        t = QLabel(f"I:{THUMBWHEEL_SLOT}  (BCD)")
+        t = QLabel(f"{self.n('I', THUMBWHEEL_SLOT)}  (BCD)")
         t.setFont(theme.font("mono", "md"))
         lay.addWidget(t, 0, 0)
         row = QHBoxLayout()
@@ -88,7 +89,7 @@ class IoPanelView(QWidget):
             row.addWidget(sb)
             self.wheels.append(sb)
         lay.addLayout(row, 0, 1)
-        t2 = QLabel(f"O:{DISPLAY_SLOT}  (BCD)")
+        t2 = QLabel(f"{self.n('O', DISPLAY_SLOT)}  (BCD)")
         t2.setFont(theme.font("mono", "md"))
         lay.addWidget(t2, 1, 0)
         self.display = DigitDisplay(0)

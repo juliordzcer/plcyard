@@ -20,8 +20,9 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Modern PLC models
 - [x] Phase 1: controller profiles on a shared scan engine, `.plcy` project files.
-- [ ] **Next — Phase 2:** ladder editor uses the program's profile instructions (not `isa.SPECS`),
-      then the Logix and S7 profiles and a tag editor dock.
+- [x] Phase 2: Logix and S7 profiles in ladder, tag list, controller-aware editor and simulations.
+- [ ] **Next — Phase 3:** PID and an analog process (see docs/ROADMAP.md).
+- [ ] Forcing I/O from the tag list; arrays and user structures; Logix routines (JSR); S7 FBs/DBs.
 - [ ] Controller profiles beyond SLC 500: a Logix-style controller (tags instead of file addresses,
       as in Studio 5000) and an S7-1200/1500-style controller (Siemens TIA Portal).
 - [ ] New instruction blocks those controllers have: PID, scaling (SCP), ramps, edge detection

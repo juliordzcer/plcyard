@@ -7,7 +7,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence
 from PySide6.QtWidgets import (QApplication, QDockWidget, QFileDialog, QFrame, QHBoxLayout, QLabel, QMainWindow,
-                               QMessageBox, QPushButton, QScrollArea, QSlider, QSplitter, QTabBar,
+                               QMessageBox, QPushButton, QScrollArea, QSlider, QSplitter, QStackedWidget, QTabBar,
                                QVBoxLayout, QWidget)
 
 from .. import grader, labs
@@ -22,6 +22,7 @@ from ..sims.traffic import TrafficModel
 from .io_panel_view import IoPanelView
 from .sim_views import SiloView, TrafficView
 from .datatable_view import DataTableView
+from .tags_view import TagsView
 from .instruction_bar import InstructionBar
 from .labs_view import LabsView
 from .ladder_view import LadderView
@@ -98,10 +99,9 @@ class MainWindow(QMainWindow):
         sim_scroll.setMinimumWidth(theme.layout("sim-pane-min-w"))
         self.ladder = LadderView()
         self.tabs = QTabBar()
-        self.tabs.addTab("LAD 2")
-        for n in range(3, 10):
-            self.tabs.addTab(f"SBR {n}")
-        self.tabs.currentChanged.connect(lambda i: self.ladder.canvas.set_file(i + 2))
+        self.tab_files: list[int] = []
+        self.tabs.currentChanged.connect(
+            lambda i: 0 <= i < len(self.tab_files) and self.ladder.canvas.set_file(self.tab_files[i]))
 
         right = QWidget()
         rl = QVBoxLayout(right)
@@ -128,9 +128,14 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self.table_view = DataTableView(self.plc.dt, self.program.symbols)
+        self.tags_view = TagsView()
+        self.tags_view.edited.connect(self._edited)
+        self.data_stack = QStackedWidget()
+        self.data_stack.addWidget(self.table_view)
+        self.data_stack.addWidget(self.tags_view)
         self.table_dock = QDockWidget("Data table", self)
         self.table_dock.setObjectName("datatable")
-        self.table_dock.setWidget(self.table_view)
+        self.table_dock.setWidget(self.data_stack)
         self.table_dock.setMinimumWidth(theme.layout("dock-w"))
         self.addDockWidget(Qt.RightDockWidgetArea, self.table_dock)
         self.table_dock.hide()
@@ -180,6 +185,9 @@ class MainWindow(QMainWindow):
 
         f = mb.addMenu("&File")
         act(f, "&New", self.new, QKeySequence.New)
+        nf = f.addMenu("New for controller")
+        for prof in profiles.PROFILES.values():
+            act(nf, f"{prof.title} program", lambda _=False, n=prof.name: self.new(n))
         act(f, "&Open…", lambda: self.open(), QKeySequence.Open)
         ex = f.addMenu("Open &example")
         for path in sorted(labs.SAMPLES.glob("*.rsl")):
@@ -255,10 +263,11 @@ class MainWindow(QMainWindow):
         else:
             e.ignore()
 
-    def new(self) -> None:
+    def new(self, profile: str | None = None) -> None:
+        """New program for `profile`; by default the same controller as the current program."""
         if not self.maybe_save():
             return
-        self.program = Program.new()
+        self.program = Program.new(profile or self.program.profile)
         self.path = None
         self._program_changed()
         self._rebuild_sim()
@@ -306,16 +315,17 @@ class MainWindow(QMainWindow):
     def _rebuild_sim(self) -> None:
         """Fresh simulation of the selected kind. The I/O panel is wired from the program's
         symbols (NC stops, pushbuttons)."""
+        name = profiles.get(self.program.profile).io_name
         if self.sim_kind == "silo":
             self.sim = SiloModel()
-            self.sim_view = SiloView(self.sim)
+            self.sim_view = SiloView(self.sim, name)
         elif self.sim_kind == "traffic":
             self.sim = TrafficModel()
-            self.sim_view = TrafficView(self.sim)
+            self.sim_view = TrafficView(self.sim, name)
         else:
             self.sim = IoPanelModel()
-            self.sim.configure_from_symbols(self.program.symbols)
-            self.sim_view = IoPanelView(self.sim, self.program.symbols)
+            self.sim.configure_from_symbols(self.program.symbols, name)
+            self.sim_view = IoPanelView(self.sim, self.program.symbols, name)
         if hasattr(self.sim_view, "reset_requested"):
             self.sim_view.reset_requested.connect(lambda: self._rebuild_sim())
         self.plc.device = self.sim
@@ -354,13 +364,37 @@ class MainWindow(QMainWindow):
         self._show_program()
 
     def _show_program(self) -> None:
-        self.bar.set_specs(profiles.get(self.program.profile).specs)
+        prof = profiles.get(self.program.profile)
+        self.bar.set_specs(prof.specs)
         self.ladder.canvas.set_program(self.program)
+        self._show_tabs()
+        tagged = bool(prof.tag_types)
+        self.data_stack.setCurrentWidget(self.tags_view if tagged else self.table_view)
+        self.table_dock.setWindowTitle("Tags" if tagged else "Data table")
+        self.tags_view.set_program(self.program if tagged else None)
         if isinstance(self.sim_view, IoPanelView):
             self.sim_view.symbols = self.program.symbols
         self.table_view.symbols = self.program.symbols
         self._title()
         self._update_status()
+
+    def _show_tabs(self) -> None:
+        """One tab per program file: LAD 2 and SBR 3-9 on SLC 500, the main routine on Logix."""
+        if self.program.profile == "slc500":
+            files = list(range(2, 10))
+            label = {n: "LAD 2" if n == 2 else f"SBR {n}" for n in files}
+        else:
+            files = sorted(self.program.files)
+            label = {n: self.program.files[n].title or f"Routine {n}" for n in files}
+        self.tabs.blockSignals(True)
+        while self.tabs.count():
+            self.tabs.removeTab(0)
+        for n in files:
+            self.tabs.addTab(label[n])
+        self.tab_files = files
+        self.tabs.setCurrentIndex(0)
+        self.tabs.blockSignals(False)
+        self.ladder.canvas.set_file(files[0])
 
     def _title(self) -> None:
         name = self.path.name if self.path else "Untitled"
@@ -376,7 +410,8 @@ class MainWindow(QMainWindow):
 
     def show_address(self, address: str) -> None:
         self.table_dock.show()
-        self.table_view.show_address(address)
+        if self.data_stack.currentWidget() is self.table_view:
+            self.table_view.show_address(address)
 
     # -- PLC ----------------------------------------------------------------
     def download(self) -> None:
@@ -456,11 +491,15 @@ class MainWindow(QMainWindow):
         live = self.plc.mode in (Processor.RUN, Processor.STEP)
         self.sim_view.refresh()
         same = self.in_sync and live
-        self.table_view.refresh()
-        self.ladder.canvas.set_live(self.plc.dt, live, self.plc.trace if same else None)
+        same_controller = self.plc.profile.name == self.program.profile
+        if self.data_stack.currentWidget() is self.table_view:
+            if same_controller and self.table_view.model.dt is not self.plc.dt:
+                self.table_view.model.dt = self.plc.dt      # a download switched controllers
+            self.table_view.refresh()
+        elif self.table_dock.isVisible():
+            downloaded = same_controller and self.downloaded and self.plc.program is not None
+            self.tags_view.set_memory(self.plc.dt if downloaded else None)
+        self.ladder.canvas.set_live(self.plc.dt, live and same_controller, self.plc.trace if same else None)
         self.panel.scans.setText(f"{self.plc.scan_count} scans")
-        dt = self.plc.dt
-        self.panel.io_words.setText(
-            f"I:1 {dt.read_slot(1, 1):04X}h  I:3 {dt.read_slot(1, 3):04X}h  "
-            f"O:2 {dt.read_slot(0, 2):04X}h  O:4 {dt.read_slot(0, 4):04X}h")
+        self.panel.io_words.setText("  ".join(f"{n} {v & 0xFFFF:04X}h" for n, v in self.plc.profile.io_image(self.plc.dt)))
         self._update_status()

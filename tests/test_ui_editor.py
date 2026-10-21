@@ -1,7 +1,7 @@
 """Editor flows driven like a user: instruction bar, keyboard, operand editor, undo."""
 
 import pytest
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
 
 from plcyard.core.processor import Processor
 from plcyard.formats import rsl
@@ -21,6 +21,7 @@ def win(qtbot, qapp):
     w.frame.stop()
     w.close()
     w.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)   # really free it: no slowdown
     qapp.processEvents()
 
 

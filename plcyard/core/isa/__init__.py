@@ -39,6 +39,8 @@ class Spec:
     on_download: Callable | None = None
     on_prescan: Callable | None = None
     optional: int = 0           # trailing operands that may be left out
+    shape: str = "block"        # contact | contact_nc | coil | small | block (how the ladder draws it)
+    letter: str = ""            # drawn inside a coil or small box (L, U, S, R, P…)
 
 
 KINDS = {
@@ -57,11 +59,19 @@ KINDS = {
 SPECS: dict[str, Spec] = {}
 
 
+SHAPES = {"XIC": ("contact", ""), "XIO": ("contact_nc", ""), "OTE": ("coil", ""),
+          "OTL": ("coil", "L"), "OTU": ("coil", "U"), "OSR": ("small", "OSR"), "NOP": ("small", "NOP")}
+
+
 def instruction(mnemonic, title, family, operands, labels, output=False,
-                on_download=None, on_prescan=None, optional=0):
+                on_download=None, on_prescan=None, optional=0, *, into=None, shape=None, letter=None):
+    """Register an executor. `into` is the profile's instruction dict (SLC 500 by default)."""
+    default_shape, default_letter = SHAPES.get(mnemonic, ("block", ""))
+
     def deco(fn):
-        SPECS[mnemonic] = Spec(mnemonic, title, family, tuple(operands), tuple(labels),
-                               output, fn, on_download, on_prescan, optional)
+        (SPECS if into is None else into)[mnemonic] = Spec(
+            mnemonic, title, family, tuple(operands), tuple(labels), output, fn, on_download, on_prescan,
+            optional, shape or default_shape, default_letter if letter is None else letter)
         return fn
     return deco
 
@@ -176,9 +186,13 @@ def _check(kind: str, op: str) -> str | None:
     return None
 
 
-def validate(mnemonic: str, operands: list[str]) -> list[str]:
-    """Problems with one instruction; empty list means it can be downloaded."""
-    spec = SPECS.get(mnemonic)
+def validate(mnemonic: str, operands: list[str], specs: dict[str, Spec] | None = None,
+             check: Callable[[str, str], str | None] | None = None) -> list[str]:
+    """Problems with one instruction; empty list means it can be downloaded. `specs` and `check`
+    (operand kind, operand → problem) default to SLC 500."""
+    specs = SPECS if specs is None else specs
+    check = check or _check
+    spec = specs.get(mnemonic)
     if spec is None:
         return [f"{mnemonic} is not supported yet"]
     ops = list(operands)
@@ -192,7 +206,7 @@ def validate(mnemonic: str, operands: list[str]) -> list[str]:
         if op in ("", "?"):
             problems.append(f"{mnemonic}: {label} is not set")
             continue
-        msg = _check(kind, op)
+        msg = check(kind, op)
         if msg:
             problems.append(f"{mnemonic} {label}: {msg}")
         elif spec.family == "Timer/Counter" and label == "Preset" and mnemonic in ("TON", "TOF", "RTO"):
@@ -202,8 +216,8 @@ def validate(mnemonic: str, operands: list[str]) -> list[str]:
     return problems
 
 
-def is_output(mnemonic: str) -> bool:
-    spec = SPECS.get(mnemonic)
+def is_output(mnemonic: str, specs: dict[str, Spec] | None = None) -> bool:
+    spec = (SPECS if specs is None else specs).get(mnemonic)
     return bool(spec and spec.output)
 
 

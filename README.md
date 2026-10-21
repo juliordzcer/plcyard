@@ -34,8 +34,14 @@ no licence key.
   with automatic checks of every written requirement. Runs faster than real time.
 - **Simulations**: I/O panel (16 inputs, 16 outputs per card, thumbwheels and a 7-segment BCD
   display), a filling line (silo) and a road crossing (traffic lights).
-- **45 instructions** in the SLC 500 style: bits, latches, one-shot, timers (TON, TOF, RTO),
-  counters, compare, math, move/logical, BCD, bit shift, sequencers, subroutines.
+- **Three controller styles**, chosen with File → New for controller:
+  - **SLC 500**: data table addresses (`I:1/0`, `T4:0`, `N7:5`), 45 instructions including
+    sequencers, bit shift and subroutines.
+  - **Logix (Studio 5000 style)**: named tags (`Motor`, `Delay.DN`, `Local:1:I.Data.0`), timers in
+    milliseconds, DINT math, SCP scaling.
+  - **S7-1200/1500 (TIA Portal style)**: `%I0.0`, `%Q0.0`, `%MW10` and symbolic tags, IEC timers
+    and counters (TON, TOF, TP, CTU, CTD) with instances, edge contacts, NORM_X/SCALE_X.
+- **Tag list** for Logix and S7: declare tags, watch and change values while running.
 - **Real scan behaviour**: prescan on entering RUN, first-pass bit S:1/15, outputs off in PGM,
   rung-order effects, major faults with codes.
 - **Mistakes caught before you run**: wrong address types, addresses outside the data table,
@@ -79,7 +85,7 @@ Open a sample from **File → Open example**, or press **Ctrl+E** for the exerci
 ## Roadmap
 
 - More simulations (door, elevator, batch mixing, bottle line) and exercises.
-- Modern controller profiles (Logix-style tags, S7-1200/1500) with PID and IEC blocks.
+- PID and an analog process (tank level) to tune.
 - Function block diagram and structured text (ST / SCL), next to ladder.
 - A wiki. Full list in [TODO.md](TODO.md).
 - More UI languages.

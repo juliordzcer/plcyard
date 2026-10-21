@@ -16,8 +16,15 @@ def paint_instruction(p: QPainter, rect: QRectF, mnemonic: str, operands: list[s
                       symbol: str = "", *, energized: bool = False,
                       selected: bool = False, labels: list[str] | None = None,
                       extra: list[tuple[str, str]] | None = None,
-                      pins: list[tuple[str, bool]] | None = None) -> None:
-    """Draw one instruction centred on the rung wire that crosses rect vertically centred."""
+                      pins: list[tuple[str, bool]] | None = None,
+                      shape: str | None = None, letter: str | None = None) -> None:
+    """Draw one instruction centred on the rung wire that crosses rect vertically centred.
+    `shape`/`letter` come from the instruction's spec; by default they follow the SLC mnemonic."""
+    from ..core.isa import SHAPES
+    if shape is None:
+        shape, default_letter = SHAPES.get(mnemonic, ("block", ""))
+        letter = default_letter if letter is None else letter
+    letter = letter or ""
     p.save()
     p.setRenderHint(QPainter.Antialiasing)
     wire = theme.color("energized") if energized else theme.color("wire")
@@ -30,7 +37,7 @@ def paint_instruction(p: QPainter, rect: QRectF, mnemonic: str, operands: list[s
         p.setBrush(theme.color("accent-soft"))
         p.drawRoundedRect(rect.adjusted(1, 1, -1, -1), theme.radius("sm"), theme.radius("sm"))
 
-    if mnemonic in CONTACTS or mnemonic in COILS or mnemonic == "OSR":
+    if shape != "block":
         cx = rect.center().x()
         p.setPen(pen)
         p.drawLine(QPointF(rect.left(), mid_y), QPointF(cx - 9, mid_y))
@@ -41,15 +48,19 @@ def paint_instruction(p: QPainter, rect: QRectF, mnemonic: str, operands: list[s
             p.drawRect(QRectF(cx - 8, mid_y - 9, 16, 18))
         p.setPen(pen)
         p.setBrush(Qt.NoBrush)
-        if mnemonic in CONTACTS:
+        if shape in ("contact", "contact_nc"):
             p.drawLine(QPointF(cx - 8, mid_y - 9), QPointF(cx - 8, mid_y + 9))
             p.drawLine(QPointF(cx + 8, mid_y - 9), QPointF(cx + 8, mid_y + 9))
-            if mnemonic == "XIO":
+            if shape == "contact_nc":
                 p.drawLine(QPointF(cx - 6, mid_y + 8), QPointF(cx + 6, mid_y - 8))
-        elif mnemonic in COILS:
+            elif letter:
+                p.setFont(theme.font("sans", "xs"))
+                p.setPen(theme.color("text"))
+                p.drawText(QRectF(cx - 6, mid_y - 9, 12, 18), Qt.AlignCenter, letter)
+        elif shape == "coil":
             p.drawArc(QRectF(cx - 12, mid_y - 9, 10, 18), 90 * 16, 180 * 16)
             p.drawArc(QRectF(cx + 2, mid_y - 9, 10, 18), -90 * 16, 180 * 16)
-            tag = {"OTL": "L", "OTU": "U"}.get(mnemonic, "")
+            tag = letter
             if tag:
                 p.setFont(theme.font("sans", "xs"))
                 p.setPen(theme.color("text"))
@@ -58,7 +69,7 @@ def paint_instruction(p: QPainter, rect: QRectF, mnemonic: str, operands: list[s
             p.drawRect(QRectF(cx - 14, mid_y - 9, 28, 18))
             p.setFont(theme.font("sans", "xs"))
             p.setPen(theme.color("text"))
-            p.drawText(QRectF(cx - 14, mid_y - 9, 28, 18), Qt.AlignCenter, "OSR")
+            p.drawText(QRectF(cx - 14, mid_y - 9, 28, 18), Qt.AlignCenter, letter or mnemonic)
         addr = operands[0] if operands else "?"
         p.setFont(theme.font("mono", "sm"))
         p.setPen(theme.color("unset") if unset else theme.color("text"))
@@ -82,7 +93,12 @@ def paint_instruction(p: QPainter, rect: QRectF, mnemonic: str, operands: list[s
                    Qt.AlignLeft | Qt.AlignVCenter, mnemonic)
         y = box.top() + 26
         rows = [(labels[i] if labels and i < len(labels) else "", op, False) for i, op in enumerate(operands)]
-        rows += [(lab, val, True) for lab, val in (extra or [])]
+        for lab, val in (extra or []):
+            k = next((i for i, r in enumerate(rows) if r[0] == lab), None)
+            if k is None:
+                rows.append((lab, val, True))
+            else:
+                rows[k] = (lab, val, True)      # the operand shows its live value (Logix Accum)
         for lab, op, live in rows:
             p.setFont(theme.font("sans", "sm"))
             p.setPen(theme.color("text-muted"))
@@ -90,7 +106,8 @@ def paint_instruction(p: QPainter, rect: QRectF, mnemonic: str, operands: list[s
             p.setFont(theme.font("mono", "sm"))
             colour = "unset" if op in ("", "?") else ("energized" if live else "text")
             p.setPen(theme.color(colour))
-            value_w = box.width() - 86 - (34 if pins else 0)
+            beside_pins = bool(pins) and y < box.top() + 4 + 16 * len(pins)     # only rows next to a pin give way
+            value_w = box.width() - 86 - (34 if beside_pins else 0)
             p.drawText(QRectF(box.left() + 70, y, value_w + 8, 16),
                        Qt.AlignLeft | Qt.AlignVCenter, op or "?")
             y += 17

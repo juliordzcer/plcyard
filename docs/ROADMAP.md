@@ -34,7 +34,7 @@ Split what is shared from what belongs to a controller family:
 - Carried to Phase 2: the ladder editor (`ui/ladder_view.py`, `core/edit.py`) still looks up
   `isa.SPECS`; it takes the program's profile when the second real profile lands.
 
-## Phase 2 — Modern controllers in ladder (L)
+## Phase 2 — Modern controllers in ladder (L) — done
 
 - **Logix-style profile** (Studio 5000): tags `Start`, `Motor`, `Tank.Level`; types BOOL, DINT,
   REAL, TIMER, COUNTER, user structures later. Instructions: XIC/XIO/OTE/OTL/OTU, ONS/OSR/OSF,
@@ -43,6 +43,9 @@ Split what is shared from what belongs to a controller family:
   counters as instances (TON, TOF, TP, CTU, CTD, CTUD), R_TRIG/F_TRIG, NORM_X/SCALE_X, MOVE.
 - Tag editor dock (replaces the data table for these profiles), with live values and forcing.
 - The existing simulations get I/O maps per profile, so every machine works with every controller.
+- Done: Logix (tags, ms timers, DINT math, Local:<slot>:I/O.Data) and S7 (%I/%Q/%M, PLC tags,
+  IEC_TIMER/IEC_COUNTER instances, boxes passing ENO/Q). Left for later: forcing from the tag list,
+  arrays and user structures, routines (JSR) on Logix, function blocks/DBs on S7.
 
 ## Phase 3 — PID and analog process (M)
 

@@ -3,7 +3,7 @@ Case ids match that plan."""
 
 
 import pytest
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QCoreApplication, QEvent, QPoint, Qt
 from PySide6.QtWidgets import QMessageBox
 
 from plcyard.core.processor import Processor
@@ -31,6 +31,7 @@ def win(qtbot, qapp, monkeypatch):
     w.frame.stop()
     w.close()
     w.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)   # really free it: no slowdown
     qapp.processEvents()
 
 
@@ -332,9 +333,108 @@ def test_F05_H2_save_and_reopen_project(win, tmp_path, monkeypatch):
     assert win.warnings == [] and win.downloaded
 
 
-def test_F05_N2_other_controller_cannot_be_saved_as_rsl(win, tmp_path):
+def test_F05_N2_other_controller_cannot_be_saved_as_rsl(win, tmp_path, monkeypatch):
+    from plcyard.core import profiles
+    from plcyard.core.profiles.slc500 import Slc500
+    other = type("Other", (Slc500,), {"name": "other"})()
+    monkeypatch.setitem(profiles.PROFILES, "other", other)
     win.open(str(SAMPLES / "start-stop.rsl"))
-    win.program.profile = "logix"
+    win.program.profile = "other"
     win.path = tmp_path / "x.rsl"
     win.save()
     assert win.warnings and "SLC 500 ladder only" in win.warnings[0][1]
+
+
+# -- F10 Logix controller (Studio 5000 style) -----------------------------------------------------
+def test_F10_H1_logix_program_from_scratch(win, qtbot):
+    nf = next(a.menu() for a in win.menuBar().actions() if a.text() == "&File")
+    sub = next(a.menu() for a in nf.actions() if a.menu() and "controller" in a.text())
+    next(a for a in sub.actions() if a.text().startswith("Logix")).trigger()
+    assert win.program.profile == "logix" and win.tabs.tabText(0) == "MainRoutine"
+    assert win.sim_view.switches[(1, 0)].toolTip().startswith("Local:1:I.Data.0")
+    win.table_dock.show()
+    tv = win.tags_view
+    assert win.table_dock.windowTitle() == "Tags"
+    tv.add_tag()
+    tv.table.item(0, 0).setText("Motor")
+    assert list(win.program.tags) == ["Motor"]
+    win.bar.picked.emit("RUNG")
+    win.bar.picked.emit("XIC")
+    set_ops(win, "Local:1:I.Data.0")
+    win.bar.picked.emit("OTE")
+    set_ops(win, "Motor")
+    win.bar.picked.emit("RUNG")
+    win.bar.picked.emit("XIC")
+    set_ops(win, "Motor")
+    win.bar.picked.emit("OTE")
+    set_ops(win, "Local:2:O.Data.0")
+    win.download()
+    assert win.warnings == [] and win.plc.profile.name == "logix"
+    go(win, "RUN")
+    click(qtbot, win, 1, 0)
+    run(win, 50)
+    assert win.sim_view.lamps[(2, 0)].on
+    assert tv.table.item(0, 2).text() == "1", "live value in the tag list"
+    assert "Local:1:I" in win.panel.io_words.text()
+
+
+def test_F10_N1_logix_unknown_tag_blocks_download(win):
+    win.new("logix")
+    win.bar.picked.emit("RUNG")
+    win.bar.picked.emit("XIC")
+    set_ops(win, "Pump")
+    win.download()
+    assert win.warnings and "Pump does not exist" in win.warnings[0][1]
+
+
+def test_F10_E1_back_to_slc_after_logix(win, qtbot):
+    win.new("logix")
+    win.open(str(SAMPLES / "start-stop.rsl"))
+    assert win.table_dock.windowTitle() == "Data table" and win.tabs.count() == 8
+    win.download()
+    go(win, "RUN")
+    click(qtbot, win, 1, 0)
+    run(win, 50)
+    assert win.sim_view.lamps[(2, 0)].on and win.plc.profile.name == "slc500"
+
+
+# -- F11 S7-1200/1500 controller (TIA Portal style) ------------------------------------------------
+def test_F11_H1_s7_program_with_timer(win, qtbot):
+    win.new("s7")
+    assert win.program.profile == "s7" and win.sim_view.switches[(1, 0)].toolTip().startswith("%I0.0")
+    win.table_dock.show()
+    tv = win.tags_view
+    assert "Address" in tv.columns
+    tv.add_tag()
+    tv.table.item(0, 0).setText("Delay")
+    tv.table.cellWidget(0, 1).setCurrentText("IEC_TIMER")
+    assert win.program.tags == {"Delay": {"type": "IEC_TIMER"}}
+    win.bar.picked.emit("RUNG")
+    win.bar.picked.emit("XIC")
+    set_ops(win, "i0.0")
+    assert win.program.main.rungs[0].body.items[0].operands == ["%I0.0"], "address normalised"
+    win.bar.picked.emit("TON")
+    set_ops(win, "Delay", "T#200ms")
+    win.download()
+    assert win.warnings == [], win.warnings
+    win.ladder.canvas.sel = ("rung", 0)
+    win.bar.picked.emit("OTE")
+    set_ops(win, "%Q0.0")
+    assert [i.mnemonic for i in win.program.main.rungs[0].body.items] == ["XIC", "TON", "OTE"]
+    win.download()
+    go(win, "RUN")
+    click(qtbot, win, 1, 0)
+    run(win, 100)
+    assert not win.sim_view.lamps[(2, 0)].on
+    run(win, 150)
+    assert win.sim_view.lamps[(2, 0)].on, "TON passes Q to the coil after PT"
+    assert "%IW0" in win.panel.io_words.text()
+
+
+def test_F11_N1_s7_bad_address_in_tag_list_is_rejected(win):
+    win.new("s7")
+    win.table_dock.show()
+    tv = win.tags_view
+    tv.add_tag()
+    tv.table.item(0, tv.col("Address")).setText("%MW0")      # Bool needs a bit
+    assert "needs a bit address" in tv.message.text() and "address" not in win.program.tags["Tag1"]
