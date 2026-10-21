@@ -47,14 +47,30 @@ class InstructionBar(QWidget):
         lay.setContentsMargins(8, 4, 8, 4)
         lay.setSpacing(2)
         self.tabs = QTabBar()
-        for f in FAMILIES:
-            self.tabs.addTab(f)
         self.tabs.setDrawBase(False)
         lay.addWidget(self.tabs)
         self.row = QHBoxLayout()
         self.row.setSpacing(4)
         lay.addLayout(self.row)
+        self.specs: dict[str, isa.Spec] = {}
+        self.families: list[str] = []
+        self.set_specs(isa.SPECS)
         self.tabs.currentChanged.connect(self._show)
+
+    def set_specs(self, specs: dict[str, isa.Spec]) -> None:
+        """Show the instruction set of the selected controller."""
+        if specs is self.specs:
+            return
+        self.specs = specs
+        present = list(dict.fromkeys(s.family for s in specs.values()))
+        self.families = [f for f in FAMILIES if f in present] + [f for f in present if f not in FAMILIES]
+        self.tabs.blockSignals(True)
+        while self.tabs.count():
+            self.tabs.removeTab(0)
+        for f in self.families:
+            self.tabs.addTab(f)
+        self.tabs.setCurrentIndex(0)
+        self.tabs.blockSignals(False)
         self._show(0)
 
     def _add(self, mnemonic, text, tip):
@@ -69,9 +85,12 @@ class InstructionBar(QWidget):
                 item.widget().deleteLater()
         self._add("RUNG", "Rung +", "New rung below the selection (Insert)")
         self._add("BRANCH", "Branch", "Put the selected instruction in a branch")
-        family = FAMILIES[index]
+        if not 0 <= index < len(self.families):
+            self.row.addStretch(1)
+            return
+        family = self.families[index]
         glyph = {"XIC": "-] [-", "XIO": "-]/[-", "OTE": "-( )-", "OTL": "-(L)-", "OTU": "-(U)-"}
-        for m, spec in isa.SPECS.items():
+        for m, spec in self.specs.items():
             if spec.family == family:
                 self._add(m, glyph.get(m, m), f"{m} — {spec.title}")
         self.row.addStretch(1)

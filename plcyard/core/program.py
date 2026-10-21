@@ -43,6 +43,7 @@ class Program:
     symbols: dict[str, str] = field(default_factory=dict)
     tables: dict[str, list[str]] = field(default_factory=dict)   # BTBL/NTBL/FTBL raw values
     symbols_section: bool = True                                   # write SYMBOLS even when empty
+    profile: str = "slc500"                                        # controller family, see core/profiles
 
     @classmethod
     def new(cls) -> "Program":

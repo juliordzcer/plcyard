@@ -317,3 +317,24 @@ def test_F02_H2_open_example_menu(win):
     assert "Start stop" in names
     examples.actions()[names.index("Start stop")].trigger()
     assert win.path == SAMPLES / "start-stop.rsl"
+
+
+def test_F05_H2_save_and_reopen_project(win, tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QFileDialog
+    target = tmp_path / "mine"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(target), "PLCYard projects (*.plcy)"))
+    win.open(str(SAMPLES / "start-stop.rsl"))
+    win.save()                                              # bundled file: goes to Save as
+    assert win.path == tmp_path / "mine.plcy" and win.path.exists()
+    win.open(str(win.path))
+    assert win.warnings == [] and win.windowTitle().startswith("mine.plcy")
+    win.download()
+    assert win.warnings == [] and win.downloaded
+
+
+def test_F05_N2_other_controller_cannot_be_saved_as_rsl(win, tmp_path):
+    win.open(str(SAMPLES / "start-stop.rsl"))
+    win.program.profile = "logix"
+    win.path = tmp_path / "x.rsl"
+    win.save()
+    assert win.warnings and "SLC 500 ladder only" in win.warnings[0][1]

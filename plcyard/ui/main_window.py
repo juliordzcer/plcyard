@@ -11,9 +11,10 @@ from PySide6.QtWidgets import (QApplication, QDockWidget, QFileDialog, QFrame, Q
                                QVBoxLayout, QWidget)
 
 from .. import grader, labs
+from ..core import profiles
 from ..core.processor import Processor
 from ..core.program import Program
-from ..formats import rsl
+from .. import formats
 from ..sims.io_panel import IoPanelModel
 from . import theme
 from ..sims.silo import SiloModel
@@ -266,12 +267,12 @@ class MainWindow(QMainWindow):
         if not self.maybe_save():
             return
         if path is None:
-            path, _ = QFileDialog.getOpenFileName(self, "Open program", "", "Ladder programs (*.rsl)")
+            path, _ = QFileDialog.getOpenFileName(self, "Open program", "", formats.OPEN_FILTER)
             if not path:
                 return
         try:
-            self.program = rsl.load(path)
-        except (OSError, rsl.RslError) as e:
+            self.program = formats.load(path)
+        except (OSError, *formats.FormatError) as e:
             QMessageBox.warning(self, "Could not open the program", str(e))
             return
         self.path = Path(path)
@@ -319,15 +320,15 @@ class MainWindow(QMainWindow):
             self.sim_view.reset_requested.connect(lambda: self._rebuild_sim())
         self.plc.device = self.sim
         if self.plc.mode in (Processor.PGM, Processor.FAULT):
-            self.plc._io_scan_outputs_off()
+            self.plc.outputs_off()
         self.sim_scroll.setWidget(self.sim_view)   # the scroll area deletes the old view
 
     def save(self) -> None:
         if self.path is None or self.path.resolve().is_relative_to(labs.DATA):
             return self.save_as()       # examples and exercise solutions are never overwritten
         try:
-            replaced = rsl.save(self.program, self.path)
-        except OSError as e:
+            replaced = formats.save(self.program, self.path)
+        except (OSError, *formats.FormatError) as e:
             QMessageBox.warning(self, "Could not save", str(e))
             return
         if replaced:
@@ -339,9 +340,11 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Saved {self.path.name}", 3000)
 
     def save_as(self) -> None:
-        path, _ = QFileDialog.getSaveFileName(self, "Save program", "", "Ladder programs (*.rsl)")
+        path, chosen = QFileDialog.getSaveFileName(self, "Save program", "", formats.FILTER)
         if path:
-            self.path = Path(path if path.endswith(".rsl") else path + ".rsl")
+            if Path(path).suffix.lower() not in (".plcy", ".rsl"):
+                path += ".rsl" if "rsl" in chosen and "plcy" not in chosen else ".plcy"
+            self.path = Path(path)
             self.save()
 
     def _program_changed(self) -> None:
@@ -351,6 +354,7 @@ class MainWindow(QMainWindow):
         self._show_program()
 
     def _show_program(self) -> None:
+        self.bar.set_specs(profiles.get(self.program.profile).specs)
         self.ladder.canvas.set_program(self.program)
         if isinstance(self.sim_view, IoPanelView):
             self.sim_view.symbols = self.program.symbols
@@ -415,12 +419,7 @@ class MainWindow(QMainWindow):
         self.panel.mode.set_mode("PGM")
 
     def reset_timers_counters(self) -> None:
-        for n in (4, 5):
-            f = self.plc.dt.files[n]
-            f.words = [0] * len(f.words)
-        if self.plc.program:
-            self.plc._each_instruction("on_download")   # presets come back from the program
-        self.plc._ctx.timer_marks.clear()
+        self.plc.reset_timers_counters()
 
     def clear_data(self) -> None:
         self.plc.dt.clear(keep_io=True)

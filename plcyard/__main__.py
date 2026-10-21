@@ -13,13 +13,13 @@ import sys
 def headless(args) -> int:
     from .core.address import parse_address
     from .core.processor import Processor
-    from .formats import rsl
+    from . import formats
     from .sims.io_panel import IoPanelModel
 
     plc = Processor()
     panel = IoPanelModel()
     plc.device = panel
-    prog = rsl.load(args.program)
+    prog = formats.load(args.program)
     panel.configure_from_symbols(prog.symbols)
     for addr in args.press:
         a = parse_address(addr)

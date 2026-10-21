@@ -7,45 +7,21 @@ runs are deterministic; the UI scales ms by the speed slider.
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass
-from typing import Protocol
 
-from . import isa
-from .address import Address
-from .datatable import DataTable, DataTableError, to_int16
+from . import isa, profiles
+from .profiles import Diagnostic, IODevice, Profile  # noqa: F401  (re-exported)
 from .program import Instr, Parallel, Program, Series, walk
 
 SCAN_MS = 10.0
-INPUT_FILE, OUTPUT_FILE = 1, 0
-FIRST_PASS = "S:1/15"
-MAJOR_FAULT, FAULT_CODE = "S:1/13", "S:6"
 MAX_NESTING = 8
 
 
-class IODevice(Protocol):
-    """A simulation wired to the rack."""
-
-    def input_words(self) -> dict[int, int]: ...
-    def set_output_words(self, words: dict[int, int]) -> None: ...
-    def step(self, dt_ms: float) -> None: ...
-
-
-@dataclass
-class Diagnostic:
-    file: int
-    rung: int
-    message: str
-
-    def __str__(self) -> str:
-        where = "LAD 2" if self.file == 2 else f"SBR {self.file}"
-        return f"{where}, rung {self.rung}: {self.message}"
-
-
 class Processor:
+    """The shared scan engine. Everything specific to a PLC family lives in its profile."""
+
     PGM, RUN, STEP, FAULT = "PGM", "RUN", "STEP", "FAULT"
 
-    def __init__(self):
-        self.dt = DataTable()
+    def __init__(self, profile: str | Profile = profiles.DEFAULT):
         self.program: Program | None = None
         self.mode = self.PGM
         self.device: IODevice | None = None
@@ -58,70 +34,50 @@ class Processor:
         self._depth = 0
         self.tracing = False
         self.trace: dict[tuple, tuple[bool, bool]] = {}   # (file, rung, *path) -> (in, out)
-        self._ctx = isa.Context(self.dt)
+        self._use(profiles.get(profile) if isinstance(profile, str) else profile)
+
+    def _use(self, profile: Profile) -> None:
+        self.profile = profile
+        self.dt = profile.new_memory()        # the profile's memory (a DataTable for SLC 500)
+        self._ctx = profile.context(self.dt)
         self._ctx.call = self._call
 
     # -- program --------------------------------------------------------
     def download(self, program: Program) -> list[Diagnostic]:
-        problems = []
-        for f in program.files.values():
-            for i, rung in enumerate(f.rungs):
-                for ins in walk(rung.body):
-                    problems += [Diagnostic(f.number, i, m) for m in isa.validate(ins.mnemonic, ins.operands)]
-                    problems += [Diagnostic(f.number, i, m) for m in self._range_problems(ins)]
-                    if ins.mnemonic == "JSR" and not problems:
-                        n = int(ins.operands[0].split(":")[1])
-                        if n not in program.files or program.files[n].kind != "SBR":
-                            problems.append(Diagnostic(f.number, i, f"JSR: subroutine file {n} does not exist"))
+        target = profiles.get(program.profile)
+        problems = target.check(program, self.dt if target is self.profile else target.new_memory())
         if problems:
             return problems
         was_running = self.mode in (self.RUN, self.STEP)
+        if was_running:
+            self.outputs_off()
+        if target is not self.profile:
+            self._use(target)
         self.program = copy.deepcopy(program)
         self.mode = self.PGM
         self.fault, self.fault_code = None, 0
-        if was_running:
-            self._io_scan_outputs_off()
-        self.dt.clear(keep_io=True)           # the new program brings its own data
+        self.profile.load(self.program, self.dt)
         self._ctx.timer_marks.clear()
-        self._load_tables()
         try:
             self._each_instruction("on_download")
-        except (DataTableError, ValueError) as e:
+        except self.profile.memory_errors + (ValueError,) as e:
             return [Diagnostic(2, 0, str(e))]
         return []
-
-    def _range_problems(self, ins: Instr) -> list[str]:
-        """Direct addresses must exist in the data table (indirect ones are checked at run time)."""
-        out = []
-        for op in ins.operands:
-            if op in ("", "?") or isa.parse_literal(op) is not None or ":" not in op:
-                continue
-            try:
-                a = self.dt.addr(op)
-                if a.is_indirect:
-                    continue
-                if a.is_file_ref:
-                    a = Address(a.type, a.file, a.element if a.element is not None else 0)
-                self.dt._locate(a)
-            except (DataTableError, ValueError) as e:
-                if "out of range" in str(e) or "does not exist" in str(e):
-                    out.append(f"{ins.mnemonic}: {e}")
-        return out
-
-    def _load_tables(self) -> None:
-        for name, file_no in (("BTBL", 3), ("NTBL", 7), ("FTBL", 8)):
-            for k, raw in enumerate(self.program.tables.get(name, [])):
-                f = self.dt.files[file_no]
-                if k < len(f.words):
-                    f.words[k] = float(raw) if f.type == "F" else to_int16(int(float(raw)))
 
     def _each_instruction(self, hook: str) -> None:
         for f in self.program.files.values():
             for rung in f.rungs:
                 for ins in walk(rung.body):
-                    fn = getattr(isa.SPECS[ins.mnemonic], hook)
+                    fn = getattr(self.profile.specs[ins.mnemonic], hook)
                     if fn:
                         fn(self._ctx, ins.operands)
+
+    def reset_timers_counters(self) -> None:
+        """Accumulators and status bits to zero; presets come back from the program."""
+        self.profile.reset_timers_counters(self.dt)
+        if self.program:
+            self._each_instruction("on_download")
+        self._ctx.timer_marks.clear()
 
     # -- modes ----------------------------------------------------------
     def set_mode(self, mode: str) -> None:
@@ -135,30 +91,20 @@ class Processor:
         if entering_run:
             self._prescan()
         if mode == self.PGM:
-            self._io_scan_outputs_off()
+            self.outputs_off()
 
     def _prescan(self) -> None:
-        """Entering RUN (manual ch. 2): OTE bits reset, OTL/OTU keep their state,
-        timers/counters apply their re-entry rules; the next scan is the first pass."""
-        for f in self.program.files.values():
-            for rung in f.rungs:
-                for ins in walk(rung.body):
-                    if ins.mnemonic == "OTE":
-                        try:
-                            self.dt.write_bit(ins.operands[0], False)
-                        except DataTableError:
-                            pass
+        """Entering RUN: the profile's rules, then each instruction's; the next scan is the first pass."""
+        self.profile.prescan(self.program, self.dt, self._ctx)
         try:
             self._each_instruction("on_prescan")
-        except DataTableError:
+        except self.profile.memory_errors:
             pass
         self._first_pass = True
 
     def clear_fault(self) -> None:
         self.fault, self.fault_code = None, 0
-        self.dt.write_bit(MAJOR_FAULT, False)
-        self.dt.write_word(FAULT_CODE, 0)
-        self.dt.write_bit(isa.OVERFLOW_TRAP, False)
+        self.profile.clear_fault(self.dt)
         self.mode = self.PGM
 
     # -- time -----------------------------------------------------------
@@ -190,27 +136,25 @@ class Processor:
         self.now_ms += SCAN_MS
         self._ctx.now_ms = self.now_ms
         self._read_inputs()
-        self.dt.write_bit(FIRST_PASS, self._first_pass)
+        self.profile.begin_scan(self.dt, self._first_pass)
         self._first_pass = False
         try:
             self._depth = 0
             self._run_file(self.program.main)
-            if self.dt.read_bit(isa.OVERFLOW_TRAP):
-                raise isa.PlcFault(0x0020, "math overflow or divide by zero (S:5/0 still set at END)")
+            self.profile.end_of_program(self.dt)
         except isa.PlcFault as e:
             return self._major_fault(e.code, str(e))
-        except DataTableError as e:
-            return self._major_fault(0x0024, str(e))
-        self.dt.write_bit(FIRST_PASS, False)
+        except self.profile.memory_errors as e:
+            return self._major_fault(self.profile.memory_fault_code, str(e))
+        self.profile.end_scan(self.dt)
         self._write_outputs()
         self.scan_count += 1
 
     def _major_fault(self, code: int, message: str) -> None:
         self.fault, self.fault_code = message, code
-        self.dt.write_bit(MAJOR_FAULT, True)
-        self.dt.write_word(FAULT_CODE, code)
+        self.profile.set_fault(self.dt, code)
         self.mode = self.FAULT
-        self._io_scan_outputs_off()
+        self.outputs_off()
 
     def _call(self, number: int) -> None:
         if self._depth >= MAX_NESTING:
@@ -250,24 +194,20 @@ class Processor:
         return out
 
     def _instr(self, ins: Instr, cond: bool, path: tuple) -> bool:
-        out = isa.SPECS[ins.mnemonic].run(self._ctx, ins.operands, cond)
+        out = self.profile.specs[ins.mnemonic].run(self._ctx, ins.operands, cond)
         if self.tracing:
             self.trace[path] = (cond, out)
         return out
 
     # -- I/O ------------------------------------------------------------
     def _read_inputs(self) -> None:
-        if not self.device:
-            return
-        for slot, word in self.device.input_words().items():
-            self.dt.write_slot(INPUT_FILE, slot, word)
+        if self.device:
+            self.profile.read_inputs(self.dt, self.device)
 
     def _write_outputs(self) -> None:
-        if not self.device:
-            return
-        words = {s: self.dt.read_slot(OUTPUT_FILE, s) for s in range(1, len(self.dt.files[0].words))}
-        self.device.set_output_words(words)
-
-    def _io_scan_outputs_off(self) -> None:
         if self.device:
-            self.device.set_output_words({s: 0 for s in range(1, len(self.dt.files[0].words))})
+            self.profile.write_outputs(self.dt, self.device)
+
+    def outputs_off(self) -> None:
+        if self.device:
+            self.profile.outputs_off(self.dt, self.device)

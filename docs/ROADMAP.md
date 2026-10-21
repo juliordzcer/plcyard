@@ -3,14 +3,14 @@
 How the items in [TODO.md](../TODO.md) get built, in order. Each phase ships on its own, keeps the
 current SLC 500 ladder trainer working, and ends with the full test suite green.
 
-## Phase 0 — Release 0.1 (small)
+## Phase 0 — Release 0.1 (small) — done except PyPI, icon, site, trademark
 
 - Ship `labs/` and `samples/` inside the package (`plcyard/data/`), load them with
   `importlib.resources`; a non-editable install and PyPI then work.
 - Exercise solutions open read-only: Save on a file under `labs/solutions` asks for a new name.
 - GitHub release v0.1.0, issue templates, final icon, `site/` on juliordz.com, trademark screening.
 
-## Phase 1 — Controller profiles (foundation, M)
+## Phase 1 — Controller profiles (foundation, M) — done
 
 Today the processor, the data table (`N7:0`, `T4:0`) and the instruction set are all SLC 500.
 Split what is shared from what belongs to a controller family:
@@ -28,6 +28,11 @@ Split what is shared from what belongs to a controller family:
 - Project format `.plcy` (JSON): profile, tags, programs in any language, symbols, exercise id.
   `.rsl` stays as import/export for SLC ladder.
 - Gate: all 216 tests pass unchanged with `slc500`.
+- Done as: one instruction dict per profile (`Profile.specs`) instead of a `profiles=` field, since
+  the same mnemonic (TON) means different things in SLC, Logix and S7. A toy tag-based profile in
+  `tests/test_profiles.py` proves the engine has no SLC assumptions left.
+- Carried to Phase 2: the ladder editor (`ui/ladder_view.py`, `core/edit.py`) still looks up
+  `isa.SPECS`; it takes the program's profile when the second real profile lands.
 
 ## Phase 2 — Modern controllers in ladder (L)
 

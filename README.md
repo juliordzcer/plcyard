@@ -42,6 +42,7 @@ no licence key.
   unset operands, all with a suggestion.
 - **Switch types** from your symbols: write "Stop (NC)" or "Jog (PB)" and the switch is wired that
   way.
+- **Projects (.plcy)**: readable JSON with the controller, programs, symbols and tables.
 - **.rsl files**: open and save the plain-text ladder format used by SLC 500 trainers;
   unchanged programs save byte for byte.
 - Light and dark themes, keyboard shortcuts for everything, undo/redo.

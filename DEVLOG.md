@@ -363,3 +363,19 @@ keys:      download, clear, outputs, RUN, counter
 - Save on a bundled file (example or exercise solution) opens Save as instead: a solution had been
   overwritten with an empty program by accident.
 - GitHub issue templates: bug, exercise idea.
+
+## C-018 — Phase 1: controller profiles and .plcy projects
+2026-10-21 · commit: 251b25b
+- `core/profiles/`: `Profile` (memory, instruction set, download check, prescan, status bits,
+  faults, I/O image) and `slc500` with the code that was in the processor, moved without
+  behaviour changes. `Processor(profile)` is the shared scan engine; downloading a program of
+  another profile switches the controller (a rejected download does not).
+- `Program.profile` (default `slc500`). `Processor.reset_timers_counters`, `outputs_off` public.
+- `formats/plcy.py`: JSON project, version 1; ladder rungs as .rsl token text; unknown profile,
+  newer version, unsupported language and broken rungs are reported. `formats.load/save` pick the
+  format by extension; Save as offers .plcy (default) or .rsl; .rsl refuses non-SLC programs.
+- Instruction bar shows the instruction set of the program's controller.
+- Tests: `tests/test_profiles.py` (toy tag controller on the same engine: runs, check blocks
+  download, memory error → fault with the profile's code, switch back to SLC), `tests/test_plcy.py`
+  (every bundled program rsl → plcy → rsl identical and downloadable), e2e F05-H2/N2.
+keys:      profile, controller, plcy, project, json, Logix, S7

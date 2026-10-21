@@ -123,6 +123,15 @@ def _parse_rung(tokens: list[str], line_no: int) -> Series:
     return out
 
 
+def parse_rung_text(text: str) -> Series:
+    """A rung body as tokens separated by spaces: "XIC,I:1/0 BST,1 ... BND,1 OTE,O:2/0"."""
+    return _parse_rung(["SOR,0", *text.split()], 0) if text.strip() else Series()
+
+
+def rung_text(body: Series) -> str:
+    return " ".join(_dump_series(body, 0))
+
+
 def _dump_series(s: Series, depth: int) -> list[str]:
     out = []
     for item in s.items:
@@ -140,6 +149,8 @@ def _dump_series(s: Series, depth: int) -> list[str]:
 
 
 def dumps(prog: Program) -> str:
+    if prog.profile != "slc500":
+        raise RslError(".rsl files hold SLC 500 ladder only; save as a PLCYard project (.plcy)")
     out: list[str] = []
     for num in sorted(prog.files):
         f = prog.files[num]
