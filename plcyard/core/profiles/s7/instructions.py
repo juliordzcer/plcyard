@@ -308,21 +308,26 @@ def _pid_prescan(ctx, ops):
 def pid_compact(ctx, ops, cond):
     """Simplified PID_Compact: dependent gains (Gain, Ti, Td in seconds), Output in %. Runs every scan
     the box is enabled (on a real CPU it sits in a cyclic interrupt OB)."""
-    el, key = ctx.element(ops[0]), ops[0].lower()
-    mark_key = "pid:" + key
     if not cond:
-        ctx.timer_marks.pop(mark_key, None)
+        ctx.timer_marks.pop("pid:" + ops[0].lower(), None)
         return False
+    ctx.store(ops[3], run_pid_compact(ctx, ops[0], float(ctx.value(ops[1])), float(ctx.value(ops[2]))))
+    return True
+
+
+def run_pid_compact(ctx, instance: str, setpoint: float, value: float) -> float:
+    """One evaluation of a PID_Compact instance; returns Output (also used from structured text)."""
+    el, key = ctx.element(instance), instance.lower()
+    mark_key = "pid:" + key
     last = ctx.timer_marks.get(mark_key)
     ctx.timer_marks[mark_key] = ctx.now_ms
     dt = 0.0 if last is None else (ctx.now_ms - last) / 1000.0
-    el["Setpoint"], el["Input"] = float(ctx.value(ops[1])), float(ctx.value(ops[2]))
+    el["Setpoint"], el["Input"] = setpoint, value
     state = ctx.pid_state.setdefault(key, {"CV": el["Output"], "I": el["Output"]})
-    el["Output"] = pid.step(state, el["Setpoint"], el["Input"], dt, kc=el["Gain"], ti=el["Ti"], td=el["Td"],
+    el["Output"] = pid.step(state, setpoint, value, dt, kc=el["Gain"], ti=el["Ti"], td=el["Td"],
                             out_min=el["OutputLowerLimit"], out_max=el["OutputUpperLimit"],
                             manual=el["ManualEnable"], manual_value=el["ManualValue"], reverse=el["InvertControl"])
-    ctx.store(ops[3], el["Output"])
-    return True
+    return el["Output"]
 
 
 # -- operand checks ---------------------------------------------------------------------------------------------

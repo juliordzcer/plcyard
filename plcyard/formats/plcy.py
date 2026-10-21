@@ -28,9 +28,10 @@ def dumps(prog: Program) -> str:
                 "number": f.number,
                 "kind": f.kind,
                 "title": f.title,
-                "language": "LD",
-                "rungs": [{"text": rung_text(r.body), "comment": r.comment} for r in f.rungs],
-                "end_comment": f.end_comment,
+                "language": f.language,
+                **({"source": f.source} if f.language == "ST" else {
+                    "rungs": [{"text": rung_text(r.body), "comment": r.comment} for r in f.rungs],
+                    "end_comment": f.end_comment}),
             }
             for _, f in sorted(prog.files.items())
         ],
@@ -59,9 +60,11 @@ def loads(text: str) -> Program:
     prog.tags = {k: dict(v) for k, v in doc.get("tags", {}).items()}
     prog.tables = {k: list(v) for k, v in doc.get("tables", {}).items()}
     for d in doc.get("programs", []):
-        if d.get("language", "LD") != "LD":
-            raise PlcyError(f"{d.get('language')} programs are not supported yet")
-        f = ProgramFile(int(d["number"]), d.get("kind", "LAD"), d.get("title"), end_comment=d.get("end_comment", ""))
+        language = d.get("language", "LD")
+        if language not in ("LD", "ST"):
+            raise PlcyError(f"{language} programs are not supported yet")
+        f = ProgramFile(int(d["number"]), d.get("kind", "LAD"), d.get("title"), end_comment=d.get("end_comment", ""),
+                        language=language, source=d.get("source", ""))
         try:
             f.rungs = [Rung(parse_rung_text(r.get("text", "")), r.get("comment", "")) for r in d.get("rungs", [])]
         except RslError as e:

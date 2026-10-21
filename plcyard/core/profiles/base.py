@@ -28,10 +28,12 @@ class Diagnostic:
     file: int
     rung: int
     message: str
+    line: int | None = None          # structured text: the source line instead of a rung
 
     def __str__(self) -> str:
         where = "LAD 2" if self.file == 2 else f"SBR {self.file}"
-        return f"{where}, rung {self.rung}: {self.message}"
+        at = f"line {self.line}" if self.line is not None else f"rung {self.rung}"
+        return f"{where}, {at}: {self.message}"
 
 
 class Profile:
@@ -54,6 +56,32 @@ class Profile:
 
     def is_output(self, mnemonic: str) -> bool:
         return isa.is_output(mnemonic, self.specs)
+
+    # -- structured text ---------------------------------------------------------------
+    st_blocks: dict[str, tuple[str, tuple[str, ...]]] = {}   # block → (instruction, instance types)
+
+    def check_st(self, program: Program, memory) -> list[Diagnostic]:
+        """Parse every ST routine and check its variables and block calls against `memory`."""
+        from .. import st
+        problems = []
+        for f in program.files.values():
+            if f.language != "ST":
+                continue
+            if not self.st_blocks:
+                problems.append(Diagnostic(f.number, 0, f"{self.title} has no structured text; use ladder", 1))
+                continue
+            try:
+                body = st.parse(f.source)
+            except st.StError as e:
+                problems.append(Diagnostic(f.number, 0, e.message, e.line))
+                continue
+            blocks = {k: types for k, (_, types) in self.st_blocks.items()}
+            problems += [Diagnostic(f.number, 0, m, line) for line, m in st.check(body, memory, blocks)]
+        return problems
+
+    def st_call(self, ctx, instance: str, block: str, inputs: dict) -> dict:
+        """Run one block call from structured text; returns its outputs by name."""
+        raise NotImplementedError
 
     # -- tag list (tag-based controllers) -------------------------------------------
     tag_types: tuple[str, ...] = ()            # empty: the controller has no tag list (SLC 500)

@@ -35,6 +35,8 @@ class ProgramFile:
     title: str | None = None   # None: header written without ':'
     rungs: list[Rung] = field(default_factory=list)   # END rung is implicit
     end_comment: str = ""
+    language: str = "LD"       # LD (rungs) or ST (structured text in `source`)
+    source: str = ""
 
 
 @dataclass
@@ -47,10 +49,10 @@ class Program:
     tags: dict[str, dict] = field(default_factory=dict)            # tag-based controllers: {name: {type, value}}
 
     @classmethod
-    def new(cls, profile: str = "slc500") -> "Program":
+    def new(cls, profile: str = "slc500", language: str = "LD") -> "Program":
         if profile != "slc500":             # tag-based controllers: one main routine, tags instead of tables
             p = cls(profile=profile, symbols_section=False)
-            p.files[2] = ProgramFile(2, "LAD", "MainRoutine")
+            p.files[2] = ProgramFile(2, "LAD", "MainRoutine", language=language)
             return p
         p = cls()
         p.files[2] = ProgramFile(2, "LAD")

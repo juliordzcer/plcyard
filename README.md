@@ -45,6 +45,10 @@ no licence key.
   - **S7-1200/1500 (TIA Portal style)**: `%I0.0`, `%Q0.0`, `%MW10` and symbolic tags, IEC timers
     and counters (TON, TOF, TP, CTU, CTD) with instances, edge contacts, NORM_X/SCALE_X.
 - **Tag list** for Logix and S7: declare tags, watch and change values while running.
+- **Structured text** (ST / SCL) for Logix and S7, next to ladder: IF, CASE, FOR, WHILE, REPEAT,
+  math and conversion functions, timer, counter and PID blocks called on their instance
+  (`"Delay".TON(IN := Start, PT := T#2s)`). Syntax colours, line numbers, errors as you type and a
+  watch list with live values.
 - **Real scan behaviour**: prescan on entering RUN, first-pass bit S:1/15, outputs off in PGM,
   rung-order effects, major faults with codes.
 - **Mistakes caught before you run**: wrong address types, addresses outside the data table,
@@ -59,7 +63,7 @@ no licence key.
 | | |
 | --- | --- |
 | ![Silo filling line](docs/screenshots/silo.png) | ![Traffic light crossing](docs/screenshots/traffic.png) |
-| ![PID level loop on the tank with its trend](docs/screenshots/tank-pid.png) | |
+| ![PID level loop on the tank with its trend](docs/screenshots/tank-pid.png) | ![The same loop in SCL with live values](docs/screenshots/st-scl.png) |
 
 ## Install
 
@@ -89,7 +93,7 @@ Open a sample from **File → Open example**, or press **Ctrl+E** for the exerci
 ## Roadmap
 
 - More simulations (door, elevator, batch mixing, bottle line) and exercises.
-- Function block diagram and structured text (ST / SCL), next to ladder.
+- Function block diagram (FBD), next to ladder and structured text.
 - A wiki. Full list in [TODO.md](TODO.md).
 - More UI languages.
 

@@ -1,0 +1,28 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "logix",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "MainRoutine",
+      "language": "ST",
+      "source": "// Start/stop with seal-in, in structured text (Logix).\n// Start: NO pushbutton on Local:1:I.Data.0. Stop: NC on Local:1:I.Data.1 (TRUE when not pressed).\nMotor := (Local:1:I.Data.0 OR Motor) AND Local:1:I.Data.1;\nLocal:2:O.Data.0 := Motor;\n\n// Running light 2 s after the motor starts.\nDelay.TON(IN := Motor, PRE := 2000);\nLocal:2:O.Data.1 := Delay.DN;\n\n// Stopped light.\nLocal:2:O.Data.2 := NOT Motor;\n"
+    }
+  ],
+  "tags": {
+    "Motor": {
+      "type": "BOOL"
+    },
+    "Delay": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "Motor": "Conveyor motor",
+    "Local:1:I.Data.1": "Stop (NC)",
+    "Delay": "Running light delay"
+  },
+  "tables": {}
+}

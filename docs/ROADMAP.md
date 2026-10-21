@@ -61,7 +61,7 @@ Split what is shared from what belongs to a controller family:
   Logix `PID` (PID tag) and S7 `PID_Compact` (instance), SLC without PID for now (on/off with
   analog compares). Exercises 11 (on/off, SLC) and 12 (PID, Logix).
 
-## Phase 4 — Structured text (L)
+## Phase 4 — Structured text (L) — done
 
 - One language core: the IEC 61131-3 ST subset shared by Allen-Bradley **ST** and Siemens **SCL**:
   assignments, IF/ELSIF/CASE, FOR/WHILE/REPEAT, expressions, function and function-block calls
@@ -71,6 +71,10 @@ Split what is shared from what belongs to a controller family:
 - Dialect switches per profile for the small differences (SCL `#local` and `"Tag"` quoting,
   `:=` everywhere, AB tag names).
 - Editor: syntax highlighting, error markers, live values next to variables while running.
+- Done as: `core/st/` (lexer, parser, checks, interpreter, watchdog 100 000 loop iterations per
+  scan), `Instance.BLOCK(IN := …, Q => …)` calls (TIA syntax) mapped to each profile's executors,
+  `ui/st_editor.py` (colours, line numbers, problems as you type, watch list). SLC 500 has no ST, as
+  on the real controller. Not yet: Studio 5000's own TONR/FBD_TIMER, user functions, arrays.
 
 ## Phase 5 — Function block diagram (L)
 

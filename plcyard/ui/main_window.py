@@ -24,6 +24,7 @@ from .io_panel_view import IoPanelView
 from .sim_views import SiloView, TrafficView
 from .tank_view import TankView
 from .datatable_view import DataTableView
+from .st_editor import StEditor
 from .tags_view import TagsView
 from .instruction_bar import InstructionBar
 from .labs_view import LabsView
@@ -102,8 +103,9 @@ class MainWindow(QMainWindow):
         self.ladder = LadderView()
         self.tabs = QTabBar()
         self.tab_files: list[int] = []
-        self.tabs.currentChanged.connect(
-            lambda i: 0 <= i < len(self.tab_files) and self.ladder.canvas.set_file(self.tab_files[i]))
+        self.tabs.currentChanged.connect(lambda i: 0 <= i < len(self.tab_files) and self._show_file(self.tab_files[i]))
+        self.st_editor = StEditor()
+        self.st_editor.changed.connect(self._edited)
 
         right = QWidget()
         rl = QVBoxLayout(right)
@@ -112,7 +114,10 @@ class MainWindow(QMainWindow):
         self.bar = InstructionBar()
         self.bar.picked.connect(self.ladder.canvas.insert_mnemonic)
         rl.addWidget(self.bar)
-        rl.addWidget(self.ladder, 1)
+        self.editor_stack = QStackedWidget()
+        self.editor_stack.addWidget(self.ladder)
+        self.editor_stack.addWidget(self.st_editor)
+        rl.addWidget(self.editor_stack, 1)
         rl.addWidget(self.tabs)
         self.ladder.canvas.changed.connect(self._edited)
         split = QSplitter()
@@ -189,10 +194,12 @@ class MainWindow(QMainWindow):
         act(f, "&New", self.new, QKeySequence.New)
         nf = f.addMenu("New for controller")
         for prof in profiles.PROFILES.values():
-            act(nf, f"{prof.title} program", lambda _=False, n=prof.name: self.new(n))
+            act(nf, f"{prof.title} — ladder", lambda _=False, n=prof.name: self.new(n))
+            if prof.st_blocks:
+                act(nf, f"{prof.title} — structured text", lambda _=False, n=prof.name: self.new(n, "ST"))
         act(f, "&Open…", lambda: self.open(), QKeySequence.Open)
         ex = f.addMenu("Open &example")
-        for path in sorted(labs.SAMPLES.glob("*.rsl")):
+        for path in sorted([*labs.SAMPLES.glob("*.rsl"), *labs.SAMPLES.glob("*.plcy")]):
             act(ex, path.stem.replace("-", " ").capitalize(), lambda _=False, p=path: self.open(str(p)))
         act(f, "&Save", self.save, QKeySequence.Save)
         act(f, "Save &as…", self.save_as, QKeySequence.SaveAs)
@@ -266,11 +273,11 @@ class MainWindow(QMainWindow):
         else:
             e.ignore()
 
-    def new(self, profile: str | None = None) -> None:
+    def new(self, profile: str | None = None, language: str = "LD") -> None:
         """New program for `profile`; by default the same controller as the current program."""
         if not self.maybe_save():
             return
-        self.program = Program.new(profile or self.program.profile)
+        self.program = Program.new(profile or self.program.profile, language)
         self.path = None
         self._program_changed()
         self._rebuild_sim()
@@ -397,11 +404,24 @@ class MainWindow(QMainWindow):
         while self.tabs.count():
             self.tabs.removeTab(0)
         for n in files:
-            self.tabs.addTab(label[n])
+            st_file = n in self.program.files and self.program.files[n].language == "ST"
+            self.tabs.addTab(label[n] + (" (ST)" if st_file else ""))
         self.tab_files = files
         self.tabs.setCurrentIndex(0)
         self.tabs.blockSignals(False)
-        self.ladder.canvas.set_file(files[0])
+        self._show_file(files[0])
+
+    def _show_file(self, number: int) -> None:
+        """Ladder canvas or structured text editor, whichever the file is written in."""
+        f = self.program.files.get(number)
+        if f is not None and f.language == "ST":
+            self.st_editor.set_program(self.program, number)
+            self.editor_stack.setCurrentWidget(self.st_editor)
+            self.bar.hide()
+        else:
+            self.ladder.canvas.set_file(number)
+            self.editor_stack.setCurrentWidget(self.ladder)
+            self.bar.show()
 
     def _title(self) -> None:
         name = self.path.name if self.path else "Untitled"
@@ -410,6 +430,8 @@ class MainWindow(QMainWindow):
     def _edited(self) -> None:
         self.dirty = True
         self.in_sync = False
+        if self.sender() is self.tags_view and self.editor_stack.currentWidget() is self.st_editor:
+            self.st_editor.check()                    # a new or renamed tag may fix (or break) the code
         if isinstance(self.sim_view, IoPanelView):
             self.sim_view.symbols = self.program.symbols
         self._title()
@@ -507,6 +529,8 @@ class MainWindow(QMainWindow):
             downloaded = same_controller and self.downloaded and self.plc.program is not None
             self.tags_view.set_memory(self.plc.dt if downloaded else None)
         self.ladder.canvas.set_live(self.plc.dt, live and same_controller, self.plc.trace if same else None)
+        if self.editor_stack.currentWidget() is self.st_editor:
+            self.st_editor.set_live(self.plc.dt if same_controller and self.downloaded else None)
         self.panel.scans.setText(f"{self.plc.scan_count} scans")
         self.panel.io_words.setText("  ".join(f"{n} {v & 0xFFFF:04X}h" for n, v in self.plc.profile.io_image(self.plc.dt)))
         self._update_status()

@@ -36,7 +36,7 @@ class Slc500(Profile):
 
     # -- download ------------------------------------------------------------
     def check(self, program: Program, memory: DataTable) -> list[Diagnostic]:
-        problems = []
+        problems = self.check_st(program, memory)
         for f in program.files.values():
             for i, rung in enumerate(f.rungs):
                 for ins in walk(rung.body):

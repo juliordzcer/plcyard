@@ -149,7 +149,7 @@ def _dump_series(s: Series, depth: int) -> list[str]:
 
 
 def dumps(prog: Program) -> str:
-    if prog.profile != "slc500":
+    if prog.profile != "slc500" or any(f.language != "LD" for f in prog.files.values()):
         raise RslError(".rsl files hold SLC 500 ladder only; save as a PLCYard project (.plcy)")
     out: list[str] = []
     for num in sorted(prog.files):

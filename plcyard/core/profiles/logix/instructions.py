@@ -333,21 +333,26 @@ def _pid_prescan(ctx, ops):
              ["PID", "PV", "CV"], output=True, on_prescan=_pid_prescan)
 def pid_(ctx, ops, cond):
     """Simplified Logix PID (dependent gains, TI/TD in seconds): runs every scan the rung is true."""
-    el, key = ctx.element(ops[0]), ops[0].lower()
-    mark_key = "pid:" + key
     if not cond:
-        ctx.timer_marks.pop(mark_key, None)
+        ctx.timer_marks.pop("pid:" + ops[0].lower(), None)
         return cond
+    ctx.store(ops[2], run_pid(ctx, ops[0], float(ctx.value(ops[1]))))
+    return cond
+
+
+def run_pid(ctx, instance: str, pv: float) -> float:
+    """One evaluation of a PID tag; returns CV (also used from structured text)."""
+    el, key = ctx.element(instance), instance.lower()
+    mark_key = "pid:" + key
     last = ctx.timer_marks.get(mark_key)
     ctx.timer_marks[mark_key] = ctx.now_ms
     dt = 0.0 if last is None else (ctx.now_ms - last) / 1000.0
-    el["PV"] = float(ctx.value(ops[1]))
+    el["PV"] = pv
     state = ctx.pid_state.setdefault(key, {"CV": el["CV"], "I": el["CV"]})
-    el["CV"] = pid.step(state, el["SP"], el["PV"], dt, kc=el["KP"], ti=el["TI"], td=el["TD"],
+    el["CV"] = pid.step(state, el["SP"], pv, dt, kc=el["KP"], ti=el["TI"], td=el["TD"],
                         out_min=el["MINO"], out_max=el["MAXO"], manual=el["MO"], manual_value=el["SO"],
                         reverse=el["CA"])
-    ctx.store(ops[2], el["CV"])
-    return cond
+    return el["CV"]
 
 
 @instruction("NOP", "No operation", "Program Control", [], [])

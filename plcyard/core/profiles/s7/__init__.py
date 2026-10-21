@@ -8,7 +8,7 @@ from __future__ import annotations
 from ... import isa
 from ...program import Program, walk
 from ..base import Diagnostic, IODevice, Profile
-from .instructions import KINDS, SPECS, S7Context, check_operand, literal
+from .instructions import KINDS, SPECS, S7Context, check_operand, literal, run_pid_compact
 from .memory import ANALOG_IN, ANALOG_OUT, FULL_SCALE, STRUCTS, TYPES, S7Error, S7Memory, _BIT, _SYM, _WORD
 
 INPUT_BYTES = {1: 0, 3: 2, 5: 4}       # slot → first byte
@@ -76,12 +76,35 @@ class S7(Profile):
     def context(self, memory: S7Memory) -> S7Context:
         return S7Context(memory)
 
+    st_blocks = {"TON": ("TON", ("IEC_TIMER",)), "TOF": ("TOF", ("IEC_TIMER",)), "TP": ("TP", ("IEC_TIMER",)),
+                 "CTU": ("CTU", ("IEC_COUNTER",)), "CTD": ("CTD", ("IEC_COUNTER",)),
+                 "PID_COMPACT": ("PID_Compact", ("PID_Compact",))}
+
+    def st_call(self, ctx, instance: str, block: str, inputs: dict) -> dict:
+        """TIA syntax: Delay.TON(IN := x, PT := T#2s); Parts.CTU(CU := x, R := y, PV := 5);
+        LevelPID.PID_Compact(Setpoint := sp, Input := pv, Output => out)."""
+        el = ctx.element(instance)
+        lit = lambda v: "TRUE" if v is True else ("FALSE" if v is False else repr(v))
+        if block in ("TON", "TOF", "TP"):
+            pt = inputs.get("PT", el["PT"])
+            SPECS[block].run(ctx, [instance, lit(int(pt))], bool(inputs.get("IN", False)))
+            return {"Q": el["Q"], "ET": el["ET"]}
+        if block in ("CTU", "CTD"):
+            edge, extra = ("CU", "R") if block == "CTU" else ("CD", "LD")
+            pv = inputs.get("PV", el["PV"])
+            SPECS[block].run(ctx, [instance, lit(int(pv)), lit(bool(inputs.get(extra, False)))],
+                             bool(inputs.get(edge, False)))
+            return {"Q": el["Q"], "CV": el["CV"]}
+        out = run_pid_compact(ctx, instance, float(inputs.get("SETPOINT", el["Setpoint"])),
+                              float(inputs.get("INPUT", el["Input"])))
+        return {"OUTPUT": out}
+
     def check(self, program: Program, memory) -> list[Diagnostic]:
         try:
             mem = S7Memory(program.tags)
         except S7Error as e:
             return [Diagnostic(2, 0, f"Tags: {e}")]
-        problems = []
+        problems = self.check_st(program, mem)
         for f in program.files.values():
             for i, rung in enumerate(f.rungs):
                 for ins in walk(rung.body):

@@ -8,7 +8,7 @@ from plcyard import formats, labs
 from plcyard.core.processor import Processor
 from plcyard.formats import plcy, rsl
 
-BUNDLED = sorted(labs.SAMPLES.glob("*.rsl")) + [lab.solution for lab in labs.load_all()]
+BUNDLED = sorted([*labs.SAMPLES.glob("*.rsl"), *labs.SAMPLES.glob("*.plcy")]) + [lab.solution for lab in labs.load_all()]
 
 
 @pytest.mark.parametrize("path", BUNDLED, ids=[p.stem for p in BUNDLED])
@@ -44,7 +44,7 @@ def test_unicode_is_kept(tmp_path):
     ('{"format": "plcyard", "version": 99}', "newer PLCYard"),
     ('{"format": "plcyard", "version": 1, "profile": "s5"}', "unknown controller profile"),
     ('{"format": "plcyard", "version": 1, "programs": []}', "no main program"),
-    ('{"format": "plcyard", "version": 1, "programs": [{"number": 2, "language": "ST"}]}', "not supported yet"),
+    ('{"format": "plcyard", "version": 1, "programs": [{"number": 2, "language": "FBD"}]}', "not supported yet"),
     ('{"format": "plcyard", "version": 1, "programs": [{"number": 2, "rungs": [{"text": "BST,1 XIC,I:1/0"}]}]}',
      "branch not closed"),
 ])

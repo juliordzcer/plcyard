@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import copy
 
-from . import isa, profiles
+from . import isa, profiles, st
 from .profiles import Diagnostic, IODevice, Profile  # noqa: F401  (re-exported)
 from .program import Instr, Parallel, Program, Series, walk
 
@@ -34,6 +34,7 @@ class Processor:
         self._depth = 0
         self.tracing = False
         self.trace: dict[tuple, tuple[bool, bool]] = {}   # (file, rung, *path) -> (in, out)
+        self._st: dict[int, list] = {}                     # file number -> parsed structured text
         self._use(profiles.get(profile) if isinstance(profile, str) else profile)
 
     def _use(self, profile: Profile) -> None:
@@ -58,6 +59,7 @@ class Processor:
         self.fault, self.fault_code = None, 0
         self.profile.load(self.program, self.dt)
         self._ctx.timer_marks.clear()
+        self._st = {f.number: st.parse(f.source) for f in self.program.files.values() if f.language == "ST"}
         try:
             self._each_instruction("on_download")
         except self.profile.memory_errors + (ValueError,) as e:
@@ -71,6 +73,12 @@ class Processor:
                     fn = getattr(self.profile.specs[ins.mnemonic], hook)
                     if fn:
                         fn(self._ctx, ins.operands)
+        if hook == "on_prescan":                   # block instances called from structured text
+            for body in self._st.values():
+                for call in st.calls(body):
+                    fn = self.profile.specs[self.profile.st_blocks[call.block][0]].on_prescan
+                    if fn:
+                        fn(self._ctx, [call.instance, "0", "0"])
 
     def reset_timers_counters(self) -> None:
         """Accumulators and status bits to zero; presets come back from the program."""
@@ -166,6 +174,10 @@ class Processor:
             self._depth -= 1
 
     def _run_file(self, f) -> None:
+        if f.language == "ST":
+            runner = st.Runner(self.dt, lambda inst, block, ins, line:
+                               self.profile.st_call(self._ctx, inst, block, ins))
+            return runner.run(self._st[f.number])
         try:
             for n, rung in enumerate(f.rungs):
                 self._series(rung.body, True, (f.number, n))

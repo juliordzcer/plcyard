@@ -22,7 +22,8 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [x] Phase 1: controller profiles on a shared scan engine, `.plcy` project files.
 - [x] Phase 2: Logix and S7 profiles in ladder, tag list, controller-aware editor and simulations.
 - [x] Phase 3: PID (Logix PID, S7 PID_Compact), analog I/O, tank simulation with trend, exercises 11-12.
-- [ ] **Next — Phase 4:** structured text (ST / SCL), see docs/ROADMAP.md.
+- [x] Phase 4: structured text (ST / SCL) for Logix and S7, editor with live watch list.
+- [ ] **Next — Phase 5:** function block diagram (FBD), see docs/ROADMAP.md.
 - [ ] SLC 500 PID instruction (control block in an N file); a PID exercise for S7.
 - [ ] Forcing I/O from the tag list; arrays and user structures; Logix routines (JSR); S7 FBs/DBs.
 - [ ] Controller profiles beyond SLC 500: a Logix-style controller (tags instead of file addresses,
@@ -34,8 +35,8 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 ## Three programming languages (IEC 61131-3)
 - [x] Ladder (LD): done.
 - [ ] Function block diagram (FBD): both Allen-Bradley (Studio 5000) and Siemens (TIA Portal) have it.
-- [ ] Structured text: Allen-Bradley calls it ST, Siemens calls it SCL. Same language family,
-      Pascal-like; start with one dialect close to both.
+- [x] Structured text: Allen-Bradley calls it ST, Siemens calls it SCL. Same language family,
+      Pascal-like; one dialect close to both.
 - [ ] Same exercises solvable in all three, so a learner can compare them.
 
 ## Documentation

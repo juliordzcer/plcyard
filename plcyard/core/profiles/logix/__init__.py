@@ -6,7 +6,7 @@ from __future__ import annotations
 from ... import isa
 from ...program import Program, walk
 from ..base import Diagnostic, IODevice, Profile
-from .instructions import KINDS, SPECS, LogixContext, check_operand
+from .instructions import KINDS, SPECS, LogixContext, check_operand, run_pid
 from .tags import (_REF as REF, ANALOG_IN_SLOT, ANALOG_OUT_SLOT, INPUT_SLOTS, OUTPUT_SLOTS, STRUCTS, TYPES,
                    TagError, TagTable)
 
@@ -59,12 +59,34 @@ class Logix(Profile):
         return LogixContext(memory)
 
     # -- download ------------------------------------------------------------
+    st_blocks = {"TON": ("TON", ("TIMER",)), "TOF": ("TOF", ("TIMER",)), "RTO": ("RTO", ("TIMER",)),
+                 "CTU": ("CTU", ("COUNTER",)), "CTD": ("CTD", ("COUNTER",)), "PID": ("PID", ("PID",))}
+
+    def st_call(self, ctx, instance: str, block: str, inputs: dict) -> dict:
+        """IEC-style calls on Logix tags: Delay.TON(IN := x, PRE := 2000); Parts.CTU(CU := x, RES := y);
+        LevelPID.PID(PV := level). (Studio 5000's own TONR/FBD_TIMER are not modelled.)"""
+        el = ctx.element(instance)
+        if block == "PID":
+            return {"CV": run_pid(ctx, instance, float(inputs.get("PV", el["PV"])))}
+        if "PRE" in inputs or "PT" in inputs:
+            el["PRE"] = int(inputs.get("PRE", inputs.get("PT")))
+        if block in ("TON", "TOF", "RTO"):
+            SPECS[block].run(ctx, [instance, "0", "0"], bool(inputs.get("IN", False)))
+            if block == "RTO" and inputs.get("RES"):
+                SPECS["RES"].run(ctx, [instance], True)
+            return {"EN": el["EN"], "TT": el["TT"], "DN": el["DN"], "ACC": el["ACC"], "Q": el["DN"], "ET": el["ACC"]}
+        edge = "CU" if block == "CTU" else "CD"
+        SPECS[block].run(ctx, [instance, "0", "0"], bool(inputs.get(edge, False)))
+        if inputs.get("RES") or inputs.get("R"):
+            SPECS["RES"].run(ctx, [instance], True)
+        return {"DN": el["DN"], "ACC": el["ACC"], "Q": el["DN"], "CV": el["ACC"]}
+
     def check(self, program: Program, memory) -> list[Diagnostic]:
         try:
             tags = TagTable(program.tags)
         except TagError as e:
             return [Diagnostic(2, 0, f"Tags: {e}")]
-        problems = []
+        problems = self.check_st(program, tags)
         for f in program.files.values():
             for i, rung in enumerate(f.rungs):
                 for ins in walk(rung.body):

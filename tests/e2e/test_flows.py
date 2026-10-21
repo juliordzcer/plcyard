@@ -467,3 +467,48 @@ def test_F12_N1_empty_program_fails_tank_checks(win, qtbot):
     qtbot.mouseClick(lv.start_btn, Qt.LeftButton)
     qtbot.mouseClick(lv.check_btn, Qt.LeftButton)
     assert "✘" in lv.result.toPlainText() and "✔" not in lv.result.toPlainText()
+
+
+# -- F13 structured text ---------------------------------------------------------------------------
+def test_F13_H1_s7_scl_program(win, qtbot):
+    nf = next(a.menu() for a in win.menuBar().actions() if a.text() == "&File")
+    sub = next(a.menu() for a in nf.actions() if a.menu() and "controller" in a.text())
+    next(a for a in sub.actions() if a.text().startswith("S7") and "structured" in a.text()).trigger()
+    assert win.program.main.language == "ST" and win.editor_stack.currentWidget() is win.st_editor
+    assert win.tabs.tabText(0).endswith("(ST)") and not win.bar.isVisible()
+    ed = win.st_editor
+    ed.edit.setPlainText('"Delay".TON(IN := %I0.0, PT := T#200ms);\n%Q0.0 := "Delay".Q;\n')
+    assert "Delay does not exist" in "\n".join(ed.check())
+    assert 1 in ed.edit.error_lines
+    win.table_dock.show()
+    win.tags_view.add_tag()
+    win.tags_view.table.item(0, 0).setText("Delay")
+    win.tags_view.table.cellWidget(0, 1).setCurrentText("IEC_TIMER")
+    assert ed.check() == [] and not ed.problems.isVisible()
+    assert [ed.watch.item(r, 0).text() for r in range(ed.watch.rowCount())] == ["%I0.0", "%Q0.0", "Delay.Q", "Delay"]
+    win.download()
+    assert win.warnings == []
+    go(win, "RUN")
+    click(qtbot, win, 1, 0)
+    run(win, 300)
+    assert win.sim_view.lamps[(2, 0)].on
+    assert ed.watch.item(1, 1).text() == "TRUE"
+
+
+def test_F13_N1_syntax_error_blocks_download(win):
+    win.new("logix", "ST")
+    win.st_editor.edit.setPlainText("Motor := Start\n")
+    assert "line 1" in win.st_editor.check()[0] and "missing ;" in win.st_editor.check()[0]
+    win.download()
+    assert win.warnings and "line 1" in win.warnings[0][1]
+
+
+def test_F13_E1_save_and_reopen_st(win, tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QFileDialog
+    win.new("logix", "ST")
+    win.st_editor.edit.setPlainText("Local:2:O.Data.0 := Local:1:I.Data.0;\n")
+    target = tmp_path / "st"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(target), "PLCYard projects (*.plcy)"))
+    win.save()
+    win.open(str(tmp_path / "st.plcy"))
+    assert win.st_editor.edit.toPlainText() == "Local:2:O.Data.0 := Local:1:I.Data.0;\n"

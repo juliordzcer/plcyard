@@ -445,3 +445,25 @@ keys:      S7, TIA Portal, Siemens, %I0.0, IEC_TIMER, ENO, big endian
   ≤ 5 %, disturbance rejection, new setpoint, no overflow.
 - Blocks widen for long operands; live rows for PID blocks.
 keys:      PID, PID_Compact, analog, tank, level, trend, hysteresis, Ch0Data, %IW64
+
+## C-022 — Phase 4: structured text (ST / SCL)
+2026-10-21 · commit: 1b9ba90
+- `core/st/`: lexer (comments `//`, `(* *)`, `/* */`; `T#1m30s`; `16#FF`; `"Quoted"`, `#local`,
+  `%I0.0`, `Local:1:I.Data.0`, `S:FS`), parser to an AST (assignments, IF/ELSIF/ELSE, CASE with
+  lists and ranges, FOR/BY, WHILE, REPEAT, EXIT, RETURN, block calls with `:=` inputs and `=>`
+  outputs, functions ABS SQRT MIN MAX LIMIT SEL TRUNC ROUND LN EXP SIN COS TAN and `X_TO_Y` casts),
+  checks against the controller's memory (unknown tags, block/instance type mismatch, structures
+  used as values) with line numbers, interpreter (integer division truncates, division by zero and
+  runaway loops → major fault 0601h, watchdog 100 000 iterations per scan).
+- `ProgramFile.language/source`; `.plcy` stores ST source; `.rsl` refuses it; SLC 500 rejects ST.
+  `Diagnostic.line`. The engine parses ST at download, runs it in place of rungs, and prescans the
+  block instances it calls.
+- Profiles: `st_blocks` and `st_call` — S7 TON/TOF/TP/CTU/CTD/PID_Compact (TIA syntax), Logix
+  TON/TOF/RTO/CTU/CTD/PID with IEC-style calls (Studio 5000's TONR/FBD_TIMER not modelled).
+  `run_pid` / `run_pid_compact` shared by ladder and ST.
+- UI: `ui/st_editor.py` (highlighting incl. multi-line comments, line numbers with error marks,
+  problems re-checked 300 ms after typing and when tags change, watch list with live values).
+  File → New for controller offers ladder or structured text; tabs show "(ST)"; the instruction
+  bar hides for ST. Examples `start-stop-st.plcy` (Logix ST) and `tank-pid-scl.plcy` (S7 SCL).
+- Tests: `tests/test_st.py` (20), e2e F13.
+keys:      structured text, ST, SCL, parser, IF, CASE, FOR, watchdog, TON call
