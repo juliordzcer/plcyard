@@ -2,6 +2,19 @@
 
 Planned after the first release. The current SLC 500-style ladder trainer stays as it is until then.
 
+## Before announcing
+- [ ] Trademark screening for "PLCYard": USPTO (classes 9 and 42), EUIPO/TMview, WIPO.
+- [ ] Read 20-30 learner threads by hand (r/PLC, r/PLCProgramming, plctalk.net) to confirm what
+      people need; adjust the README and site copy.
+- [ ] Final icon and wordmark (draft: `plcyard/ui/assets/icon.svg`): SVG, 1024 px PNG, favicons,
+      1200x630 social image.
+- [ ] Upload `site/` to juliordz.com.
+- [ ] GitHub release v0.1.0 with notes and screenshots; issue templates (bug, exercise idea).
+- [ ] Ship `labs/` and `samples/` inside the package so a non-editable install (and PyPI
+      `plcyard`) works; then publish to PyPI.
+- [ ] Post where learners ask how to practise without hardware (see the subreddit rules first),
+      Show HN.
+
 ## Modern PLC models
 - [ ] Controller profiles beyond SLC 500: a Logix-style controller (tags instead of file addresses,
       as in Studio 5000) and an S7-1200/1500-style controller (Siemens TIA Portal).
