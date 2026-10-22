@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QLabel, QSlider,
 
 from ..sims import tank as K
 from . import theme
+from .io_drag import Hotspots, attach
 from .primitives import Lamp, SimSwitch
 from .sim_views import _EventBar, _mono, slc_name
 
@@ -17,14 +18,16 @@ def slc_analog(direction: str, channel: int) -> str:
     return {("I", 0): "I:7", ("I", 1): "I:6", ("O", 0): "O:7"}[(direction, channel)]
 
 
-class TankCanvas(QWidget):
+class TankCanvas(Hotspots, QWidget):
     def __init__(self, model: K.TankModel, io_name=slc_name, analog_name=slc_analog):
         super().__init__()
         self.model, self.n, self.a = model, io_name, analog_name
         self.setMinimumSize(320, 220)
         self.setAccessibleName("Tank level process")
+        self.setMouseTracking(True)
 
     def paintEvent(self, _):
+        self._hotspots_reset()
         m = self.model
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
@@ -83,7 +86,7 @@ class TankCanvas(QWidget):
     def _label(self, p, x, y, text):
         p.setFont(theme.font("mono", "xs"))
         p.setPen(theme.color("text-muted"))
-        p.drawText(QPointF(x, y), text)
+        self.label(p, QPointF(x, y), text)
 
 
 class TrendChart(QWidget):
@@ -154,15 +157,16 @@ class TankView(QWidget):
                                       (self.stop, f"Stop {self.n('I', 1, 1)} (NC)"))):
             w.setToolTip(t)
             w.setAccessibleName(t)
+            w.address = self.n("I", 1, row)
             g.addWidget(w, row, 0)
-            g.addWidget(_mono(t), row, 1)
+            g.addWidget(attach(_mono(t), w.address), row, 1)
         self.lamps = {}
         for row, (bit, name, tone) in enumerate(((1, f"Run {self.n('O', 2, 1)}", "lamp-green"),
                                                   (2, f"High alarm {self.n('O', 2, 2)}", "lamp-red"))):
-            lamp = Lamp(tone)
+            lamp = attach(Lamp(tone), self.n("O", 2, bit))
             self.lamps[bit] = lamp
             g.addWidget(lamp, row, 2)
-            g.addWidget(_mono(name), row, 3)
+            g.addWidget(attach(_mono(name), self.n("O", 2, bit)), row, 3)
         self.sp = self._slider(g, 2, f"Setpoint knob {self.a('I', 1)}", model.setpoint_knob,
                                lambda v: setattr(model, "setpoint_knob", float(v)))
         self.outlet = self._slider(g, 3, "Outlet opening (disturbance)", model.outlet,

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import copy
 import re
 
 from PySide6.QtCore import Qt, QTimer
@@ -34,60 +35,10 @@ from .project_tree import ProjectTree, routine_label
 from .tags_view import TagsView
 from .instruction_bar import InstructionBar
 from .labs_view import LabsView
-from .primitives import ModeSelector
+from .online_bar import PlcPanel
 
 TICK_MS = 10
 FRAME_MS = 33
-
-
-class PlcPanel(QFrame):
-    def __init__(self):
-        super().__init__()
-        self.setFixedHeight(theme.layout("plc-strip-h"))
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(12, 8, 12, 8)
-        lay.setSpacing(12)
-        self.status = QLabel()
-        self.status.setMinimumWidth(170)
-        self.download = QPushButton("Download")
-        self.download.setProperty("variant", "primary")
-        self.download.setToolTip("Send the program to the PLC (Ctrl+D)")
-        self.mode = ModeSelector("PGM")
-        self.clear_fault = QPushButton("Clear fault")
-        self.clear_fault.setProperty("variant", "danger")
-        self.clear_fault.setVisible(False)
-        self.step = QPushButton("Step")
-        self.step.setToolTip("Run one scan (F10)")
-        self.step.setEnabled(False)
-        self.scans = QLabel("0 scans")
-        self.scans.setFont(theme.font("mono", "sm"))
-        self.scans.setProperty("muted", "true")
-        self.io_words = QLabel()
-        self.io_words.setFont(theme.font("mono", "sm"))
-        self.io_words.setProperty("muted", "true")
-        self.forces = QLabel("I/O FORCED")
-        self.forces.setProperty("status", "warning")
-        self.forces.setToolTip("Some I/O points are forced (right-click them to remove the force)")
-        self.forces.setVisible(False)
-        speed_label = QLabel("Speed")
-        speed_label.setProperty("muted", "true")
-        self.speed = QSlider(Qt.Horizontal)
-        self.speed.setRange(1, 10)
-        self.speed.setValue(10)
-        self.speed.setFixedWidth(140)
-        self.speed.setAccessibleName("Simulation speed")
-        for w in (self.status, self.clear_fault, self.download, self.mode, self.step, self.scans, self.io_words,
-                  self.forces):
-            lay.addWidget(w)
-        lay.addStretch(1)
-        lay.addWidget(speed_label)
-        lay.addWidget(self.speed)
-
-    def set_status(self, text: str, kind: str = "") -> None:
-        self.status.setText(text)
-        self.status.setProperty("status", kind)
-        self.status.style().unpolish(self.status)
-        self.status.style().polish(self.status)
 
 
 class MainWindow(QMainWindow):
@@ -102,6 +53,7 @@ class MainWindow(QMainWindow):
         self.downloaded = False      # the PLC holds a program
         self.in_sync = False         # ...and it is the one in the editor
         self.dirty = False           # unsaved edits
+        self.online = False          # the editor watches the PLC (Go Online / Download)
         self.sim_kind = "io"
 
         self.panel = PlcPanel()
@@ -177,6 +129,11 @@ class MainWindow(QMainWindow):
         self._menus()
         self.panel.download.clicked.connect(self.download)
         self.panel.mode.modeChanged.connect(self.set_mode)
+        self.panel.mode_requested.connect(self.panel.mode.set_mode)
+        self.panel.go_online.connect(self.go_online)
+        self.panel.go_offline.connect(self.go_offline)
+        self.panel.upload.connect(self.upload)
+        self.panel.remove_forces.connect(self.remove_forces)
         self.panel.step.clicked.connect(self.step)
         self.panel.clear_fault.clicked.connect(self.clear_fault)
         self._fault_shown = None
@@ -260,8 +217,12 @@ class MainWindow(QMainWindow):
         act(s, "&Reset simulation", lambda: self._rebuild_sim())
         act(s, "Reset &timers and counters", self.reset_timers_counters)
         act(s, "Clear &data table", self.clear_data)
-        p = mb.addMenu("&PLC")
+        p = mb.addMenu("&Communications")
+        act(p, "Go &Online", self.go_online, "Ctrl+K")
+        act(p, "Go O&ffline", self.go_offline)
+        act(p, "&Upload…", self.upload)
         act(p, "&Download", self.download, "Ctrl+D")
+        p.addSeparator()
         act(p, "&Run", lambda: self.panel.mode.set_mode("RUN"), "Ctrl+R")
         act(p, "&Program mode", lambda: self.panel.mode.set_mode("PGM"), "Ctrl+P")
         act(p, "S&tep mode", lambda: self.panel.mode.set_mode("STEP"))
@@ -399,6 +360,7 @@ class MainWindow(QMainWindow):
 
     def _program_changed(self) -> None:
         self.in_sync = False
+        self.online = False
         self.dirty = False
         self.panel.mode.set_mode("PGM")
         self._show_program()
@@ -410,6 +372,7 @@ class MainWindow(QMainWindow):
             self._remove_doc(0)
         self.tree.set_program(self.program)
         self.tree_dock.setWindowTitle({"logix": "Controller Organizer", "s7": "Project tree"}.get(prof.name, "Project"))
+        self.panel.set_family(prof.name)
         self.add_routine_act.setEnabled(bool(prof.routine_kinds))
         self.add_type_act.setEnabled(bool(prof.tag_types))
         self.open_routine(2)
@@ -638,11 +601,63 @@ class MainWindow(QMainWindow):
             return
         self.downloaded = True
         self.in_sync = True
+        self.online = True
         self.panel.mode.set_mode("PGM")
         self.statusBar().showMessage("Program downloaded. Switch to RUN to start scanning.", 4000)
         self._update_status()
 
+    # -- online -------------------------------------------------------------
+    def go_online(self) -> None:
+        """Watch the controller. If it holds another program, choose to upload or download."""
+        if self.plc.program is None:
+            if QMessageBox.question(self, "Go Online", "The controller has no program. Download this one?") \
+                    == QMessageBox.Yes:
+                self.download()
+            return
+        same = self.in_sync or (self.plc.program.profile == self.program.profile
+                                and formats.plcy.dumps(self.plc.program) == formats.plcy.dumps(self.program))
+        if not same:
+            box = QMessageBox(QMessageBox.Question, "Go Online",
+                              "The program in the controller is not the one open here.", parent=self)
+            up = box.addButton("Upload", QMessageBox.AcceptRole)
+            down = box.addButton("Download", QMessageBox.AcceptRole)
+            box.addButton(QMessageBox.Cancel)
+            box.exec()
+            if box.clickedButton() is up:
+                return self.upload(ask=False)
+            if box.clickedButton() is down:
+                return self.download()
+            return
+        self.in_sync = self.downloaded = self.online = True
+        self.statusBar().showMessage("Online.", 3000)
+        self._update_status()
+
+    def go_offline(self) -> None:
+        """Stop watching; the controller keeps running what it has."""
+        self.online = False
+        self._update_status()
+
+    def upload(self, ask: bool = True) -> None:
+        """Copy the controller's program into the editor."""
+        if self.plc.program is None:
+            QMessageBox.warning(self, "Upload", "The controller has no program to upload.")
+            return
+        if ask and not self.maybe_save():
+            return
+        self.program = copy.deepcopy(self.plc.program)
+        self.path = None
+        self.dirty = False
+        self._show_program()
+        self.in_sync = self.downloaded = self.online = True
+        self.panel.mode.set_mode(self.plc.mode if self.plc.mode != Processor.FAULT else "PGM")
+        self.statusBar().showMessage("Uploaded the controller's program.", 4000)
+        self._update_status()
+
     def set_mode(self, mode: str) -> None:
+        if not self.online and self.plc.program is not None and mode != self.plc.mode:
+            self.statusBar().showMessage("Go online first (Communications → Go Online).", 4000)
+            self.panel.mode.set_mode(self.plc.mode if self.plc.mode != Processor.FAULT else "PGM")
+            return
         if self.plc.mode == Processor.FAULT:
             # The selector shows PGM while faulted; only "Clear fault" leaves FAULT.
             if mode != "PGM":
@@ -687,6 +702,8 @@ class MainWindow(QMainWindow):
 
     def _update_status(self) -> None:
         mode = self.plc.mode
+        self.panel.set_online(self.online, mode, self.online and not self.in_sync)
+        self.panel.set_forces(bool(self.plc.forces))
         self.panel.clear_fault.setVisible(mode == Processor.FAULT)
         if mode == Processor.FAULT:
             self.panel.set_status(f"FAULT {self.plc.fault_code:04X}h", "danger")
@@ -715,7 +732,7 @@ class MainWindow(QMainWindow):
         return ScopedMemory(self.plc.dt, lambda text: scoped(text, insts[0], names))
 
     def _refresh(self) -> None:
-        live = self.plc.mode in (Processor.RUN, Processor.STEP)
+        live = self.online and self.plc.mode in (Processor.RUN, Processor.STEP)
         self.sim_view.refresh()
         same = self.in_sync and live
         same_controller = self.plc.profile.name == self.program.profile
@@ -724,15 +741,17 @@ class MainWindow(QMainWindow):
                 self.table_view.model.dt = self.plc.dt      # a download switched controllers
             self.table_view.refresh()
         elif self.table_dock.isVisible():
-            downloaded = same_controller and self.downloaded and self.plc.program is not None
+            downloaded = same_controller and self.downloaded and self.online and self.plc.program is not None
             self.tags_view.set_memory(self.plc.dt if downloaded else None)
         doc = self.doc
         if isinstance(doc, RoutineDoc):
             if doc.canvas is not None:
                 doc.canvas.set_live(self._doc_memory(doc), live and same_controller, self.plc.trace if same else None)
             else:
-                doc.st.set_live(self._doc_memory(doc) if same_controller and self.downloaded else None)
+                doc.st.set_live(self._doc_memory(doc) if same_controller and self.downloaded and self.online else None)
         self.panel.forces.setVisible(bool(self.plc.forces))
+        self.panel.set_leds(running=self.plc.mode in (Processor.RUN, Processor.STEP), forced=bool(self.plc.forces),
+                            fault=self.plc.mode == Processor.FAULT, io=self.downloaded, mode=self.plc.mode)
         self.panel.scans.setText(f"{self.plc.scan_count} scans")
         self.panel.io_words.setText("  ".join(f"{n} {v & 0xFFFF:04X}h" for n, v in self.plc.profile.io_image(self.plc.dt)))
         self._update_status()

@@ -381,7 +381,7 @@ def nop(ctx, ops, cond):
     return cond
 
 
-@instruction("JSR", "Jump to subroutine", "Program Control", ["routine"], ["Routine name"], output=True)
+@instruction("JSR", "Jump to subroutine", "Program Control", ["routine"], ["Routine"], output=True)
 def jsr(ctx, ops, cond):
     if cond:
         ctx.call(ops[0])

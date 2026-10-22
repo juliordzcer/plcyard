@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QFrame, QGridLayout, QHB
 from ..sims import silo as S
 from ..sims import traffic as T
 from . import theme
+from .io_drag import Hotspots, attach
 from .primitives import Lamp, SimSwitch
 
 
@@ -50,15 +51,17 @@ def slc_name(direction: str, slot: int, bit: int | None = None) -> str:
     return f"{direction}:{slot}" + ("" if bit is None else f"/{bit}")
 
 
-class SiloCanvas(QWidget):
+class SiloCanvas(Hotspots, QWidget):
     def __init__(self, model: S.SiloModel, io_name=slc_name):
         super().__init__()
         self.n = io_name
         self.model = model
         self.setMinimumSize(320, 200)
         self.setAccessibleName("Silo filling line")
+        self.setMouseTracking(True)
 
     def paintEvent(self, _):
+        self._hotspots_reset()
         m = self.model
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
@@ -116,7 +119,7 @@ class SiloCanvas(QWidget):
     def _label(self, p, x, y, text):
         p.setPen(theme.color("text"))
         p.setFont(theme.font("mono", "xs"))
-        p.drawText(QPointF(x, y), text)
+        self.label(p, QPointF(x, y), text)
         p.setPen(Qt.NoPen)
 
 
@@ -136,13 +139,14 @@ class SiloView(QWidget):
         self.stop = SimSwitch(normally_closed=True, momentary=True)
         self.start.changed.connect(lambda _s: setattr(model, "start_pressed", self.start.pressed))
         self.stop.changed.connect(lambda _s: setattr(model, "stop_pressed", self.stop.pressed))
-        for w, t in ((self.start, f"Start {self.n('I', 1, 0)}"), (self.stop, f"Stop {self.n('I', 1, 1)}")):
+        for w, t, bit in ((self.start, f"Start {self.n('I', 1, 0)}", 0), (self.stop, f"Stop {self.n('I', 1, 1)}", 1)):
             w.setToolTip(t)
             w.setAccessibleName(t)
+            w.address = self.n("I", 1, bit)
         g.addWidget(self.start, 0, 0)
-        g.addWidget(_mono(f"Start {self.n('I', 1, 0)}"), 0, 1)
+        g.addWidget(attach(_mono(f"Start {self.n('I', 1, 0)}"), self.n("I", 1, 0)), 0, 1)
         g.addWidget(self.stop, 1, 0)
-        g.addWidget(_mono(f"Stop {self.n('I', 1, 1)} (NC)"), 1, 1)
+        g.addWidget(attach(_mono(f"Stop {self.n('I', 1, 1)} (NC)"), self.n("I", 1, 1)), 1, 1)
         sel = QHBoxLayout()
         self.sel_group = QButtonGroup(self)
         for i, name in enumerate("ABC"):
@@ -157,10 +161,10 @@ class SiloView(QWidget):
         g.addWidget(_mono(f"Selector {self.n('I', 1, 5)}..7", muted=True), 3, 0, 1, 2)
         self.lamps = {}
         for row, (bit, name) in enumerate(((2, f"Run {self.n('O', 2, 2)}"), (3, f"Fill {self.n('O', 2, 3)}"), (4, f"Full {self.n('O', 2, 4)}"))):
-            lamp = Lamp({2: "lamp-green", 3: "lamp-amber", 4: "lamp-red"}[bit])
+            lamp = attach(Lamp({2: "lamp-green", 3: "lamp-amber", 4: "lamp-red"}[bit]), self.n("O", 2, bit))
             self.lamps[bit] = lamp
             g.addWidget(lamp, row, 2)
-            g.addWidget(_mono(name), row, 3)
+            g.addWidget(attach(_mono(name), self.n("O", 2, bit)), row, 3)
         top = QHBoxLayout()
         top.addWidget(panel)
         top.addStretch(1)
@@ -181,15 +185,17 @@ class SiloView(QWidget):
 
 # -- Traffic ---------------------------------------------------------------------
 
-class TrafficCanvas(QWidget):
+class TrafficCanvas(Hotspots, QWidget):
     def __init__(self, model: T.TrafficModel, io_name=slc_name):
         super().__init__()
         self.n = io_name
         self.model = model
         self.setMinimumSize(320, 320)
         self.setAccessibleName("Traffic intersection")
+        self.setMouseTracking(True)
 
     def paintEvent(self, _):
+        self._hotspots_reset()
         m = self.model
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
@@ -224,8 +230,8 @@ class TrafficCanvas(QWidget):
             p.drawRoundedRect(r, 6, 6)
         p.setPen(theme.color("text"))
         p.setFont(theme.font("mono", "xs"))
-        p.drawText(QPointF(4, jc - w / 2 - 12), f"Car waiting A → {self.n('I', 1, 2)}")
-        p.drawText(QPointF(jc + w / 2 + 8, 30), f"Car waiting B → {self.n('I', 1, 3)}")
+        self.label(p, QPointF(4, jc - w / 2 - 12), f"Car waiting A → {self.n('I', 1, 2)}")
+        self.label(p, QPointF(jc + w / 2 + 8, 30), f"Car waiting B → {self.n('I', 1, 3)}")
 
     def _head(self, p, at: QPointF, road: str, label: str):
         p.setPen(QPen(theme.color("rail"), 2))
@@ -236,6 +242,8 @@ class TrafficCanvas(QWidget):
             p.setBrush(theme.color(f"lamp-{colour}") if on else theme.color("lamp-off"))
             p.setPen(Qt.NoPen)
             p.drawEllipse(QPointF(at.x() + 15, at.y() + 14 + i * 24), 9, 9)
+            self.add_hotspot(QRectF(at.x() + 6, at.y() + 5 + i * 24, 18, 18),
+                             f"{colour} {self.n('O', 2, (0 if road == 'A' else 4) + i)}")
         p.setPen(theme.color("text"))
         p.setFont(theme.font("mono", "xs"))
         p.drawText(QPointF(at.x() - 4, at.y() - 6), f"{road}: {label}")
@@ -246,7 +254,7 @@ class TrafficCanvas(QWidget):
         p.drawRoundedRect(QRectF(at.x(), at.y(), 22, 16), 3, 3)
         p.setPen(theme.color("text"))
         p.setFont(theme.font("mono", "xs"))
-        p.drawText(QPointF(at.x() + 28, at.y() + 12), label)
+        self.label(p, QPointF(at.x() + 28, at.y() + 12), label)
 
 
 class TrafficView(QWidget):
@@ -264,8 +272,9 @@ class TrafficView(QWidget):
             sw.changed.connect(lambda _s, r=road, w=sw: model.buttons.__setitem__(r, w.pressed))
             sw.setToolTip(f"Crosswalk button {road} → {self.n('I', 1, bit)}")
             sw.setAccessibleName(sw.toolTip())
+            sw.address = self.n("I", 1, bit)
             row.addWidget(sw)
-            row.addWidget(_mono(f"Walk button {road} {self.n('I', 1, bit)}"))
+            row.addWidget(attach(_mono(f"Walk button {road} {self.n('I', 1, bit)}"), self.n("I", 1, bit)))
             row.addSpacing(16)
         for road in "AB":
             cb = QCheckBox(f"Park car {road}")

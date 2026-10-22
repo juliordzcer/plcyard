@@ -593,3 +593,74 @@ def test_F14_N1_bad_names_are_refused(win, monkeypatch):
     add_routine(win, monkeypatch, "1bad", "SBR")
     add_routine(win, monkeypatch, "MainRoutine", "SBR")
     assert len(win.program.files) == 1 and len(win.warnings) == 2
+
+
+# -- F15 drag inputs and outputs from the simulation onto the ladder ---------------------------------
+def test_F15_H1_drop_io_on_rungs_and_instructions(win):
+    win.new("logix")
+    c = win.canvas
+    c.drop_address("Local:1:I.Data.0", ("newrung", 0))
+    c.drop_address("Local:2:O.Data.3", (0, None, None, None))
+    items = win.program.main.rungs[0].body.items
+    assert [(i.mnemonic, i.operands) for i in items] == [("XIC", ["Local:1:I.Data.0"]), ("OTE", ["Local:2:O.Data.3"])]
+    rect = c._instr_rect(0, (0,))
+    target = c._address_target(rect.center(), "Local:1:I.Data.5")
+    assert target[0] == "operand"
+    c.drop_address("Local:1:I.Data.5", target)
+    assert win.program.main.rungs[0].body.items[0].operands == ["Local:1:I.Data.5"]
+    win.download()
+    assert win.warnings == []
+
+
+def test_F15_H2_analog_channel_fills_a_value_operand(win):
+    win.new("s7")
+    win.bar.picked.emit("RUNG")
+    win.bar.picked.emit("MOVE")
+    c = win.canvas
+    rect = c._instr_rect(0, (0,))
+    c.drop_address("%IW64", c._address_target(rect.center(), "%IW64"))
+    c.drop_address("%QW64", c._address_target(rect.center(), "%QW64"))
+    assert win.program.main.rungs[0].body.items[0].operands == ["%IW64", "%QW64"]
+
+
+def test_F15_H3_sim_widgets_carry_their_address(win):
+    from plcyard.ui.io_drag import Draggable
+    win.new("s7")
+    assert win.sim_view.switches[(1, 0)].address == "%I0.0"
+    assert win.sim_view.lamps[(2, 1)].findChild(Draggable).address == "%Q0.1"
+    win.select_sim("silo")
+    win.sim_view.canvas.grab()
+    assert win.sim_view.canvas.hotspot_at(win.sim_view.canvas._spots[0][0].center()) is not None
+
+
+# -- F16 online bar (RSLogix 500 / Studio 5000 style) -------------------------------------------------
+def test_F16_H1_offline_online_upload(win, monkeypatch):
+    win.open(str(SAMPLES / "start-stop.rsl"))
+    assert win.panel.online_btn.text() == "Offline"
+    win.download()
+    go(win, "RUN")
+    assert win.panel.online_btn.text() == "Rem Run" and win.panel.edits.text() == "No Edits"
+    win.go_offline()
+    win.panel.mode.set_mode("PGM")
+    assert win.plc.mode == Processor.RUN, "offline, the mode cannot be changed"
+    win.go_online()
+    assert win.online and win.panel.online_btn.text() == "Rem Run"
+    win.bar.picked.emit("RUNG")
+    assert win.panel.edits.text() == "Edits pending"
+    monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.Discard)
+    win.upload()
+    assert win.in_sync and len(win.program.main.rungs) == len(win.plc.program.main.rungs)
+    win.panel.set_folded(True)
+    assert win.panel.details.isHidden()
+
+
+def test_F16_H2_s7_shows_stop_run(win):
+    win.new("s7")
+    win.bar.picked.emit("RUNG")
+    win.bar.picked.emit("XIC")
+    set_ops(win, "%I0.0")
+    win.bar.picked.emit("OTE")
+    set_ops(win, "%Q0.0")
+    win.download()
+    assert win.panel.online_btn.text() == "Online · STOP"
+    assert [l.label.text() for l in win.panel.leds.values()][:3] == ["RUN/STOP", "MAINT", "ERROR"]

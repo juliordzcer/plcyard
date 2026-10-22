@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPainterPath, QPen, QRadialGradient
-from PySide6.QtWidgets import QButtonGroup, QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QApplication, QButtonGroup, QHBoxLayout, QPushButton, QWidget
 
 from . import theme
 
@@ -180,6 +180,8 @@ class SimSwitch(QWidget):
     def __init__(self, normally_closed=False, momentary=False, pressed=False):
         super().__init__()
         self.nc, self.momentary, self.pressed = normally_closed, momentary, pressed
+        self.address: str | None = None      # set by the view: dragging the switch drags this address
+        self._press = None
         self.setFixedSize(56, 34)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setCursor(Qt.PointingHandCursor)
@@ -196,9 +198,22 @@ class SimSwitch(QWidget):
 
     def mousePressEvent(self, e):
         if e.button() == Qt.LeftButton:
+            self._press = (e.position(), self.pressed)
             self._set(True if self.momentary else not self.pressed)
 
+    def mouseMoveEvent(self, e):
+        """Dragging the switch away (instead of clicking it) drags its address onto the ladder."""
+        if self._press is None or not self.address or not e.buttons() & Qt.LeftButton:
+            return
+        start, before = self._press
+        if (e.position() - start).manhattanLength() >= QApplication.startDragDistance():
+            self._press = None
+            self._set(before)
+            from .io_drag import start_drag
+            start_drag(self, self.address)
+
     def mouseReleaseEvent(self, e):
+        self._press = None
         if self.momentary and e.button() == Qt.LeftButton:
             self._set(False)
 

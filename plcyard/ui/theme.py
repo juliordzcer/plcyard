@@ -128,9 +128,9 @@ QMenu {{ background: {c('bg')}; border: 1px solid {c('border')}; padding: 4px; }
 QMenu::item {{ padding: 4px 20px; border-radius: {r('sm')}px; }}
 QMenu::item:selected {{ background: {c('accent-soft')}; }}
 QLabel[muted="true"] {{ color: {c('text-muted')}; }}
-QLabel[status="success"] {{ color: {c('success')}; font-weight: 600; }}
-QLabel[status="warning"] {{ color: {c('warning')}; font-weight: 600; }}
-QLabel[status="danger"] {{ color: {c('danger')}; font-weight: 600; }}
+QLabel[status="success"], QToolButton[status="success"] {{ color: {c('success')}; font-weight: 600; }}
+QLabel[status="warning"], QToolButton[status="warning"] {{ color: {c('warning')}; font-weight: 600; }}
+QLabel[status="danger"], QToolButton[status="danger"] {{ color: {c('danger')}; font-weight: 600; }}
 """
 
 

@@ -60,7 +60,10 @@ class SiloModel:
         return next((b for b in self.boxes if b.x <= SENSOR_X <= b.right), None)
 
     def prox(self) -> bool:
-        return self.box_under_hopper() is not None
+        """The sensor sees a box once its centre has reached the hopper outlet, so a conveyor
+        stopped by it leaves the box centred under the filling pipe."""
+        b = self.box_under_hopper()
+        return b is not None and SENSOR_X - 1.0 <= b.x + BOX_W / 2 <= b.right - 12.0
 
     def level(self) -> bool:
         b = self.box_under_hopper()

@@ -495,3 +495,19 @@ keys:      structured text, ST, SCL, parser, IF, CASE, FOR, watchdog, TON call
   motor starters (S7 FB ×2), recipes (Logix UDT array), SLC PID tank.
 - Tests: `test_routines.py` (28), `test_samples.py` (18), SLC PID (3), e2e F14 (5). 414 in total.
 keys:      JSR, FC, FB, instance DB, UDT, array, forcing, Controller Organizer, project tree, PID
+
+## C-024 — Commercial-style polish: drag I/O, online bar, silo sensor
+2026-10-21 · commits: 43c54fe and the one after this entry
+- Silo: the prox sensor sees a box once its centre reaches the filling pipe, so the box stops centred.
+- `ui/io_drag.py`: switches, lamps and address labels of every simulation (also labels painted on
+  the silo, traffic and tank canvases, and each traffic light) drag their address onto the ladder,
+  as in LogixPro. On an instruction it fills the first free operand of the right kind (bit, value,
+  destination); on a rung it adds XIC (input) or OTE (output); on empty space a new rung.
+- `ui/online_bar.py`: online toolbar like RSLogix 500 / Studio 5000: mode box (Offline, Rem Prog,
+  Rem Run, Rem Test, Faulted; S7: Online · STOP/RUN) with Go Online / Go Offline / Upload /
+  Download / modes / Clear Faults, No Forces / Forces Enabled (Remove All Forces), No Edits /
+  Edits pending, LEDs RUN FORCE OK I/O (S7: RUN/STOP MAINT ERROR), fold button. Communications
+  menu. Offline the PLC keeps running, live display stops and modes cannot change; Go Online with a
+  different program offers Upload or Download.
+- Tests: e2e F15 (3), F16 (2). 419 in total.
+keys:      drag and drop, LogixPro, online, offline, upload, Rem Run, LEDs

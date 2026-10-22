@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (QCompleter, QFormLayout, QFrame, QInputDialog, QL
 
 from ..core import edit, profiles
 from ..core.profiles.base import parse_param
+from . import io_drag
 from ..core.datatable import DataTable
 from ..core.program import Instr, Parallel, Program, ProgramFile, walk
 from . import theme
@@ -558,6 +559,9 @@ class LadderCanvas(QWidget):
             return
         pen = QPen(theme.color("drop-target"), 4)
         p.setPen(pen)
+        if self._drop[0] == "operand":
+            p.drawRoundedRect(self._drop[3].adjusted(-3, -3, 3, 3), 6, 6)
+            return
         if self._drop[0] == "newrung":
             idx = self._drop[1]
             row = self.rows[min(idx, len(self.rows) - 1)]
@@ -715,13 +719,17 @@ class LadderCanvas(QWidget):
 
     # -- drag and drop ----------------------------------------------------
     def dragEnterEvent(self, e):
-        if e.mimeData().hasFormat(MIME):
+        if e.mimeData().hasFormat(MIME) or e.mimeData().hasFormat(io_drag.MIME):
             e.acceptProposedAction()
 
     def dragMoveEvent(self, e):
-        if not e.mimeData().hasFormat(MIME):
+        md = e.mimeData()
+        if md.hasFormat(io_drag.MIME):
+            self._drop = self._address_target(e.position(), bytes(md.data(io_drag.MIME)).decode())
+        elif md.hasFormat(MIME):
+            self._drop = self._drop_target(e.position())
+        else:
             return
-        self._drop = self._drop_target(e.position())
         e.acceptProposedAction()
         self.update()
 
@@ -730,6 +738,14 @@ class LadderCanvas(QWidget):
         self.update()
 
     def dropEvent(self, e):
+        if e.mimeData().hasFormat(io_drag.MIME):
+            address = bytes(e.mimeData().data(io_drag.MIME)).decode()
+            target = self._address_target(e.position(), address)
+            self._drop = None
+            e.acceptProposedAction()
+            self.drop_address(address, target)
+            self.update()
+            return
         target = self._drop_target(e.position())
         self._drop = None
         data = bytes(e.mimeData().data(MIME)).decode()
@@ -741,6 +757,63 @@ class LadderCanvas(QWidget):
         else:
             self._drop_new(data, target)
         self.update()
+
+    # -- I/O dragged from a simulation (LogixPro style) -----------------------------------
+    BIT_KINDS = ("bit", "bool", "bool_opt")
+    WORD_KINDS = ("value", "word", "value_opt")
+    OUT_KINDS = ("dest", "word", "dest_opt")
+
+    def _operand_for(self, ins: Instr, address: str) -> int | None:
+        """Which operand of an instruction a dropped address fills."""
+        spec = self.specs.get(ins.mnemonic)
+        if spec is None:
+            return None
+        if io_drag.is_bit(address):
+            kinds = self.BIT_KINDS
+        else:
+            kinds = self.OUT_KINDS if io_drag.direction_of(address) == "O" else self.WORD_KINDS
+        free = [k for k, kind in enumerate(spec.operands) if kind in kinds]
+        unset = [k for k in free if k >= len(ins.operands) or ins.operands[k] in ("", "?")]
+        return (unset or free or [None])[0]
+
+    def _address_target(self, pos: QPointF, address: str):
+        """("operand", rung, path, rect) over an instruction that can take it, else where a new
+        contact or coil would go."""
+        if self.file is None:
+            return None
+        hit = self._hit(pos)
+        if hit and hit[0] == "instr" and hit[1] < len(self.file.rungs):
+            node = edit.node_at(self.file.rungs[hit[1]].body, hit[2])
+            if isinstance(node, Instr) and self._operand_for(node, address) is not None:
+                return ("operand", hit[1], hit[2], self._instr_rect(hit[1], hit[2]))
+        return self._drop_target(pos) if io_drag.is_bit(address) else None
+
+    def drop_address(self, address: str, target) -> None:
+        if target is None:
+            self.window().statusBar().showMessage(f"Drop {address} on an instruction that takes a value", 4000)
+            return
+        if target[0] == "operand":
+            _, n, path, _ = target
+            node = edit.node_at(self.file.rungs[n].body, path)
+            k = self._operand_for(node, address)
+            ops = list(node.operands) + ["?"] * (k + 1 - len(node.operands))
+            ops[k] = address
+            self.apply_edit(f"Set {address}", lambda body: edit.set_operands(
+                body, path, ops, self.profile, self.program, self.file_no), n, select=path)
+            return
+        mnemonic = "OTE" if io_drag.direction_of(address) == "O" else "XIC"
+        if target[0] == "newrung":
+            idx = target[1]
+            self.apply_edit("New rung", lambda f: edit.new_rung(f, idx), None, select=lambda m: ("rung", m))
+            n, slot = idx, None
+        else:
+            n, slot = target[0], target[1]
+        node = edit.new_instr(mnemonic, self.specs)
+        node.operands = [self.profile.normalize(address)]
+        if slot is None:
+            slot = edit.default_slot(self.file.rungs[n].body, mnemonic, self.specs)
+        self.apply_edit(f"Add {mnemonic} {address}", lambda body: edit.insert(body, slot, node), n,
+                        select=lambda p: ("instr", n, p))
 
     def _drop_new(self, mnemonic: str, target) -> None:
         if mnemonic in ("RUNG", "BRANCH") or target[0] == "newrung":

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QMenu, QSpinBox
 
 from ..sims.io_panel import DISPLAY_SLOT, INPUT_SLOTS, OUTPUT_SLOTS, THUMBWHEEL_SLOT, IoPanelModel
 from . import theme
+from .io_drag import attach
 from .primitives import DigitDisplay, Lamp, SimSwitch
 
 
@@ -54,6 +55,7 @@ class IoPanelView(QWidget):
                 w.changed.connect(lambda _sig, s=slot, b=bit, sw=w: self.model.set_pressed(s, b, sw.pressed))
                 w.setContextMenuPolicy(Qt.CustomContextMenu)
                 w.customContextMenuRequested.connect(lambda pos, s=slot, b=bit, sw=w: self._switch_menu(s, b, sw, pos))
+                w.address = addr
                 self.switches[(slot, bit)] = w
             else:
                 w = Lamp("lamp-generic")
@@ -61,6 +63,9 @@ class IoPanelView(QWidget):
             tip = f"{addr} {self.symbols.get(addr, '')}".strip()
             w.setToolTip(tip)
             w.setAccessibleName(tip)
+            if not is_input:
+                attach(w, addr)
+            attach(label, addr)
             grid.setRowMinimumHeight(bit + 1, 34)
             grid.addWidget(w, bit + 1, 0, Qt.AlignCenter)
             grid.addWidget(label, bit + 1, 1)
