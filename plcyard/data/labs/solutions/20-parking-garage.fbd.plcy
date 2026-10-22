@@ -1,0 +1,210 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "FBD",
+      "fbd": {
+        "blocks": [
+          {
+            "id": 1,
+            "type": "LT",
+            "x": 260.0,
+            "y": 40.0,
+            "operands": {
+              "IN1": "Count",
+              "IN2": "10"
+            }
+          },
+          {
+            "id": 2,
+            "type": "AND",
+            "x": 520.0,
+            "y": 40.0,
+            "operands": {
+              "IN1": "%I0.0"
+            }
+          },
+          {
+            "id": 3,
+            "type": "F_TRIG",
+            "x": 780.0,
+            "y": 40.0,
+            "operands": {
+              "CLK": "%I0.1"
+            }
+          },
+          {
+            "id": 4,
+            "type": "SR",
+            "x": 1040.0,
+            "y": 40.0,
+            "operands": {
+              "Q1": "%Q0.0"
+            }
+          },
+          {
+            "id": 5,
+            "type": "F_TRIG",
+            "x": 260.0,
+            "y": 220.0,
+            "operands": {
+              "CLK": "%I0.3"
+            }
+          },
+          {
+            "id": 6,
+            "type": "SR",
+            "x": 520.0,
+            "y": 220.0,
+            "operands": {
+              "S1": "%I0.2",
+              "Q1": "%Q0.1"
+            }
+          },
+          {
+            "id": 7,
+            "type": "SEL",
+            "x": 260.0,
+            "y": 400.0,
+            "operands": {
+              "IN0": "0",
+              "IN1": "1"
+            }
+          },
+          {
+            "id": 8,
+            "type": "SEL",
+            "x": 520.0,
+            "y": 400.0,
+            "operands": {
+              "IN0": "0",
+              "IN1": "1"
+            }
+          },
+          {
+            "id": 9,
+            "type": "ADD",
+            "x": 780.0,
+            "y": 400.0,
+            "operands": {
+              "IN1": "Count"
+            }
+          },
+          {
+            "id": 10,
+            "type": "SUB",
+            "x": 1040.0,
+            "y": 400.0,
+            "operands": {
+              "OUT": "Count"
+            }
+          },
+          {
+            "id": 11,
+            "type": "GE",
+            "x": 260.0,
+            "y": 580.0,
+            "operands": {
+              "IN1": "Count",
+              "IN2": "10",
+              "OUT": "%Q0.2"
+            }
+          },
+          {
+            "id": 12,
+            "type": "SUB",
+            "x": 520.0,
+            "y": 580.0,
+            "operands": {
+              "IN1": "10",
+              "IN2": "Count"
+            }
+          },
+          {
+            "id": 13,
+            "type": "TO_BCD",
+            "x": 780.0,
+            "y": 580.0,
+            "operands": {
+              "OUT": "%QW4"
+            }
+          }
+        ],
+        "wires": [
+          [
+            1,
+            "OUT",
+            2,
+            "IN2"
+          ],
+          [
+            2,
+            "OUT",
+            4,
+            "S1"
+          ],
+          [
+            3,
+            "Q",
+            4,
+            "R"
+          ],
+          [
+            5,
+            "Q",
+            6,
+            "R"
+          ],
+          [
+            3,
+            "Q",
+            7,
+            "G"
+          ],
+          [
+            5,
+            "Q",
+            8,
+            "G"
+          ],
+          [
+            7,
+            "OUT",
+            9,
+            "IN2"
+          ],
+          [
+            9,
+            "OUT",
+            10,
+            "IN1"
+          ],
+          [
+            8,
+            "OUT",
+            10,
+            "IN2"
+          ],
+          [
+            12,
+            "OUT",
+            13,
+            "IN"
+          ]
+        ]
+      }
+    }
+  ],
+  "tags": {
+    "Count": {
+      "type": "DINT",
+      "value": 3
+    }
+  },
+  "symbols": {}
+}

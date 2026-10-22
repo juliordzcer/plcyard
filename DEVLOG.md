@@ -746,3 +746,18 @@ keys:      web, routines, function block, interface, parameters
 - Tests: `tests/test_webapp.py` (17): every machine's controls, devices and drawing, unknown
   controls ignored, control points listed, exercise 15 solved; browser run of all 11 examples.
 keys:      web, simulations, machines, elevator, washer, hvac
+
+## C-040 — Exercises 17-20 on the newer machines
+2026-10-22 · commits: accc7eb
+- 17 Pick and place cycle (sequence with a step number, safe order of moves, stop after the
+  cycle), 18 Bottle filling and capping line (stop the belt per station, reject bad caps),
+  19 Sorting boxes by size (measure, then one queue per stretch of belt with indexed arrays),
+  20 Parking garage barriers and counter (edges, count, FULL, BCD display).
+- Each with written requirements and hints, automatic checks in `grader.py` (5-8 per exercise,
+  none passes for an empty program) and reference solutions in ladder, structured text and
+  function blocks (12 programs; FBD uses SEL for conditional writes, R_TRIG/F_TRIG for edges).
+- They show in the desktop exercises panel and in the web version (all machines are there).
+- TODO: phone-friendly web version; exercises 21-24 (pump station, room climate, washing
+  machine, elevator). README and ROADMAP brought up to date.
+- Tests: 443 (every solution passes in its three languages, empty programs get no credit).
+keys:      exercises, grader, pick and place, bottles, sorter, parking

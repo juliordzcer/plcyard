@@ -426,9 +426,109 @@ def _16(new, out):
         "outputs still on")
 
 
+def _tap(r, attr: str, ms: int = 100) -> None:
+    """Press and release a button of the machine."""
+    setattr(r.sim, attr, True)
+    r.ms(ms)
+    setattr(r.sim, attr, False)
+
+
+def _17(new, out):
+    r = new()
+    r.ms(100)
+    _tap(r, "start_pressed")
+    lamp_in_cycle, sideways = False, False
+    for _ in range(6000):
+        r.ms(10)
+        lamp_in_cycle |= r.sim.lamp(3) and r.sim.held
+    m = r.sim
+    out("Start runs cycles: at least 5 parts placed in a minute", m.placed >= 5, f"{m.placed} placed")
+    out("No part is dropped outside the tray", m.placed > 0 and m.dropped == 0, f"{m.dropped} dropped")
+    sideways = any("sideways" in e for e in m.events)
+    out("The arm never moves sideways while it is down", m.placed > 0 and not sideways)
+    out("The cycle lamp is on during a cycle", lamp_in_cycle)
+    _tap(r, "stop_pressed")
+    r.ms(8000)
+    placed = m.placed
+    r.ms(10000)
+    out("Stop: the current cycle ends, the arm goes home, no new cycle starts", m.placed > 0 and m.placed == placed
+        and not m.held and m.x <= 0.0 and m.z <= 0.0 and m.dropped == 0 and not m.lamp(3),
+        f"placed went from {placed} to {m.placed}" if m.placed != placed else "the arm is not home and idle")
+
+
+def _18(new, out):
+    r = new()
+    r.ms(100)
+    _tap(r, "start_pressed")
+    run_lamp = True
+    for _ in range(12000):
+        r.ms(10)
+        run_lamp &= r.sim.lamp(4)
+    m = r.sim
+    out("Start runs the line: at least 8 good bottles shipped in 2 minutes", m.shipped_good >= 8,
+        f"{m.shipped_good} good bottles shipped")
+    out("No bad bottle is shipped", m.shipped_good > 0 and m.shipped_bad == 0, f"{m.shipped_bad} bad bottles shipped")
+    out("Bad bottles are rejected, good ones are not", m.rejected_bad > 0 and m.rejected_good == 0,
+        f"rejected {m.rejected_bad} bad and {m.rejected_good} good")
+    bad = list(m.events)
+    out("No spill, no overflow, no capping a moving bottle", m.shipped_good > 0 and m.spilled == 0 and not bad,
+        "; ".join(bad)[:200])
+    out("The run lamp is on while the line runs", m.shipped_good > 0 and run_lamp)
+    _tap(r, "stop_pressed")
+    r.ms(3000)
+    out("Stop turns the conveyor, the filler, the capper and the run lamp off", m.shipped_good > 0
+        and not any(m.out(b) for b in (0, 1, 2, 4)), "outputs still on")
+
+
+def _19(new, out):
+    r = new()
+    r.ms(100)
+    _tap(r, "start_pressed")
+    r.ms(90000)
+    m = r.sim
+    n = sum(len(b) for b in m.bins.values())
+    out("Start runs the belt: at least 15 boxes sorted in 90 s", n >= 15, f"{n} boxes in the bins")
+    out("Every box goes into the bin for its size", n > 0 and m.wrong == 0, "; ".join(m.events)[:200])
+    out("No box falls off the end of the belt", n > 0 and m.fallen == 0, f"{m.fallen} fell off")
+    out("The run lamp is on while the belt runs", n > 0 and m.lamp(4))
+    _tap(r, "stop_pressed")
+    r.ms(2000)
+    out("Stop stops the belt and turns the run lamp off", n > 0 and not m.out(0) and not m.lamp(4))
+
+
+def _20(new, out):
+    r = new()
+    m = r.sim
+    r.ms(500)
+    out("The display shows the free spaces at the start (7)", m.display == 7, f"display shows {m.display}")
+    for _ in range(2):
+        m.car_arrives()
+        r.ms(6000)
+    out("A waiting car gets the entry barrier; it comes down once the car is in", m.entered == 2
+        and m.entry_barrier <= 0.0, f"{m.entered} cars came in")
+    out("Cars coming in are counted on the display", m.entered == 2 and m.display == 5, f"display shows {m.display}")
+    m.car_leaves()
+    r.ms(6000)
+    out("A car leaving gets the exit barrier and is counted", m.left == 1 and m.exit_barrier <= 0.0 and m.display == 6,
+        f"{m.left} left, display shows {m.display}")
+    for _ in range(6):
+        m.car_arrives()
+        r.ms(6000)
+    out("FULL lights with ten cars in", m.parked == 10 and m.lamp(2), f"{m.parked} parked")
+    m.car_arrives()
+    r.ms(6000)
+    out("With the garage full the entry barrier stays down", m.parked == 10 and m.entry_barrier <= 0.0
+        and m.entry_queue == 1, f"{m.parked} parked")
+    m.car_leaves()
+    r.ms(12000)
+    out("When a car leaves, the waiting car comes in", m.left == 2 and m.parked == 10 and m.entry_queue == 0,
+        f"{m.parked} parked, {m.entry_queue} waiting")
+    out("No barrier comes down on a car", m.entered > 0 and not m.events, "; ".join(m.events))
+
+
 CHECKS = {"01": _01, "02": _02, "03": _03, "04": _04, "05": _05,
           "06": _06, "07": _07, "08": _08, "09": _09, "10": _10, "11": _11, "12": _12, "13": _12,
-          "14": _14, "15": _15, "16": _16}
+          "14": _14, "15": _15, "16": _16, "17": _17, "18": _18, "19": _19, "20": _20}
 
 
 def grade(lab, program: Program) -> Report:

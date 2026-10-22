@@ -1,0 +1,78 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "LD",
+      "rungs": [
+        {
+          "text": "XIC,%I0.0 LES,Count,10 OTL,EntryUp",
+          "comment": "A car waits at the entry and there is room: raise the barrier."
+        },
+        {
+          "text": "XIC,EntryPass XIO,%I0.1 BST,1 OTU,EntryUp NXB,1 ADD,Count,1,Count BND,1",
+          "comment": "The car has just cleared the entry beam: lower the barrier, count it in."
+        },
+        {
+          "text": "XIC,%I0.1 OTE,EntryPass",
+          "comment": "The entry beam, as it was this scan (for the falling edge)."
+        },
+        {
+          "text": "XIC,%I0.2 OTL,ExitUp",
+          "comment": "A car waits at the exit: raise the barrier."
+        },
+        {
+          "text": "XIC,ExitPass XIO,%I0.3 BST,1 OTU,ExitUp NXB,1 SUB,Count,1,Count BND,1",
+          "comment": "The car has just cleared the exit beam: lower the barrier, count it out."
+        },
+        {
+          "text": "XIC,%I0.3 OTE,ExitPass",
+          "comment": "The exit beam, as it was this scan."
+        },
+        {
+          "text": "XIC,EntryUp OTE,%Q0.0",
+          "comment": "Entry barrier."
+        },
+        {
+          "text": "XIC,ExitUp OTE,%Q0.1",
+          "comment": "Exit barrier."
+        },
+        {
+          "text": "GEQ,Count,10 OTE,%Q0.2",
+          "comment": "FULL sign."
+        },
+        {
+          "text": "BST,1 SUB,10,Count,Free NXB,1 TOD,Free,%QW4 BND,1",
+          "comment": "Free spaces on the display, in BCD."
+        }
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "Count": {
+      "type": "DINT",
+      "value": 3
+    },
+    "EntryUp": {
+      "type": "BOOL"
+    },
+    "EntryPass": {
+      "type": "BOOL"
+    },
+    "ExitUp": {
+      "type": "BOOL"
+    },
+    "ExitPass": {
+      "type": "BOOL"
+    },
+    "Free": {
+      "type": "DINT"
+    }
+  },
+  "symbols": {}
+}

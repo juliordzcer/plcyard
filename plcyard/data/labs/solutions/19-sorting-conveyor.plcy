@@ -1,0 +1,155 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "LD",
+      "rungs": [
+        {
+          "text": "BST,1 XIC,%I0.0 NXB,1 XIC,Run BND,1 XIC,%I0.1 OTE,Run",
+          "comment": "Run: Start seals in, Stop (NC) breaks it."
+        },
+        {
+          "text": "XIC,Run OTE,%Q0.0",
+          "comment": "Conveyor."
+        },
+        {
+          "text": "XIC,Run OTE,%Q0.4",
+          "comment": "Run lamp."
+        },
+        {
+          "text": "XIC,%I0.2 ONS,E0 OTE,NewBox",
+          "comment": "A new box at the measuring point."
+        },
+        {
+          "text": "XIC,NewBox MOV,1,Size",
+          "comment": "Size 1 (small)…"
+        },
+        {
+          "text": "XIC,NewBox XIC,%I0.3 MOV,2,Size",
+          "comment": "…2 if the low beam is blocked…"
+        },
+        {
+          "text": "XIC,NewBox XIC,%I0.4 MOV,3,Size",
+          "comment": "…3 if the high beam is blocked too."
+        },
+        {
+          "text": "XIC,NewBox BST,1 MOV,Size,Q1[W1] NXB,1 ADD,W1,1,W1 NXB,1 MOD,W1,8,W1 BND,1",
+          "comment": "Queue it for pusher 1 (an array of 8 with a write index)."
+        },
+        {
+          "text": "XIC,%I0.5 ONS,E1 OTE,At1",
+          "comment": "A box reaches pusher 1."
+        },
+        {
+          "text": "XIC,At1 BST,1 MOV,Q1[R1],Size NXB,1 ADD,R1,1,R1 NXB,1 MOD,R1,8,R1 BND,1",
+          "comment": "Its size is the oldest one in queue 1."
+        },
+        {
+          "text": "XIC,At1 EQU,Size,1 OTE,%Q0.1",
+          "comment": "Push it if it is size 1…"
+        },
+        {
+          "text": "XIC,At1 NEQ,Size,1 BST,1 MOV,Size,Q2[W2] NXB,1 ADD,W2,1,W2 NXB,1 MOD,W2,8,W2 BND,1",
+          "comment": "…otherwise it goes on to queue 2."
+        },
+        {
+          "text": "XIC,%I0.6 ONS,E2 OTE,At2",
+          "comment": "A box reaches pusher 2."
+        },
+        {
+          "text": "XIC,At2 BST,1 MOV,Q2[R2],Size NXB,1 ADD,R2,1,R2 NXB,1 MOD,R2,8,R2 BND,1",
+          "comment": "Its size is the oldest one in queue 2."
+        },
+        {
+          "text": "XIC,At2 EQU,Size,2 OTE,%Q0.2",
+          "comment": "Push it if it is size 2…"
+        },
+        {
+          "text": "XIC,At2 NEQ,Size,2 BST,1 MOV,Size,Q3[W3] NXB,1 ADD,W3,1,W3 NXB,1 MOD,W3,8,W3 BND,1",
+          "comment": "…otherwise it goes on to queue 3."
+        },
+        {
+          "text": "XIC,%I0.7 ONS,E3 OTE,At3",
+          "comment": "A box reaches pusher 3."
+        },
+        {
+          "text": "XIC,At3 BST,1 MOV,Q3[R3],Size NXB,1 ADD,R3,1,R3 NXB,1 MOD,R3,8,R3 BND,1",
+          "comment": "Its size is the oldest one in queue 3."
+        },
+        {
+          "text": "XIC,At3 EQU,Size,3 OTE,%Q0.3",
+          "comment": "Push it if it is size 3…"
+        }
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "Run": {
+      "type": "BOOL"
+    },
+    "Size": {
+      "type": "DINT"
+    },
+    "Q1": {
+      "type": "DINT[8]"
+    },
+    "Q2": {
+      "type": "DINT[8]"
+    },
+    "Q3": {
+      "type": "DINT[8]"
+    },
+    "W1": {
+      "type": "DINT"
+    },
+    "R1": {
+      "type": "DINT"
+    },
+    "W2": {
+      "type": "DINT"
+    },
+    "R2": {
+      "type": "DINT"
+    },
+    "W3": {
+      "type": "DINT"
+    },
+    "R3": {
+      "type": "DINT"
+    },
+    "NewBox": {
+      "type": "BOOL"
+    },
+    "At1": {
+      "type": "BOOL"
+    },
+    "At2": {
+      "type": "BOOL"
+    },
+    "At3": {
+      "type": "BOOL"
+    },
+    "E0": {
+      "type": "BOOL"
+    },
+    "E1": {
+      "type": "BOOL"
+    },
+    "E2": {
+      "type": "BOOL"
+    },
+    "E3": {
+      "type": "BOOL"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}

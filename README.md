@@ -18,7 +18,7 @@ It runs natively on Linux, macOS and Windows, stays sharp on high-resolution scr
 no licence key.
 
 Try it in your browser, nothing to install: **[PLCYard web](https://juliordz.com/plcyard/app/)**
-(ladder and structured text, I/O panel, silo, traffic lights, tank, exercises 1-13). Documentation: **[the wiki](https://juliordz.com/plcyard/)**.
+(ladder, structured text and function blocks, routines, all fifteen simulations, every exercise). Documentation: **[the wiki](https://juliordz.com/plcyard/)**.
 
 ## How it works
 
@@ -37,7 +37,7 @@ Try it in your browser, nothing to install: **[PLCYard web](https://juliordz.com
   mnemonics (`XIC`, `OTE`, `MOV`, timer `.PRE` `.ACC` `.DN`, I/O as `Local:1:I.Data.0`) or IEC
   symbols (NO/NC contacts, `MOVE`, timer `.PT` `.ET` `.Q`, I/O as `%I0.0`). The program is the same
   in both, so you can switch at any time and read either style of documentation.
-- **Check my program**: 16 exercises, from logic gates to tuning a PID level loop, each with
+- **Check my program**: 20 exercises, from logic gates to tuning a PID level loop, each with
   automatic checks of every written requirement. Runs faster than real time. **Compare
   languages** shows each reference solution in ladder, structured text and function block diagram.
 - **Simulations**: I/O panel (16 inputs, 16 outputs per card, thumbwheels and a 7-segment BCD

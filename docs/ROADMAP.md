@@ -72,13 +72,15 @@ with the full test suite green.
 - Mobile from the web version: PWA first, then Android APK and iOS with Capacitor.
 - Web version: reuse the pure-Python core, simulations and checker in the browser (Pyodide) with an
   HTML/JS UI; static hosting, nothing to install. Step 1 (wiki and downloads on the site) and step 2
-  (ladder editor, I/O panel, exercises 1-7 at juliordz.com/plcyard/app) and step 3 (silo, traffic
-  lights, tank; exercises 8-13) and step 4 (structured text, tag list) done; next FBD, routines and
-  the other simulations.
+  (ladder editor, I/O panel, exercises 1-7 at juliordz.com/plcyard/app), step 3 (silo, traffic
+  lights, tank), step 4 (structured text, tag list), step 5 (FBD), step 6 (routines and blocks) and
+  step 7 (all fifteen simulations) done. Next: a phone-friendly layout.
 
 - UI languages (Qt translations; exercises as `labs/<lang>/`).
 - More simulations (list in TODO.md): elevator, bottle line, sorting conveyor, pick and place,
-  parking garage, pump station, HVAC room, washing machine; exercises for the newer ones.
+  parking garage, pump station, HVAC room, washing machine (done); exercises for them: 17-20 (pick
+  and place, bottle line, sorting conveyor, parking garage) done, 21-24 (pump station, room
+  climate, washing machine, elevator) next.
 - Real hardware: an Arduino and/or ESP32 as remote I/O over USB serial (later Wi-Fi), so a program
   running in PLCYard reads real switches and drives real LEDs/relays. A small firmware sketch
   speaks a line protocol (input word in, output word out each scan), and an `IODevice` on the PC

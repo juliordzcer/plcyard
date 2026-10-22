@@ -44,7 +44,7 @@ def press(plc, sim, bit, hold_ms=50):
 
 
 def test_all_labs_have_header_and_solution():
-    assert len(LABS) == 16
+    assert len(LABS) == 20
     for lab in LABS.values():
         assert lab.title and lab.simulation in MODELS
         assert lab.solution.exists()

@@ -1,0 +1,91 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "LD",
+      "rungs": [
+        {
+          "text": "BST,1 XIC,%I0.0 NXB,1 XIC,Run BND,1 XIC,%I0.1 OTE,Run",
+          "comment": "Run: Start seals in, Stop (NC) breaks it."
+        },
+        {
+          "text": "EQU,State,0 XIC,Run XIC,%I0.6 XIC,%I0.2 XIC,%I0.4 MOV,1,State",
+          "comment": "Home: a part waits and Run is on: go down."
+        },
+        {
+          "text": "EQU,State,1 XIC,%I0.5 MOV,2,State",
+          "comment": "Down at the pick point: grip."
+        },
+        {
+          "text": "EQU,State,2 XIC,%I0.7 MOV,3,State",
+          "comment": "The vacuum holds the part: up."
+        },
+        {
+          "text": "EQU,State,3 XIC,%I0.4 MOV,4,State",
+          "comment": "Up: across to the tray."
+        },
+        {
+          "text": "EQU,State,4 XIC,%I0.3 MOV,5,State",
+          "comment": "At the tray: down."
+        },
+        {
+          "text": "EQU,State,5 XIC,%I0.5 MOV,6,State",
+          "comment": "Down at the tray: release."
+        },
+        {
+          "text": "EQU,State,6 XIC,Release.DN MOV,7,State",
+          "comment": "Released: up."
+        },
+        {
+          "text": "EQU,State,7 XIC,%I0.4 MOV,8,State",
+          "comment": "Up: back home."
+        },
+        {
+          "text": "EQU,State,8 XIC,%I0.2 MOV,0,State",
+          "comment": "Home: the cycle is over."
+        },
+        {
+          "text": "EQU,State,6 TON,Release,300",
+          "comment": "Let go for 0.3 s before lifting."
+        },
+        {
+          "text": "GEQ,State,4 LEQ,State,7 OTE,%Q0.0",
+          "comment": "Extend across in steps 4 to 7."
+        },
+        {
+          "text": "BST,1 EQU,State,1 NXB,1 EQU,State,2 NXB,1 EQU,State,5 NXB,1 EQU,State,6 BND,1 OTE,%Q0.1",
+          "comment": "Down in steps 1, 2, 5, 6."
+        },
+        {
+          "text": "GEQ,State,2 LEQ,State,5 OTE,%Q0.2",
+          "comment": "Vacuum from the grip to the release."
+        },
+        {
+          "text": "NEQ,State,0 OTE,%Q0.3",
+          "comment": "Cycle lamp."
+        }
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "Run": {
+      "type": "BOOL"
+    },
+    "State": {
+      "type": "DINT"
+    },
+    "Release": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}
