@@ -693,3 +693,21 @@ keys:      web, cache, version, update
 - Tests: `tests/test_webapp.py` (10): an ST program with tags, an exercise solved in ST; browser
   run: example, new program fixed by adding a tag, exercise 10 solved in ST (4/4).
 keys:      web, structured text, tags, highlighter, watch
+
+## C-037 — Web version, step 5: function block diagrams
+2026-10-22 · commits: 0535819
+- New → Function blocks. Block bar by family (bit logic, timers, counters, compare, math, move,
+  process); click a block to add it below the others or drag it onto the diagram. Drag a block to
+  move it (snaps to the grid); drag from a pin to a pin to wire it; click a wire to select it.
+- Operand bar for the selected block: instance tag (timers, counters, PID), the operand of every
+  unwired pin (either notation; wired pins show "wired"), Input +/− on AND, OR, ADD, MUL, MAX, MIN,
+  Delete. Addresses from the I/O panel or a machine drop onto a pin. Blocks with problems get a
+  red outline and their problems are listed (same check as the download).
+- Live: energized BOOL wires and pins, numbers next to the pins while the PLC runs the diagram.
+- Same geometry and wire routing as the desktop editor (core/fbd.py, ui/fbd_view.py).
+- Exercises can be written in FBD; examples in FBD: start/stop, silo with modes, traffic lights,
+  tank PID.
+- Tests: `tests/test_webapp.py` (12): build, wire, run and undo a diagram; FBD examples check
+  clean, exercise 2 solved in FBD; browser run: add/move/wire blocks, operands, Input +, RUN lights
+  the lamp, tank PID example live.
+keys:      web, function block diagram, fbd, wires, blocks

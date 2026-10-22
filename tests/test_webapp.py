@@ -164,3 +164,45 @@ def test_exercise_in_structured_text():
     s.open_text(lab.solutions["ST"].read_text(encoding="utf-8"))
     s.lab = lab
     assert s.check()["passed"]
+
+
+def test_function_blocks_edit_run_and_undo():
+    s = Session()
+    s.new("FBD")
+    assert s.add_block("OR", 100, 40) == "" and s.add_block("AND", 300, 40) == ""
+    assert s.set_block(1, "", {"IN1": "%I0.0", "IN2": "%Q0.0"}) == ""
+    assert s.connect(1, "OUT", 2, "IN1") == ""
+    assert s.set_block(2, "", {"IN2": "%I0.1", "OUT": "%Q0.0"}) == ""
+    s.add_block("TON", 300, 200)
+    st = json.loads(s.state(800))
+    assert st["fbd"]["problems"]["3"] and st["block"]["kind"] == "TIMER"
+    s.delete()
+    assert len(s.diagram.blocks) == 2 and s.connect(1, "OUT", 1, "IN1")
+    s.set_mode("RUN")
+    s.press(1, 1, True)                            # stop not pressed (a normally closed button)
+    s.press(1, 0, True)
+    s.tick(50)
+    s.press(1, 0, False)
+    s.tick(50)
+    st = json.loads(s.state(800))
+    assert lamp(s, 0) and st["fbd"]["blocks"][0]["outputs"][0]["value"] is True
+    assert '"FBD"' in s.save_text()
+    s.select(["wire", 0])
+    s.delete()
+    assert not s.diagram.wires
+    s.undo_step()
+    assert len(s.diagram.wires) == 1
+
+
+def test_function_block_examples_and_exercise():
+    s = Session()
+    for key in ("start-stop-fbd", "silo-fbd", "traffic-fbd", "tank-pid-fbd"):
+        s.open_example(key)
+        assert s.language == "FBD" and not json.loads(s.state(800))["fbd"]["problems"], key
+    s.open_exercise("02", "FBD")
+    assert s.language == "FBD" and not s.diagram.blocks
+    from plcyard import labs
+    lab = labs.load_all()[1]
+    s.open_text((lab.solution.parent / "02-start-stop.fbd.plcy").read_text(encoding="utf-8"))
+    s.lab = lab
+    assert s.check()["passed"]

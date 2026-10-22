@@ -7,6 +7,7 @@ const VERSION = document.documentElement.dataset.version;
 const GUTTER = 48, MARGIN = 12, RUNG_GAP = 18, COMMENT_LINE = 16, WIRE_Y = 26;
 const $ = (id) => document.getElementById(id);
 let py, S, state = null, lastJson = "", family = null, palette = [], opsKey = "", HL = null, stKey = "", tagsKey = "";
+let fbdKey = "", paletteLang = "";
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const store = {
@@ -91,10 +92,14 @@ function render(force) {
     : "Hold a button to press it. Drag an address onto an instruction to use it.";
   if (state.io) renderIo(state.io);
   else Sims.render($("machine"), state.machine);
-  const st = state.language === "ST";
-  for (const id of ["families", "palette", "ladder"]) $(id).hidden = st;
+  const st = state.language === "ST", fb = state.language === "FBD";
+  if (paletteLang !== state.language) { paletteLang = state.language; family = null; buildPalette(); }
+  for (const id of ["families", "palette"]) $(id).hidden = st;
+  $("ladder").hidden = st || fb;
+  $("fbd").hidden = !fb;
   $("stwrap").hidden = !st;
   if (st) { $("operands").hidden = true; opsKey = ""; renderSt(state.st); }
+  else if (fb) { renderFbd(state); renderBlockForm(state); }
   else { renderLadder(state); renderOperands(state); }
   if (!$("tagpane").hidden) renderTags(state.tags);
 }
@@ -135,6 +140,33 @@ function renderSt(st) {
   paintCode(ta.value, st.lines);
   $("stprob").textContent = st.problems.slice(0, 6).join("\n") + (st.problems.length > 6 ? `\n…and ${st.problems.length - 6} more` : "");
   $("stwatch").innerHTML = st.watch.map(([n, v]) => `<tr><td>${esc(n)}</td><td>${esc(v)}</td></tr>`).join("");
+}
+
+// -- function blocks -------------------------------------------------------------------------------
+function renderFbd(st) {
+  const key = JSON.stringify([st.fbd, st.sel, $("fbd").clientWidth]);
+  if (key === fbdKey || Fbd.busy()) return;
+  fbdKey = key;
+  Fbd.render($("fbd"), st.fbd, st.sel);
+}
+
+function renderBlockForm(st) {
+  const form = $("operands"), b = st.block;
+  const wireSel = st.sel && st.sel[0] === "wire";
+  const key = JSON.stringify([st.sel, b]);
+  if (key === opsKey) return;
+  opsKey = key;
+  form.hidden = !b && !wireSel;
+  if (wireSel) { form.innerHTML = `<span class="what">Wire</span><button type="button" id="b-del">Delete wire</button>`; return; }
+  if (!b) return;
+  const field = (name, label, value, attrs = "") => `<label>${esc(label)}<input name="${esc(name)}" value="${esc(value)}" autocomplete="off" spellcheck="false" ${attrs}></label>`;
+  form.innerHTML = `<span class="what" title="${esc(b.title)}">${esc(b.type)}</span>` +
+    (b.kind ? field("@instance", `${b.kind} tag`, b.instance) : "") +
+    b.pins.map((p) => p.wired ? field(p.name, p.name, "wired", "disabled") : field(p.name, p.name + (p.out ? " →" : ""), p.op, `placeholder="${p.out ? "none" : "tag, address or value"}"`)).join("") +
+    `<button class="primary" type="submit">Apply</button>` +
+    (b.variable ? `<button type="button" id="b-addin">Input +</button>${b.inputs > 2 ? `<button type="button" id="b-remin">Input −</button>` : ""}` : "") +
+    `<button type="button" id="b-del">Delete</button>` +
+    (b.problems.length ? `<span class="probs">${esc(b.problems.join(" · "))}</span>` : "");
 }
 
 // -- tags --------------------------------------------------------------------------------------------
@@ -288,12 +320,15 @@ function renderOperands(st) {
 
 // -- input ---------------------------------------------------------------------------------------
 function buildPalette() {
-  palette = js(S.palette());
+  const fb = paletteLang === "FBD";
+  palette = js(fb ? S.fbd_palette() : S.palette());
   family = family || palette[0].family;
   $("families").innerHTML = palette.map((f) => `<button role="tab" class="${f.family === family ? "on" : ""}" data-family="${esc(f.family)}">${esc(f.family)}</button>`).join("");
   const fam = palette.find((f) => f.family === family) || palette[0];
-  $("palette").innerHTML = `<button data-m="RUNG" title="New rung">Rung +</button><button data-m="BRANCH" title="Put the selected instruction in a branch">Branch</button>` +
-    fam.items.map((i) => `<button data-m="${esc(i.m)}" title="${esc(i.title)}">${esc(i.name)}</button>`).join("");
+  $("palette").innerHTML = fb
+    ? fam.items.map((i) => `<button data-b="${esc(i.m)}" draggable="true" title="${esc(i.title)} · click to add, or drag onto the diagram">${esc(i.name)}</button>`).join("")
+    : `<button data-m="RUNG" title="New rung">Rung +</button><button data-m="BRANCH" title="Put the selected instruction in a branch">Branch</button>` +
+      fam.items.map((i) => `<button data-m="${esc(i.m)}" title="${esc(i.title)}">${esc(i.name)}</button>`).join("");
 }
 
 function act(fn) {
@@ -307,7 +342,13 @@ function wire() {
     const b = e.target.closest("button[data-family]");
     if (b) { family = b.dataset.family; buildPalette(); }
   });
+  $("palette").addEventListener("dragstart", (e) => {
+    const b = e.target.closest("button[data-b]");
+    if (b) { e.dataTransfer.setData("application/x-plcyard-block", b.dataset.b); e.dataTransfer.effectAllowed = "copy"; }
+  });
   $("palette").addEventListener("click", (e) => {
+    const fb = e.target.closest("button[data-b]");
+    if (fb) { act(() => S.add_block(fb.dataset.b, ...Fbd.freeSpot())); return; }
     const b = e.target.closest("button[data-m]");
     if (!b) return;
     act(() => S.insert(b.dataset.m));
@@ -369,9 +410,31 @@ function wire() {
     if (e.target.closest("rect[data-path]")) $("operands").querySelector("input")?.focus();
   });
 
+  Fbd.wire($("fbd"), {
+    select: (sel) => { S.select(sel ? py.toPy(sel) : null); render(true); },
+    move: (id, x, y) => act(() => S.move_block(id, x, y)),
+    connect: (a, ap, b, bp) => act(() => S.connect(a, ap, b, bp)),
+    add: (kind, x, y) => act(() => S.add_block(kind, x, y)),
+    drop: (id, pin, addr) => act(() => S.set_pin(id, pin, addr)),
+  });
+  $("fbd").addEventListener("dblclick", (e) => {
+    const p = e.target.closest(".pinhit");
+    const input = $("operands").querySelector(p ? `input[name="${CSS.escape(p.dataset.pin)}"]` : "input:not([disabled])");
+    input?.focus();
+  });
+
   const form = $("operands");
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+    if (state.block) {
+      const ops = {};
+      let inst = "";
+      for (const i of form.querySelectorAll("input:not([disabled])")) {
+        if (i.name === "@instance") inst = i.value; else ops[i.name] = i.value;
+      }
+      act(() => S.set_block(state.block.id, inst, py.toPy(ops)));
+      return;
+    }
     const vals = [...form.querySelectorAll("input[name=op]")].map((i) => i.value.trim());
     const probs = js(S.set_operands(py.toPy(vals)));
     changed(probs.join(" · "));
@@ -382,6 +445,8 @@ function wire() {
     if (id === "b-branch") act(() => S.add_branch());
     else if (id === "b-leg") act(() => S.add_leg());
     else if (id === "b-del") act(() => S.delete());
+    else if (id === "b-addin") act(() => S.set_inputs(state.block.id, state.block.inputs + 1));
+    else if (id === "b-remin") act(() => S.set_inputs(state.block.id, state.block.inputs - 1));
     else if (id === "b-comment") {
       const n = state.sel[1];
       const text = prompt("Rung comment:", state.rungs[n].comment);

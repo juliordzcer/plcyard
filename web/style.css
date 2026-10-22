@@ -230,3 +230,17 @@ button.ghost { border: none; background: none; }
   .stwrap { flex-direction: column; }
   .stside { width: auto; max-height: 40%; border-left: none; border-top: 1px solid var(--border); }
 }
+
+.fbd { touch-action: none; }
+.fbd .blk { cursor: grab; }
+.fbd .box { stroke: var(--text); stroke-width: 1.5; }
+.fbd .box.picked { stroke: var(--accent); stroke-width: 2.5; }
+.fbd .box.bad { stroke: var(--danger); }
+.fbd .title { font-size: 13px; pointer-events: none; }
+.fbd .opv { font-size: 11px; }
+.fbd .pinhit { fill: transparent; cursor: crosshair; }
+.fbd .pinhit:hover, .fbd .pinhit.drop { fill: var(--accent-soft); }
+.fbd .wirehit { fill: none; stroke: transparent; stroke-width: 10; cursor: pointer; }
+.fbd .w.picked { stroke: var(--accent); stroke-width: 3; }
+.fbd .rubber { stroke: var(--drop-target); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
+.operands .probs { color: var(--danger); font-size: 12px; align-self: center; flex-basis: 100%; }

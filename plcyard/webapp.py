@@ -10,7 +10,7 @@ import copy
 import json
 
 from . import grader, labs
-from .core import edit
+from .core import edit, fbd
 from .core.plc import PLC
 from .core import st
 from .core.processor import Processor
@@ -37,8 +37,12 @@ EXAMPLES = {"start-stop": ("Start/stop with seal-in", "io", "samples/start-stop.
             "start-stop-st": ("Start/stop in structured text", "io", "samples/start-stop-st.plcy"),
             "silo-st": ("Silo with modes in structured text", "silo", "labs/solutions/09-silo-modes.st.plcy"),
             "traffic-st": ("Traffic lights in structured text", "traffic", "labs/solutions/10-traffic-light.st.plcy"),
-            "tank-pid-st": ("Tank level PID in structured text", "tank", "samples/tank-pid-structured-text.plcy")}
-LANGUAGES = ("LD", "ST")
+            "tank-pid-st": ("Tank level PID in structured text", "tank", "samples/tank-pid-structured-text.plcy"),
+            "start-stop-fbd": ("Start/stop in function blocks", "io", "samples/start-stop-fbd.plcy"),
+            "silo-fbd": ("Silo with modes in function blocks", "silo", "labs/solutions/09-silo-modes.fbd.plcy"),
+            "traffic-fbd": ("Traffic lights in function blocks", "traffic", "labs/solutions/10-traffic-light.fbd.plcy"),
+            "tank-pid-fbd": ("Tank level PID in function blocks", "tank", "samples/tank-pid-fbd.plcy")}
+LANGUAGES = ("LD", "ST", "FBD")
 MAIN = 2
 
 
@@ -58,6 +62,7 @@ class Session:
         self.message = ""
         self.lab: labs.Lab | None = None
         self._st_key, self._st = None, {}
+        self._fbd_key, self._fbd = None, {}
 
     # -- files ----------------------------------------------------------------------------------
     def _open(self, program: Program, lab=None, sim: str | None = None) -> None:
@@ -96,7 +101,7 @@ class Session:
         except plcy.PlcyError as e:
             return str(e)
         if program.main.language not in LANGUAGES or len(program.files) > 1:
-            return ("The web version edits one ladder or structured text routine; open this one in the "
+            return ("The web version edits one ladder, structured text or function block routine; open this one in the "
                     "desktop app.")
         self._open(program)
         return ""
@@ -113,6 +118,8 @@ class Session:
         if language == "ST":
             program.main.language = "ST"
             program.main.source = "// Write your program here.\n"
+        elif language == "FBD":
+            program.main.language, program.main.diagram = "FBD", fbd.Diagram()
         self._open(program, lab, lab.simulation)
         return self.lab_view()
 
@@ -196,7 +203,7 @@ class Session:
         return ""
 
     def select(self, sel: list | None) -> None:
-        self.sel = [sel[0], sel[1], tuple(sel[2])] if sel and len(sel) == 3 else sel
+        self.sel = [sel[0], sel[1], tuple(sel[2])] if sel and len(sel) == 3 else list(sel) if sel else None
 
     def insert(self, mnemonic: str) -> str:
         """Right of the selected instruction, into the selected empty leg, or into the selected rung."""
@@ -248,6 +255,8 @@ class Session:
         return None
 
     def delete(self) -> str:
+        if self.language == "FBD":
+            return self.fbd_delete()
         if not self.sel or self.sel[1] >= len(self.file.rungs):
             return ""
         n = self.sel[1]
@@ -366,6 +375,140 @@ class Session:
                     text = "?"
             rows.append([notation.show(n, self.program), text])
         return rows
+
+    # -- function block diagram -----------------------------------------------------------------
+    @property
+    def diagram(self) -> fbd.Diagram:
+        if self.file.diagram is None:
+            self.file.diagram = fbd.Diagram()
+        return self.file.diagram
+
+    def _block_edit(self, fn, select=None) -> str:
+        return self._edit(lambda f: fn(self.diagram), None, select)
+
+    def fbd_palette(self) -> list[dict]:
+        return [{"family": fam, "items": [{"m": t.name, "name": t.name, "title": t.title}
+                                          for t in fbd.LIBRARY.values() if t.family == fam]}
+                for fam in fbd.FAMILIES]
+
+    def add_block(self, kind: str, x: float, y: float) -> str:
+        if kind not in fbd.LIBRARY:
+            return f"No block {kind}."
+        bid = self.diagram.next_id()
+        return self._block_edit(lambda d: d.blocks.append(fbd.Block(bid, kind, max(0.0, x), max(0.0, y))),
+                                lambda _: ["block", bid])
+
+    def move_block(self, bid: int, x: float, y: float) -> str:
+        b = self.diagram.block(bid)
+        if b is None or (b.x, b.y) == (x, y):
+            return ""
+        return self._block_edit(lambda d: (setattr(d.block(bid), "x", max(0.0, x)),
+                                           setattr(d.block(bid), "y", max(0.0, y))), lambda _: ["block", bid])
+
+    def connect(self, src: int, src_pin: str, dst: int, dst_pin: str) -> str:
+        if src == dst:
+            return "A block cannot feed itself."
+
+        def fn(d):
+            d.wires = [w for w in d.wires if not (w.dst == dst and w.dst_pin == dst_pin)]
+            d.wires.append(fbd.Wire(src, src_pin, dst, dst_pin))
+            d.block(dst).operands.pop(dst_pin, None)     # a wired input takes no operand
+        return self._block_edit(fn, lambda _: ["wire", len(self.diagram.wires) - 1])
+
+    def set_pin(self, bid: int, pin: str, text: str) -> str:
+        """The operand of an unwired pin (either notation); empty removes it."""
+        def fn(d):
+            b = d.block(bid)
+            if text.strip():
+                b.operands[pin] = notation.store(text.strip(), self.program)
+                d.wires = [w for w in d.wires if not (w.dst == bid and w.dst_pin == pin)]
+            else:
+                b.operands.pop(pin, None)
+        return self._block_edit(fn, lambda _: ["block", bid])
+
+    def set_block(self, bid: int, instance: str, operands: dict) -> str:
+        """The operand form: the instance tag and the operands of the unwired pins (either notation)."""
+        def fn(d):
+            b = d.block(bid)
+            b.instance = notation.store(instance.strip(), self.program) if instance.strip() else ""
+            for pin, text in operands.items():
+                if text.strip():
+                    b.operands[pin] = notation.store(text.strip(), self.program)
+                    d.wires = [w for w in d.wires if not (w.dst == bid and w.dst_pin == pin)]
+                else:
+                    b.operands.pop(pin, None)
+        return self._block_edit(fn, lambda _: ["block", bid])
+
+    def selected_block(self) -> dict | None:
+        if not (self.language == "FBD" and self.sel and self.sel[0] == "block"):
+            return None
+        b = self.diagram.block(self.sel[1])
+        if b is None:
+            return None
+        wired = {w.dst_pin for w in self.diagram.wires if w.dst == b.id}
+        return {"id": b.id, "type": b.type, "title": b.type_().title, "kind": b.type_().instance,
+                "instance": notation.show(b.instance, self.program) if b.instance else "",
+                "variable": b.type_().variable_inputs, "inputs": len(b.input_pins()),
+                "pins": [{"name": p.name, "out": out, "wired": p.name in wired and not out,
+                          "op": notation.show(b.operands[p.name], self.program) if b.operands.get(p.name) else ""}
+                         for out, ps in ((False, b.input_pins()), (True, b.output_pins())) for p in ps],
+                "problems": self._fbd_check().get(str(b.id), [])}
+
+    def set_inputs(self, bid: int, n: int) -> str:
+        def fn(d):
+            b = d.block(bid)
+            b.inputs = max(2, n)
+            names = {p.name for p in b.input_pins()} | {p.name for p in b.output_pins()}
+            d.wires = [w for w in d.wires if w.dst != bid or w.dst_pin in names]
+            b.operands = {k: v for k, v in b.operands.items() if k in names}
+        return self._block_edit(fn, lambda _: ["block", bid])
+
+    def fbd_delete(self) -> str:
+        if not self.sel:
+            return ""
+        kind, k = self.sel[0], self.sel[1]
+        if kind == "block":
+            def fn(d):
+                d.blocks = [b for b in d.blocks if b.id != k]
+                d.wires = [w for w in d.wires if w.src != k and w.dst != k]
+        elif kind == "wire":
+            def fn(d):
+                if k < len(d.wires):
+                    d.wires.pop(k)
+        else:
+            return ""
+        return self._block_edit(fn, lambda _: None)
+
+    def _fbd_check(self) -> dict:
+        """Problems by block, as on download; cached until the program changes."""
+        key = plcy.dumps(self.program)
+        if key != self._fbd_key:
+            by: dict[str, list[str]] = {}
+            for d in self.plc.profile.check(self.program, None):
+                by.setdefault(str(d.block or 0), []).append(notation.show_text(d.message))
+            self._fbd_key, self._fbd = key, by
+        return self._fbd
+
+    def _fbd_view(self) -> dict:
+        d, live = self.diagram, self._live()
+        vals = self.plc.fbd_values.get(MAIN, {}) if live else {}
+
+        def value(bid, pin):
+            v = vals.get((bid, pin))
+            if v is None or isinstance(v, bool):
+                return v
+            return f"{v:.2f}" if isinstance(v, float) else str(v)
+
+        def pins(b, ps):
+            return [{"name": p.name, "bool": p.type == "BOOL", "value": value(b.id, p.name),
+                     "op": notation.show(b.operands[p.name], self.program) if b.operands.get(p.name) else ""}
+                    for p in ps]
+        blocks = [{"id": b.id, "type": b.type, "title": b.type_().title, "x": b.x, "y": b.y,
+                   "kind": b.type_().instance, "instance": notation.show(b.instance, self.program) if b.instance else "",
+                   "variable": b.type_().variable_inputs,
+                   "inputs": pins(b, b.input_pins()), "outputs": pins(b, b.output_pins())} for b in d.blocks]
+        return {"blocks": blocks, "wires": [[w.src, w.src_pin, w.dst, w.dst_pin] for w in d.wires],
+                "problems": self._fbd_check()}
 
     # -- tags -------------------------------------------------------------------------------------
     def tag_types(self) -> list[str]:
@@ -563,6 +706,7 @@ class Session:
             "language": self.language, "tags": self.tags(),
             "st": ({"source": self.file.source, **(c := self._st_check()), "watch": self._watch(c["names"])}
                    if self.language == "ST" else None),
+            "fbd": self._fbd_view() if self.language == "FBD" else None, "block": self.selected_block(),
             "rungs": self.rungs(width) if self.language == "LD" else [], "io": self.io(), "machine": self.machine(), "sims": [[k, t] for k, (t, _) in SIMS.items()],
             "operands": self.selected_operands(),
             "can_undo": bool(self.undo), "can_redo": bool(self.redo),

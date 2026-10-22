@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLCYard Web</title>
-<meta name="description" content="A free PLC trainer in the browser: write ladder logic, run it on a simulated PLC with an I/O panel, and check it against an exercise.">
+<meta name="description" content="A free PLC trainer in the browser: write ladder logic, structured text or function blocks, run it on a simulated PLC with an I/O panel, and check it against an exercise.">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="tokens.css?v=__VERSION__">
 <link rel="stylesheet" href="style.css?v=__VERSION__">
@@ -13,7 +13,7 @@
 <header class="top">
   <a class="brand" href="../"><img src="icon.svg" alt="" width="22" height="22"> PLCYard <span class="tag">web</span></a>
   <nav class="menu">
-    <select id="b-new" title="New program"><option value="">New…</option><option value="LD">Ladder</option><option value="ST">Structured text</option></select>
+    <select id="b-new" title="New program"><option value="">New…</option><option value="LD">Ladder</option><option value="ST">Structured text</option><option value="FBD">Function blocks</option></select>
     <select id="b-example" title="Open an example"><option value="">Examples…</option></select>
     <select id="b-lab" title="Open an exercise"><option value="">Exercises…</option></select>
     <select id="b-sim" title="The machine wired to the PLC"></select>
@@ -48,11 +48,12 @@
     <div id="machine"></div>
     <p id="simhint" class="hint"></p>
   </section>
-  <section class="editor" aria-label="Ladder editor">
+  <section class="editor" aria-label="Program editor">
     <div id="families" class="families" role="tablist"></div>
     <div id="palette" class="palette"></div>
     <div id="status" class="status" role="status"></div>
     <div id="ladder" class="ladder" tabindex="0"></div>
+    <div id="fbd" class="ladder fbd" tabindex="0" hidden></div>
     <div id="stwrap" class="stwrap" hidden>
       <div class="code" id="stcode"><div class="gutter" id="stgut" aria-hidden="true"></div>
         <div class="area"><pre id="sthl" aria-hidden="true"></pre><textarea id="stsrc" spellcheck="false" autocomplete="off" aria-label="Structured text"></textarea></div></div>
@@ -71,7 +72,7 @@
   <aside id="labpane" class="labpane" hidden>
     <div class="labhead"><strong id="labtitle"></strong><button id="b-labclose" class="ghost" title="Close">✕</button></div>
     <div class="ctl"><span class="muted">Write it in</span><span class="group" role="group" aria-label="Language">
-      <button data-lablang="LD">Ladder</button><button data-lablang="ST">Structured text</button></span></div>
+      <button data-lablang="LD">Ladder</button><button data-lablang="ST">Structured text</button><button data-lablang="FBD">Function blocks</button></span></div>
     <div id="labbody" class="labbody"></div>
     <button id="b-check" class="primary">Check my program</button>
     <div id="report" class="report"></div>
@@ -92,6 +93,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script src="sims.js?v=__VERSION__"></script>
+<script src="fbd.js?v=__VERSION__"></script>
 <script src="app.js?v=__VERSION__"></script>
 </body>
 </html>
