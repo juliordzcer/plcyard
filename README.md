@@ -17,6 +17,9 @@ requirement.
 It runs natively on Linux, macOS and Windows, stays sharp on high-resolution screens, and needs
 no licence key.
 
+Try it in your browser, nothing to install: **[PLCYard web](https://juliordz.com/plcyard/app/)**
+(ladder editor, I/O panel, exercises 1-7). Documentation: **[the wiki](https://juliordz.com/plcyard/)**.
+
 ## How it works
 
 1. **Write** a program in ladder, structured text or function block diagram: click an instruction, type its operand (`%I0.0`,

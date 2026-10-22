@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PLCYard Web</title>
+<meta name="description" content="A free PLC trainer in the browser: write ladder logic, run it on a simulated PLC with an I/O panel, and check it against an exercise.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../"><img src="icon.svg" alt="" width="22" height="22"> PLCYard <span class="tag">web</span></a>
+  <nav class="menu">
+    <button id="b-new" title="New program">New</button>
+    <select id="b-example" title="Open an example"><option value="">Examples…</option></select>
+    <select id="b-lab" title="Open an exercise"><option value="">Exercises…</option></select>
+    <button id="b-open" title="Open a .plcy file">Open…</button>
+    <button id="b-save" title="Save as a .plcy file (opens in the desktop app too)">Save</button>
+    <input id="f-open" type="file" accept=".plcy,application/json" hidden>
+    <span class="sep"></span>
+    <button id="b-undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="b-redo" title="Redo (Ctrl+Y)">Redo</button>
+    <span class="sep"></span>
+    <select id="b-notation" title="How instructions and addresses are written">
+      <option value="A">Mnemonics (XIC)</option>
+      <option value="B">IEC symbols (%I0.0)</option>
+    </select>
+  </nav>
+  <div class="plc">
+    <span id="led-run" class="led" title="RUN"></span>
+    <span id="led-fault" class="led" title="FAULT"></span>
+    <button id="b-download" class="primary" title="Send the program to the PLC">Download</button>
+    <div class="modes" role="group" aria-label="PLC mode">
+      <button id="b-pgm" title="Program mode: outputs off">PGM</button>
+      <button id="b-run" title="Run the program">RUN</button>
+    </div>
+    <span id="scans" class="mono muted"></span>
+  </div>
+</header>
+
+<main class="work">
+  <section class="sim" aria-label="I/O panel">
+    <div id="io"></div>
+    <p class="hint">Click a switch to flip it (pushbuttons spring back). Drag an address onto an instruction to use it.</p>
+  </section>
+  <section class="editor" aria-label="Ladder editor">
+    <div id="families" class="families" role="tablist"></div>
+    <div id="palette" class="palette"></div>
+    <div id="status" class="status" role="status"></div>
+    <div id="ladder" class="ladder" tabindex="0"></div>
+    <form id="operands" class="operands" hidden></form>
+  </section>
+  <aside id="labpane" class="labpane" hidden>
+    <div class="labhead"><strong id="labtitle"></strong><button id="b-labclose" class="ghost" title="Close">✕</button></div>
+    <div id="labbody" class="labbody"></div>
+    <button id="b-check" class="primary">Check my program</button>
+    <div id="report" class="report"></div>
+  </aside>
+</main>
+
+<div id="loading" class="loading">
+  <div class="card">
+    <img src="icon.svg" alt="" width="48" height="48">
+    <p><strong>Loading the PLC…</strong></p>
+    <p id="loadmsg" class="muted">The simulator runs in your browser: nothing is installed and nothing is sent anywhere.</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

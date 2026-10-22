@@ -273,10 +273,12 @@ class PlcYard(Profile):
         return problems
 
     def load(self, program: Program, mem: Memory) -> None:
+        """A new program brings new data; the input image stays (the field is still wired), the
+        output image starts off (an output no rung writes any more must not stay on)."""
         built = self.build_memory(program)
-        io = (bytearray(mem.areas["I"]), bytearray(mem.areas["Q"]))
+        inputs = bytearray(mem.areas["I"])
         mem.__dict__.update(built.__dict__)
-        mem.areas["I"][:], mem.areas["Q"][:] = io
+        mem.areas["I"][:] = inputs
 
     def prescan(self, program: Program, mem: Memory, ctx) -> None:
         for f in program.files.values():

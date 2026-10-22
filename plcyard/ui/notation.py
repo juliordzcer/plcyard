@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import re
 
-from PySide6.QtCore import QSettings
-
 from ..core.plc import PLC
 from ..core.plc.memory import absolute_to_module
 
@@ -54,7 +52,11 @@ _REF = re.compile(r'^(#?"?)([A-Za-z_]\w*)("?)((?:\[[^\]]*\])*)\.([A-Za-z_]\w*)$'
 def current() -> str:
     global _current
     if _current is None:
-        _current = str(QSettings("PLCYard", "PLCYard").value("notation", A))
+        try:
+            from PySide6.QtCore import QSettings
+            _current = str(QSettings("PLCYard", "PLCYard").value("notation", A))
+        except ImportError:                    # the web version has no Qt; it sets the notation itself
+            _current = A
         if _current not in (A, B):
             _current = A
     return _current
@@ -63,6 +65,10 @@ def current() -> str:
 def set_current(n: str) -> None:
     global _current
     _current = n
+    try:
+        from PySide6.QtCore import QSettings
+    except ImportError:
+        return
     QSettings("PLCYard", "PLCYard").setValue("notation", n)
 
 

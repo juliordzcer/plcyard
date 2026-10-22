@@ -66,7 +66,9 @@ with the full test suite green.
 ## Later
 
 - Web version: reuse the pure-Python core, simulations and checker in the browser (Pyodide) with an
-  HTML/JS UI; static hosting, nothing to install. Step 1 (wiki and downloads on the site) done.
+  HTML/JS UI; static hosting, nothing to install. Step 1 (wiki and downloads on the site) and step 2
+  (ladder editor, I/O panel, exercises 1-7 at juliordz.com/plcyard/app) done; next the other
+  simulations, then structured text, FBD and routines.
 
 - UI languages (Qt translations; exercises as `labs/<lang>/`).
 - More simulations (list in TODO.md): elevator, bottle line, sorting conveyor, pick and place,

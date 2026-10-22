@@ -636,3 +636,20 @@ keys:      wiki, mkdocs, docgen, reference, GitHub Pages
   `%I0.0`, `--shot` takes `--sim` and `--wait`.
 - TODO: a web version (Pyodide + HTML UI), step by step.
 keys:      website, wiki, screenshots, headless, shot
+
+## C-033 — Web version, step 2: ladder and I/O panel in the browser
+2026-10-22 · commits: dd0310c
+- https://juliordz.com/plcyard/app/ runs the real PLC in the browser with Pyodide 0.26.4: the core,
+  the I/O panel model, the edit operations, the ladder layout and the exercise checker are the same
+  Python as the desktop app. `plcyard/webapp.py` (Session) hands the page plain JSON;
+  `web/` (index.html, style.css, app.js) draws the ladder as SVG with live power flow, the I/O
+  cards, the instruction bar, the operand bar, exercises 1-7 with Check my program, both
+  notations, undo/redo, open/save .plcy, autosave in the browser. Drag an address onto an
+  instruction as on the desktop.
+- `python -m plcyard.webbuild OUT` packs the Qt-free Python into plcyard.zip and writes the page,
+  the design tokens as CSS and the fonts. `ui/notation.py` no longer needs Qt.
+- Fix (desktop too): downloading a new program kept the old output image, so an output no rung
+  writes any more stayed on. The input image is still kept.
+- Tests: `tests/test_webapp.py` (6), including the session without Qt and the build. Checked in a
+  real browser (Chromium): example, a program written from scratch, an exercise, phone width.
+keys:      web, pyodide, webapp, webbuild, output image

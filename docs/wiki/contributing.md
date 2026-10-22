@@ -35,6 +35,17 @@ python -m plcyard.docgen
 
 A test fails while the generated pages are out of date. Preview the wiki with `mkdocs serve`.
 
+## The web version
+
+`web/` holds the page and `plcyard/webapp.py` the Python it runs in the browser (Pyodide); nothing
+in either may import Qt. Build it with `python -m plcyard.webbuild OUT_DIR` and serve `OUT_DIR`
+with any static web server (`python -m http.server`). The site is the wiki with the web version in
+`app/`:
+
+```bash
+mkdocs build -d SITE && python -m plcyard.webbuild SITE/app
+```
+
 ## Rules
 
 - Every fix comes with a test.
