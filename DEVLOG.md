@@ -819,3 +819,19 @@ keys:      web, usability, operand form, suggestions, problems
   writing a program (operand form, suggestions, problems), running and checking, what stays in the
   desktop app; three screenshots. Linked from the home and download pages and the navigation.
 keys:      web, thumbnails, pickers, wiki
+
+## C-045 — Web version on a phone
+2026-10-22 · commits: 2d3d909
+- Below 760 px wide: one view at a time (Machine, Program, Exercise) chosen in a bar at the bottom,
+  which also has the RUN light and one button (RUN / Send / Stop). The header keeps File, Exercises
+  and ⚙; the machine selector sits at the top of the Machine view; the Program view gets undo,
+  redo, Tags and zoom (− +).
+- Touch: 40 px controls, larger switches and machine buttons, instruction families and buttons in
+  one scrolling row, the operand form docked under the editor, function block diagrams scroll with
+  a finger (blocks and pins still drag), pickers and the welcome full screen.
+- Tap an address (in the machine or the I/O panel) to put it into the operand box last used or
+  the selected instruction; works on the desktop too, next to dragging.
+- Wiki (web.md): "On a phone".
+- Checked in Chromium at 390 × 844 with touch: welcome, exercise, program, tap-to-use, RUN, FBD,
+  pickers; no sideways scrolling of the page. Still to try on real phones.
+keys:      web, phone, mobile, touch, tabs

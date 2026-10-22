@@ -8,7 +8,17 @@ const GUTTER = 48, MARGIN = 12, RUNG_GAP = 18, COMMENT_LINE = 16, WIRE_Y = 26;
 const $ = (id) => document.getElementById(id);
 let py, S, state = null, lastJson = "", family = null, palette = [], opsKey = "", HL = null, stKey = "", tagsKey = "";
 let fbdKey = "", paletteLang = "", routinesKey = "", ifaceKey = "", machineKind = "", showAllIo = false;
-let EXERCISES = [], EXAMPLES = [], THUMBS = {};
+let EXERCISES = [], EXAMPLES = [], THUMBS = {}, lastOpInput = null, zoom = 1;
+
+function setTab(tab) {
+  document.body.dataset.tab = tab;
+  document.querySelectorAll("#tabbar [data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
+}
+
+function setZoom(z) {
+  zoom = Math.min(2, Math.max(0.5, z));
+  for (const id of ["ladder", "fbd"]) $(id).style.setProperty("--zoom", zoom);
+}
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const store = {
@@ -69,7 +79,7 @@ function say(msg, err) {
 
 // -- drawing -------------------------------------------------------------------------------------
 function render(force) {
-  const width = Math.max(500, $("ladder").clientWidth - GUTTER - 2 * MARGIN - 8);
+  const width = Math.max(window.innerWidth <= 760 ? 260 : 500, $("ladder").clientWidth - GUTTER - 2 * MARGIN - 8);
   const text = S.state(width);
   if (!force && text === lastJson) return;
   lastJson = text;
@@ -85,14 +95,18 @@ function render(force) {
   if (state.fault) say("Fault: " + state.fault, true);
   else if (state.problems.length) say(state.problems.join(" · "), true);
   else if (state.message) say(state.message);
-  const sel = $("b-sim");
-  if (!sel.options.length) for (const [k, t] of state.sims) sel.add(new Option(t, k));
-  if (document.activeElement !== sel) sel.value = state.machine.kind;
+  for (const sel of document.querySelectorAll(".simsel")) {
+    if (!sel.options.length) for (const [k, t] of state.sims) sel.add(new Option(t, k));
+    if (document.activeElement !== sel) sel.value = state.machine.kind;
+  }
+  $("led-run2").className = "led" + (state.mode === "RUN" ? " run" : "") + (state.fault ? " fault" : "");
+  $("b-runm").textContent = state.mode !== "RUN" ? "RUN" : state.dirty ? "Send" : "Stop";
+  $("tab-lab").textContent = state.lab ? "Exercise" : "Exercises";
   $("io").hidden = !state.io;
   $("machine").hidden = !!state.io;
   $("simhint").textContent = state.io
-    ? "Click a switch to flip it (pushbuttons spring back). Drag an address onto an instruction to use it."
-    : "Hold a button to press it. Drag an address onto an instruction to use it.";
+    ? "Click a switch to flip it (pushbuttons spring back). Select an instruction, then drag or tap an address to use it."
+    : "Hold a button to press it. Select an instruction, then drag or tap an address to use it.";
   if (state.io) renderIo(state.io);
   else {
     if (machineKind !== state.machine.kind) { machineKind = state.machine.kind; Sims.reset(); Machines.reset(); }
@@ -210,7 +224,7 @@ function placeForm() {
   const ed = form.parentElement.getBoundingClientRect();
   const target = state.language === "FBD" ? $("fbd").querySelector(".box.picked, path.w.picked") : $("ladder").querySelector("rect.sel");
   const r = target && target.getBoundingClientRect();
-  if (!r || r.bottom < ed.top || r.top > ed.bottom || window.innerWidth < 700) { form.classList.remove("float"); return; }
+  if (!r || r.bottom < ed.top || r.top > ed.bottom || window.innerWidth <= 760) { form.classList.remove("float"); return; }
   form.classList.add("float");
   const fw = form.offsetWidth, fh = form.offsetHeight;
   let top = r.bottom - ed.top + 6;
@@ -467,7 +481,37 @@ function wire() {
     if (text !== null) { S.set_symbol(a.dataset.addr, text); changed(); }
   });
   Sims.wire($("machine"), (name, value) => { S.sim_action(name, value); render(true); });
-  $("b-sim").onchange = (e) => { S.set_sim(e.target.value); Sims.reset(); store.set("plcyard.sim", e.target.value); render(true); };
+  document.querySelectorAll(".simsel").forEach((sel) => sel.onchange = (e) => {
+    S.set_sim(e.target.value); Sims.reset(); store.set("plcyard.sim", e.target.value); render(true);
+  });
+  // Phone: one view at a time, chosen in the bar at the bottom.
+  $("tabbar").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-tab]");
+    if (!t) return;
+    if (t.dataset.tab === "lab" && !state.lab) { openExercises(); return; }
+    setTab(t.dataset.tab);
+  });
+  $("b-runm").onclick = () => {
+    if (state.mode !== "RUN") S.set_mode("RUN");
+    else if (state.dirty) S.download();
+    else S.set_mode("PGM");
+    render(true);
+  };
+  document.querySelectorAll("[data-proxy]").forEach((b) => b.onclick = () => $(b.dataset.proxy).click());
+  $("b-zoomin").onclick = () => setZoom(zoom * 1.2);
+  $("b-zoomout").onclick = () => setZoom(zoom / 1.2);
+  setTab("program");
+  // Tap an address (phones cannot drag): it goes into the operand box last used, or the selected instruction.
+  $("simpane").addEventListener("click", (e) => {
+    const a = e.target.closest(".addr");
+    if (!a || !state) return;
+    const box = lastOpInput && document.contains(lastOpInput) && !lastOpInput.disabled ? lastOpInput : $("operands").querySelector("input:not([disabled])");
+    if (!box || $("operands").hidden) { say("Select an instruction first, then tap an address to use it."); return; }
+    box.value = a.dataset.addr;
+    $("operands").requestSubmit();
+    if (window.innerWidth <= 760) setTab("program");
+  });
+  $("operands").addEventListener("focusin", (e) => { if (e.target.tagName === "INPUT") lastOpInput = e.target; });
   $("simpane").addEventListener("dragstart", (e) => {
     const a = e.target.closest(".addr");
     if (a) { e.dataTransfer.setData("text/plain", a.dataset.addr); e.dataTransfer.effectAllowed = "copy"; }
@@ -742,6 +786,7 @@ function openLab(id) {
 }
 
 function showLab(lab) {
+  setTab("lab");
   document.querySelectorAll("[data-lablang]").forEach((b) => b.classList.toggle("on", b.dataset.lablang === S.language));
   $("labtitle").textContent = `${lab.id}. ${lab.title}`;
   $("labbody").innerHTML = window.marked ? marked.parse(lab.body) : `<pre>${esc(lab.body)}</pre>`;
@@ -751,6 +796,7 @@ function showLab(lab) {
 
 function closeLab() {
   $("labpane").hidden = true;
+  if (document.body.dataset.tab === "lab") setTab("program");
 }
 
 function check() {

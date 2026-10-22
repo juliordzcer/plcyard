@@ -70,6 +70,16 @@ want to keep it.
 
 **Ladder / ST / FBD** next to the Check button starts the exercise again in another language.
 
+## On a phone
+
+On a narrow screen PLCYard shows one view at a time. The bar at the bottom switches between
+**Machine**, **Program** and **Exercise** and has the **RUN** button (it reads **Send** when you
+edited while running, **Stop** to go back to program mode) with the RUN light. The program view has
+undo, redo, Tags and zoom (− +); ladder and function block diagrams scroll with a finger.
+
+Phones cannot drag, so: select an instruction, go to **Machine** and **tap an address**: it goes
+into the operand box and you are back in the program.
+
 ## What stays in the desktop app
 
 Data types, forcing, the PID setup dialog, single-scan stepping and comparing your solution with

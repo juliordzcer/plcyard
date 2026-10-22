@@ -28,7 +28,7 @@
     <button id="b-examples" title="Open a finished example program">Examples</button>
     <input id="f-open" type="file" accept=".plcy,application/json" hidden>
     <span class="sep"></span>
-    <label class="field">Machine <select id="b-sim" title="The machine wired to the PLC"></select></label>
+    <label class="field desk-only">Machine <select id="b-sim" class="simsel" title="The machine wired to the PLC"></select></label>
     <span class="sep"></span>
     <button id="b-tags" title="Show the tag list (named memory)">Tags</button>
     <button id="b-undo" class="icon" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
@@ -59,11 +59,16 @@
 
 <main class="work">
   <section id="simpane" class="sim" aria-label="Simulation">
+    <label class="field phone-only">Machine <select id="b-sim2" class="simsel" title="The machine wired to the PLC"></select></label>
     <div id="io"></div>
     <div id="machine"></div>
     <p id="simhint" class="hint"></p>
   </section>
   <section class="editor" aria-label="Program editor">
+    <div class="phonebar phone-only">
+      <button data-proxy="b-undo" class="icon" aria-label="Undo">↶</button><button data-proxy="b-redo" class="icon" aria-label="Redo">↷</button>
+      <button data-proxy="b-tags">Tags</button><span class="grow"></span>
+      <button id="b-zoomout" class="icon" aria-label="Zoom out">−</button><button id="b-zoomin" class="icon" aria-label="Zoom in">+</button></div>
     <div class="routinebar"><div id="routines" class="routines" role="tablist" aria-label="Routines"></div>
       <button id="b-addroutine" class="ghost" title="Add a routine, function or function block">+ Routine</button></div>
     <form id="newroutine" class="newroutine" hidden>
@@ -105,6 +110,13 @@
   </aside>
 </main>
 
+<nav id="tabbar" class="tabbar phone-only" aria-label="Views">
+  <button data-tab="machine">Machine</button>
+  <button data-tab="program">Program</button>
+  <button data-tab="lab" id="tab-lab">Exercise</button>
+  <span class="tabplc"><span id="led-run2" class="led"></span><button id="b-runm" class="primary">RUN</button></span>
+</nav>
+
 <dialog id="d-exercises" class="picker" aria-labelledby="d-ex-title">
   <div class="dhead"><h2 id="d-ex-title">Exercises</h2><span class="muted" id="d-ex-progress"></span><button class="ghost" data-close aria-label="Close">✕</button></div>
   <p class="muted">Each exercise wires a machine to the PLC and lists what your program must do. Write it, press RUN to try it, then <strong>Check my program</strong>.</p>
@@ -120,7 +132,7 @@
   <p>A PLC trainer that runs in your browser: write a program, run it on a simulated PLC wired to a machine, and see what happens.</p>
   <ol class="steps">
     <li><strong>Pick an exercise.</strong> It wires a machine to the PLC and says what your program must do.</li>
-    <li><strong>Write the program</strong> in ladder, structured text or function blocks. Drag an address from the machine onto an instruction.</li>
+    <li><strong>Write the program</strong> in ladder, structured text or function blocks. Select an instruction, then drag or tap an address of the machine to use it.</li>
     <li><strong>Press RUN</strong> and play with the machine: buttons, switches, sliders.</li>
     <li><strong>Check my program</strong> runs every requirement against your program.</li>
   </ol>

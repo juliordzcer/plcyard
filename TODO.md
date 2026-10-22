@@ -68,10 +68,9 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [x] Web usability: header, welcome, exercise and example pickers with progress, Check at the
       top, compact I/O panel, IEC notation by default, instruction icons; operand form next to the
       selected instruction or block with address suggestions; problems marked on the instruction.
-- [ ] Phone-friendly web version: a layout for narrow screens (simulation, editor, exercise in
-      tabs or a bottom bar), touch-sized buttons and pins, the instruction bar and operand form
-      usable with the on-screen keyboard, pinch/scroll on the ladder and FBD canvas, tested on
-      Android Chrome and iOS Safari.
+- [x] Phone-friendly web version: one view at a time (Machine, Program, Exercise) with RUN in a
+      bottom bar, touch-sized controls, scrolling instruction bar, zoom, tap an address to use it,
+      full-screen pickers. Still to try on real Android Chrome and iOS Safari.
 - [ ] Mobile, from the web version: (1) PWA (manifest + service worker, offline, add to home
       screen on Android and iOS); (2) Android APK with Capacitor (direct download, Play Store
       later); (3) iOS with Capacitor (needs an Apple Developer account). Phone layout: simulation
