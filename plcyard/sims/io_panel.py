@@ -1,5 +1,5 @@
 """Generic I/O trainer: 2 input cards of switches, 2 output cards of lamps,
-4 BCD thumbwheels on I:5 and a 4-digit BCD display on O:6."""
+4 BCD thumbwheels on %IW4 and a 4-digit BCD display on %QW4."""
 
 from __future__ import annotations
 

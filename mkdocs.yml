@@ -1,0 +1,29 @@
+site_name: PLCYard
+site_description: A free, open-source PLC trainer
+repo_url: https://github.com/juliordzcer/plcyard
+docs_dir: docs/wiki
+theme:
+  name: readthedocs
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - The scan cycle: scan-cycle.md
+  - Notations: notations.md
+  - Ladder: ladder.md
+  - Structured text: structured-text.md
+  - Function block diagram: fbd.md
+  - Tags, data types and arrays: tags.md
+  - Routines and blocks: routines.md
+  - Simulations: simulations.md
+  - Reference:
+      - Instructions: reference/instructions.md
+      - Function blocks: reference/function-blocks.md
+      - Structured text functions: reference/st-functions.md
+      - Simulations: reference/simulations.md
+  - Writing exercises: writing-exercises.md
+  - Adding a simulation: adding-a-simulation.md
+  - Contributing: contributing.md

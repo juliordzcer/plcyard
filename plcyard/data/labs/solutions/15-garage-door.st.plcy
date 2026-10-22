@@ -1,0 +1,30 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// Reverse when the beam breaks while closing; the open limit ends it.\nIF %Q0.1 AND NOT %I0.5 THEN Reverse := TRUE; END_IF;\nIF %I0.3 THEN Reverse := FALSE; END_IF;\n%Q0.0 := (%I0.0 OR %Q0.0 OR Reverse) AND %I0.2 AND NOT %I0.3 AND NOT %Q0.1;           // up\n%Q0.1 := (%I0.1 OR %Q0.1) AND %I0.2 AND %I0.5 AND NOT %I0.4 AND NOT %Q0.0 AND NOT Reverse;   // down\nBlink.TON(IN := NOT Blink.DN, PT := T#1s);\n%Q0.2 := (%Q0.0 OR %Q0.1) AND Blink.ACC < 500;                                       // warning light\nCourtesy.TOF(IN := %Q0.0 OR %Q0.1, PT := T#10s);\n%Q0.3 := Courtesy.DN;                                                                 // courtesy light\n"
+    }
+  ],
+  "tags": {
+    "Reverse": {
+      "type": "BOOL"
+    },
+    "Blink": {
+      "type": "TIMER"
+    },
+    "Courtesy": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Open (PB)",
+    "%I0.1": "Close (PB)",
+    "%I0.2": "Stop (NC, PB)"
+  }
+}

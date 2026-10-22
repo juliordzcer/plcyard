@@ -54,7 +54,7 @@ with the full test suite green.
 - Exercise 13 became "PID scaled inside the block" (PID Setup → Scaling), so it makes sense in all
   three languages. Structured text gained INT_TO_BCD / BCD_TO_INT, FBD the TO_BCD / FROM_BCD blocks.
 
-## Phase 7 — Wiki (M, can run in parallel from Phase 1)
+## Phase 7 — Wiki (M, can run in parallel from Phase 1) — done
 
 - `docs/` with MkDocs, published on GitHub Pages (versioned with the code; the GitHub Wiki
   cannot be reviewed in pull requests).

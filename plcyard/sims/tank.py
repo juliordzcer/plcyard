@@ -5,9 +5,9 @@ outlet whose opening the user sets (the disturbance). The level is measured 0-10
 0-10 V; a setpoint knob sends 0-10 V on a second analog input.
 
 Digital I/O (slot words, like the other simulations):
-  I:1/0 Start (NO pushbutton)   I:1/1 Stop (NC pushbutton)
-  I:1/2 High level switch (level >= 90 %)   I:1/3 Low level switch (level <= 10 %)
-  O:2/0 Pump (fixed flow)   O:2/1 Run lamp   O:2/2 High alarm lamp
+  %I0.0 Start (NO pushbutton)   %I0.1 Stop (NC pushbutton)
+  %I0.2 High level switch (level >= 90 %)   %I0.3 Low level switch (level <= 10 %)
+  %Q0.0 Pump (fixed flow)   %Q0.1 Run lamp   %Q0.2 High alarm lamp
 Analog: AI0 level (0-10 V = 0-100 %), AI1 setpoint knob (0-10 V), AO0 inlet valve (0-10 V = 0-100 %).
 """
 

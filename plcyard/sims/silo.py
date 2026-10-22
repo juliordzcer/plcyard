@@ -1,10 +1,10 @@
 """Silo filling line: boxes ride a conveyor, stop under a hopper, fill, move on.
 
-I/O (as in the classic trainer wiring):
-  I:1/0 Start (NO pushbutton)   I:1/1 Stop (NC pushbutton)
-  I:1/3 Prox sensor (box under the hopper)   I:1/4 Level sensor (box full)
-  I:1/5 / I:1/6 / I:1/7 Selector A / B / C
-  O:2/0 Conveyor motor   O:2/1 Fill solenoid   O:2/2 Run lamp   O:2/3 Fill lamp   O:2/4 Full lamp
+I/O:
+  %I0.0 Start (NO pushbutton)   %I0.1 Stop (NC pushbutton)
+  %I0.3 Prox sensor (box under the hopper)   %I0.4 Level sensor (box full)
+  %I0.5 / %I0.6 / %I0.7 Selector A / B / C
+  %Q0.0 Conveyor motor   %Q0.1 Fill solenoid   %Q0.2 Run lamp   %Q0.3 Fill lamp   %Q0.4 Full lamp
 Idle input word is 0022h: Stop is NC (closed) and the selector rests on A.
 """
 

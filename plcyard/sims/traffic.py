@@ -1,11 +1,11 @@
 """Intersection with two traffic directions, crosswalk buttons and two cars.
 
 I/O:
-  O:2/0 Red A   O:2/1 Amber A   O:2/2 Green A   O:2/3 Walk (crossing A)
-  O:2/4 Red B   O:2/5 Amber B   O:2/6 Green B   O:2/7 Walk (crossing B)
-  I:1/0 Crosswalk button A   I:1/1 Crosswalk button B
-  I:1/2 Car waiting at A     I:1/3 Car waiting at B
-Car A drives along road A (lights O:2/0..2), car B along road B (O:2/4..6).
+  %Q0.0 Red A   %Q0.1 Amber A   %Q0.2 Green A   %Q0.3 Walk (crossing A)
+  %Q0.4 Red B   %Q0.5 Amber B   %Q0.6 Green B   %Q0.7 Walk (crossing B)
+  %I0.0 Crosswalk button A   %I0.1 Crosswalk button B
+  %I0.2 Car waiting at A     %I0.3 Car waiting at B
+Car A drives along road A (lights %Q0.0-%Q0.2), car B along road B (%Q0.4-%Q0.6).
 A car stops at its stop line unless its light is green; on amber it keeps going if it is
 already close to the line. Two cars inside the junction at the same time is a crash.
 """

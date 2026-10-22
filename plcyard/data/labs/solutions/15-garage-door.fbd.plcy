@@ -1,0 +1,290 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "FBD",
+      "fbd": {
+        "blocks": [
+          {
+            "id": 1,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 40.0,
+            "operands": {
+              "IN": "%I0.5"
+            }
+          },
+          {
+            "id": 2,
+            "type": "AND",
+            "x": 520.0,
+            "y": 40.0,
+            "operands": {
+              "IN1": "%Q0.1"
+            }
+          },
+          {
+            "id": 3,
+            "type": "RS",
+            "x": 780.0,
+            "y": 40.0,
+            "operands": {
+              "R1": "%I0.3",
+              "Q1": "Reverse"
+            }
+          },
+          {
+            "id": 4,
+            "type": "OR",
+            "x": 260.0,
+            "y": 210.0,
+            "operands": {
+              "IN1": "%I0.0",
+              "IN2": "%Q0.0",
+              "IN3": "Reverse"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 5,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 380.0,
+            "operands": {
+              "IN": "%I0.3"
+            }
+          },
+          {
+            "id": 6,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 550.0,
+            "operands": {
+              "IN": "%Q0.1"
+            }
+          },
+          {
+            "id": 7,
+            "type": "AND",
+            "x": 520.0,
+            "y": 210.0,
+            "operands": {
+              "IN2": "%I0.2",
+              "OUT": "%Q0.0"
+            },
+            "inputs": 4
+          },
+          {
+            "id": 8,
+            "type": "OR",
+            "x": 780.0,
+            "y": 210.0,
+            "operands": {
+              "IN1": "%I0.1",
+              "IN2": "%Q0.1"
+            }
+          },
+          {
+            "id": 9,
+            "type": "NOT",
+            "x": 780.0,
+            "y": 380.0,
+            "operands": {
+              "IN": "%I0.4"
+            }
+          },
+          {
+            "id": 10,
+            "type": "NOT",
+            "x": 780.0,
+            "y": 550.0,
+            "operands": {
+              "IN": "%Q0.0"
+            }
+          },
+          {
+            "id": 11,
+            "type": "NOT",
+            "x": 780.0,
+            "y": 720.0,
+            "operands": {
+              "IN": "Reverse"
+            }
+          },
+          {
+            "id": 12,
+            "type": "AND",
+            "x": 1040.0,
+            "y": 210.0,
+            "operands": {
+              "IN2": "%I0.2",
+              "IN3": "%I0.5",
+              "OUT": "%Q0.1"
+            },
+            "inputs": 6
+          },
+          {
+            "id": 13,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 890.0,
+            "operands": {
+              "IN": "Blink.DN"
+            }
+          },
+          {
+            "id": 14,
+            "type": "TON",
+            "x": 520.0,
+            "y": 890.0,
+            "instance": "Blink",
+            "operands": {
+              "PT": "T#1s"
+            }
+          },
+          {
+            "id": 15,
+            "type": "LT",
+            "x": 780.0,
+            "y": 890.0,
+            "operands": {
+              "IN1": "Blink.ACC",
+              "IN2": "500"
+            }
+          },
+          {
+            "id": 16,
+            "type": "OR",
+            "x": 1040.0,
+            "y": 890.0,
+            "operands": {
+              "IN1": "%Q0.0",
+              "IN2": "%Q0.1"
+            }
+          },
+          {
+            "id": 17,
+            "type": "AND",
+            "x": 1300.0,
+            "y": 890.0,
+            "operands": {
+              "OUT": "%Q0.2"
+            }
+          },
+          {
+            "id": 18,
+            "type": "TOF",
+            "x": 1300.0,
+            "y": 1060.0,
+            "instance": "Courtesy",
+            "operands": {
+              "PT": "T#10s",
+              "Q": "%Q0.3"
+            }
+          }
+        ],
+        "wires": [
+          [
+            1,
+            "OUT",
+            2,
+            "IN2"
+          ],
+          [
+            2,
+            "OUT",
+            3,
+            "S"
+          ],
+          [
+            4,
+            "OUT",
+            7,
+            "IN1"
+          ],
+          [
+            5,
+            "OUT",
+            7,
+            "IN3"
+          ],
+          [
+            6,
+            "OUT",
+            7,
+            "IN4"
+          ],
+          [
+            8,
+            "OUT",
+            12,
+            "IN1"
+          ],
+          [
+            9,
+            "OUT",
+            12,
+            "IN4"
+          ],
+          [
+            10,
+            "OUT",
+            12,
+            "IN5"
+          ],
+          [
+            11,
+            "OUT",
+            12,
+            "IN6"
+          ],
+          [
+            13,
+            "OUT",
+            14,
+            "IN"
+          ],
+          [
+            15,
+            "OUT",
+            17,
+            "IN1"
+          ],
+          [
+            16,
+            "OUT",
+            17,
+            "IN2"
+          ],
+          [
+            16,
+            "OUT",
+            18,
+            "IN"
+          ]
+        ]
+      }
+    }
+  ],
+  "tags": {
+    "Reverse": {
+      "type": "BOOL"
+    },
+    "Blink": {
+      "type": "TIMER"
+    },
+    "Courtesy": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Open (PB)",
+    "%I0.1": "Close (PB)",
+    "%I0.2": "Stop (NC, PB)"
+  }
+}

@@ -85,5 +85,5 @@ class LabsView(QWidget):
             lines = [f"- {'✔' if c.passed else '✘'} {c.requirement}" + (f" — {c.detail}" if c.detail else "")
                      for c in report.checks]
             md = head + "\n\n" + "\n".join(lines)
-        self.result.setMarkdown(md)
+        self.result.setMarkdown(notation.show_text(md))
         self.result.show()

@@ -86,8 +86,8 @@ def _01(new, out):
         want = [bool(a and b), bool(c or d), not e, f != g]
         got = r.lamps(4)
         wrong += [k for k in range(4) if got[k] != want[k] and k not in wrong]
-    for k, name in enumerate(("AND: O:2/0 = I:1/0 and I:1/1", "OR: O:2/1 = I:1/2 or I:1/3",
-                              "NOT: O:2/2 = not I:1/4", "XOR: O:2/3 = I:1/5 xor I:1/6")):
+    for k, name in enumerate(("AND: %Q0.0 = %I0.0 and %I0.1", "OR: %Q0.1 = %I0.2 or %I0.3",
+                              "NOT: %Q0.2 = not %I0.4", "XOR: %Q0.3 = %I0.5 xor %I0.6")):
         out(name, k not in wrong, "wrong for some switch combinations" if k in wrong else "")
 
 
@@ -324,8 +324,111 @@ def _12(new, out):
     out("The tank never overflows", r.sim.overflowed == 0 and reached)
 
 
+def _14(new, out):
+    r = new()
+    r.sim.level1, r.sim.level2, r.sim.setpoint_knob = 10.0, 10.0, 40.0
+    worst = 100.0
+    for k in range(18000):
+        r.ms(10)
+        if k >= 15000:
+            worst = min(worst, 100 - abs(r.sim.level2 - 40.0))
+    reached = 100 - worst <= 3.0
+    out("Tank 2 holds the setpoint (±3 %) within 3 minutes", reached, f"tank 2 at {r.sim.level2:.1f} %")
+    r.sim.outlet = 80.0
+    r.ms(150000)
+    out("Back on the setpoint after the outlet opens wider", reached and abs(r.sim.level2 - 40.0) <= 3.0,
+        f"tank 2 at {r.sim.level2:.1f} %")
+    r.sim.setpoint_knob = 60.0
+    r.ms(180000)
+    out("Follows a new setpoint (60 %)", abs(r.sim.level2 - 60.0) <= 3.0, f"tank 2 at {r.sim.level2:.1f} %")
+    out("Neither tank overflows", r.sim.overflowed == 0 and reached, "; ".join(r.sim.events))
+
+
+def _15(new, out):
+    r = new()
+    r.ms(100)
+    r.sim.open_pressed = True
+    r.ms(100)
+    r.sim.open_pressed = False
+    lamp_states, light_while_moving = set(), True
+    for _ in range(1200):
+        r.ms(10)
+        if r.sim.up:
+            lamp_states.add(r.sim.lamp(2))
+            light_while_moving &= r.sim.lamp(3)
+    opened = r.sim.position >= 100.0
+    out("Open runs the door up and stops at the open limit", opened and not r.sim.up,
+        f"door at {r.sim.position:.0f} %")
+    out("The warning light flashes while the door moves", lamp_states == {True, False},
+        "it stays on" if lamp_states == {True} else "it never lights")
+    out("The courtesy light is on while the door moves", opened and light_while_moving)
+    r.ms(5000)
+    out("…and still on 5 s after the door stops", opened and r.sim.lamp(3))
+    r.sim.close_pressed = True
+    r.ms(100)
+    r.sim.close_pressed = False
+    r.ms(4000)
+    r.sim.stop_pressed = True
+    r.ms(100)
+    r.sim.stop_pressed = False
+    held = r.sim.position
+    r.ms(2000)
+    out("Stop halts the door where it is", opened and 0 < held < 100 and abs(r.sim.position - held) < 1.0,
+        f"door moved from {held:.0f} % to {r.sim.position:.0f} %")
+    r.sim.close_pressed = True
+    r.ms(100)
+    r.sim.close_pressed = False
+    r.ms(2000)
+    r.sim.car = True                                    # a car rolls in while the door comes down
+    r.ms(12000)
+    out("A broken photo-eye beam while closing sends the door back up", opened and r.sim.hits == 0
+        and r.sim.position >= 100.0, "the door hit the car" if r.sim.hits else f"door at {r.sim.position:.0f} %")
+    r.sim.close_pressed = True
+    r.ms(100)
+    r.sim.close_pressed = False
+    r.ms(1000)
+    out("Close does nothing while something is in the doorway", opened and not r.sim.down
+        and r.sim.position >= 100.0, f"door at {r.sim.position:.0f} %")
+    r.sim.car = False
+    r.sim.close_pressed = True
+    r.ms(100)
+    r.sim.close_pressed = False
+    r.ms(12000)
+    out("Close runs the door down and stops at the closed limit", opened and r.sim.position <= 0.0 and not r.sim.down,
+        f"door at {r.sim.position:.0f} %")
+    bad = [e for e in r.sim.events if "hit" not in e]
+    out("The motor never strains at an end stop or runs both ways", opened and not bad, "; ".join(bad))
+
+
+def _16(new, out):
+    r = new()
+    r.ms(100)
+    r.sim.start_pressed = True
+    r.ms(100)
+    r.sim.start_pressed = False
+    done_lamp = False
+    for _ in range(12000):
+        r.ms(10)
+        done_lamp |= r.sim.lamp(5)
+    b = r.sim.batches
+    out("Start makes batches one after the other (at least 2 in 2 minutes)", len(b) >= 2, f"{len(b)} drained")
+    out("Every batch is good: half A, half B, full, mixed 5 s, 50-60 °C", bool(b) and all(x.good for x in b),
+        "; ".join(f"A {x.a:.0f} % B {x.b:.0f} % mixed {x.mixed_s:.0f} s at {x.temperature:.0f} °C"
+                  for x in b if not x.good)[:200])
+    out("The batch done light comes on", done_lamp)
+    bad = [e for e in r.sim.events if not e.startswith("Batch drained")]
+    out("No overflow, no dry heating, no mixing an empty tank", bool(b) and not bad, "; ".join(bad))
+    r.sim.stop_pressed = True
+    r.ms(100)
+    r.sim.stop_pressed = False
+    r.ms(3000)
+    out("Stop turns every output off and nothing restarts by itself", bool(b) and r.sim.outputs == 0,
+        "outputs still on")
+
+
 CHECKS = {"01": _01, "02": _02, "03": _03, "04": _04, "05": _05,
-          "06": _06, "07": _07, "08": _08, "09": _09, "10": _10, "11": _11, "12": _12, "13": _12}
+          "06": _06, "07": _07, "08": _08, "09": _09, "10": _10, "11": _11, "12": _12, "13": _12,
+          "14": _14, "15": _15, "16": _16}
 
 
 def grade(lab, program: Program) -> Report:

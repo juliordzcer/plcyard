@@ -1,0 +1,32 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// Batch mixer: fill A to the middle, B to the top, mix and heat to 55 °C, drain, repeat.\nTemperature := INT_TO_REAL(%IW64) / 276.48;          // 0-27648 -> 0-100 °C\nIF NOT %I0.1 THEN                                   // Stop (NC) pressed: everything off\n    Step := 0;\nEND_IF;\nCASE Step OF\n    0:  IF %I0.0 THEN Step := 1; END_IF;            // wait for Start\n    1:  IF %I0.3 THEN Step := 2; END_IF;            // ingredient A up to the middle switch\n    2:  IF %I0.4 THEN Step := 3; END_IF;            // ingredient B up to the high switch\n    3:  IF MixTime.DN AND Temperature >= 54.0 THEN Step := 4; END_IF;\n    4:  IF NOT %I0.2 THEN Step := 5; END_IF;        // drain until the low switch clears\n    5:  IF Done.DN THEN Step := 1; END_IF;          // keep draining 2 s (empty), show \"done\", next batch\nEND_CASE;\n%Q0.0 := Step = 1;                                  // valve A\n%Q0.1 := Step = 2;                                  // valve B\n%Q0.2 := Step = 3;                                  // mixer\n%Q0.4 := Step = 4 OR Step = 5;                      // drain\n// Heater with hysteresis around 55 °C, only while mixing.\nIF Step = 3 AND Temperature < 54.0 THEN\n    %Q0.3 := TRUE;\nELSIF Step <> 3 OR Temperature > 56.0 THEN\n    %Q0.3 := FALSE;\nEND_IF;\nMixTime.TON(IN := Step = 3, PT := T#6s);\nDone.TON(IN := Step = 5, PT := T#2s);\n%Q0.5 := Step = 5;                                  // batch done lamp\n"
+    }
+  ],
+  "tags": {
+    "Step": {
+      "type": "DINT"
+    },
+    "Temperature": {
+      "type": "REAL"
+    },
+    "MixTime": {
+      "type": "TIMER"
+    },
+    "Done": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}

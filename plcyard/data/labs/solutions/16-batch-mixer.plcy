@@ -1,0 +1,98 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "LD",
+      "rungs": [
+        {
+          "text": "DIV,%IW64,276.48,Temperature",
+          "comment": "0-27648 to 0-100 °C."
+        },
+        {
+          "text": "XIC,%I0.0 EQU,Step,0 MOV,1,Step",
+          "comment": "Start: fill A."
+        },
+        {
+          "text": "EQU,Step,1 XIC,%I0.3 MOV,2,Step",
+          "comment": "A reached the middle switch: fill B."
+        },
+        {
+          "text": "EQU,Step,2 XIC,%I0.4 MOV,3,Step",
+          "comment": "B reached the high switch: mix and heat."
+        },
+        {
+          "text": "EQU,Step,3 XIC,MixTime.DN GEQ,Temperature,54.0 MOV,4,Step",
+          "comment": "Mixed and hot: drain."
+        },
+        {
+          "text": "EQU,Step,4 XIO,%I0.2 MOV,5,Step",
+          "comment": "Low switch clear: drain a little longer, batch done."
+        },
+        {
+          "text": "EQU,Step,5 XIC,Done.DN MOV,1,Step",
+          "comment": "Next batch."
+        },
+        {
+          "text": "XIO,%I0.1 MOV,0,Step",
+          "comment": "Stop (NC) pressed: back to idle."
+        },
+        {
+          "text": "EQU,Step,1 OTE,%Q0.0",
+          "comment": "Valve A"
+        },
+        {
+          "text": "EQU,Step,2 OTE,%Q0.1",
+          "comment": "Valve B"
+        },
+        {
+          "text": "EQU,Step,3 OTE,%Q0.2",
+          "comment": "Mixer"
+        },
+        {
+          "text": "BST,1 EQU,Step,4 NXB,1 EQU,Step,5 BND,1 OTE,%Q0.4",
+          "comment": "Drain"
+        },
+        {
+          "text": "EQU,Step,3 LES,Temperature,54.0 OTL,%Q0.3",
+          "comment": "Heater with hysteresis 54-56 °C, only while mixing."
+        },
+        {
+          "text": "BST,1 NEQ,Step,3 NXB,1 GRT,Temperature,56.0 BND,1 OTU,%Q0.3",
+          "comment": ""
+        },
+        {
+          "text": "EQU,Step,3 TON,MixTime,T#6s",
+          "comment": "Mixing time."
+        },
+        {
+          "text": "EQU,Step,5 TON,Done,T#2s OTE,%Q0.5",
+          "comment": "Batch done light while the last of it drains."
+        }
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "Step": {
+      "type": "DINT"
+    },
+    "Temperature": {
+      "type": "REAL"
+    },
+    "MixTime": {
+      "type": "TIMER"
+    },
+    "Done": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}

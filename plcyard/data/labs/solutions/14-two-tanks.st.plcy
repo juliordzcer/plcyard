@@ -1,0 +1,40 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "Setpoint := INT_TO_REAL(%IW68) / 276.48;               // knob to %\n%QW66 := 16589;                                       // transfer valve 60 %\nOuter.PID(PV := %IW66, SP := Setpoint, CV => OuterOut);   // master: tank 2\nInner.PID(PV := %IW64, SP := OuterOut, CV => %QW64);      // slave: tank 1 → inlet valve\n"
+    }
+  ],
+  "tags": {
+    "Setpoint": {
+      "type": "REAL"
+    },
+    "OuterOut": {
+      "type": "REAL"
+    },
+    "Outer": {
+      "type": "PID",
+      "value": {
+        "KP": 2.0,
+        "KI": 0.05,
+        "MAXI": 27648.0
+      }
+    },
+    "Inner": {
+      "type": "PID",
+      "value": {
+        "KP": 4.0,
+        "KI": 0.2,
+        "MAXI": 27648.0,
+        "MAXCV": 27648.0
+      }
+    }
+  },
+  "symbols": {}
+}

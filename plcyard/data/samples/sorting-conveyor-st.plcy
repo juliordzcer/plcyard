@@ -1,0 +1,65 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// Measure each box with the two beams (1 small, 2 medium, 3 large). Boxes keep their order\n// between two sensors, so each stretch of belt has its own queue: at pusher k the oldest box of\n// queue k is the one in front; it is pushed if it is size k, otherwise it moves on to queue k+1.\nRun := (%I0.0 OR Run) AND %I0.1;\n%Q0.0 := Run;\n%Q0.4 := Run;\nIF %I0.2 AND NOT AtMeasure THEN                          // a new box at the measuring point\n    Size := 1;\n    IF %I0.3 THEN Size := 2; END_IF;\n    IF %I0.4 THEN Size := 3; END_IF;\n    Q1[W1] := Size;  W1 := (W1 + 1) MOD 8;\nEND_IF;\nAtMeasure := %I0.2;\n%Q0.1 := FALSE;\n%Q0.2 := FALSE;\n%Q0.3 := FALSE;\nIF %I0.5 AND NOT At1 THEN                                 // a box in front of pusher 1\n    Size := Q1[R1];  R1 := (R1 + 1) MOD 8;\n    IF Size = 1 THEN %Q0.1 := TRUE; ELSE Q2[W2] := Size; W2 := (W2 + 1) MOD 8; END_IF;\nEND_IF;\nIF %I0.6 AND NOT At2 THEN                                 // pusher 2\n    Size := Q2[R2];  R2 := (R2 + 1) MOD 8;\n    IF Size = 2 THEN %Q0.2 := TRUE; ELSE Q3[W3] := Size; W3 := (W3 + 1) MOD 8; END_IF;\nEND_IF;\nIF %I0.7 AND NOT At3 THEN                                 // pusher 3\n    Size := Q3[R3];  R3 := (R3 + 1) MOD 8;\n    %Q0.3 := Size = 3;\nEND_IF;\nAt1 := %I0.5;\nAt2 := %I0.6;\nAt3 := %I0.7;\n"
+    }
+  ],
+  "tags": {
+    "Run": {
+      "type": "BOOL"
+    },
+    "AtMeasure": {
+      "type": "BOOL"
+    },
+    "Size": {
+      "type": "DINT"
+    },
+    "Q1": {
+      "type": "DINT[8]"
+    },
+    "Q2": {
+      "type": "DINT[8]"
+    },
+    "Q3": {
+      "type": "DINT[8]"
+    },
+    "W1": {
+      "type": "DINT"
+    },
+    "R1": {
+      "type": "DINT"
+    },
+    "W2": {
+      "type": "DINT"
+    },
+    "R2": {
+      "type": "DINT"
+    },
+    "W3": {
+      "type": "DINT"
+    },
+    "R3": {
+      "type": "DINT"
+    },
+    "At1": {
+      "type": "BOOL"
+    },
+    "At2": {
+      "type": "BOOL"
+    },
+    "At3": {
+      "type": "BOOL"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}

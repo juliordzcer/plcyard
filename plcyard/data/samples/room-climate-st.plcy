@@ -1,0 +1,39 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// One PID whose output runs from -100 % (full cooling) to +100 % (full heating).\nOn := (%I0.0 OR On) AND %I0.1;\n%Q0.0 := On;                                         // fan\nRoom := INT_TO_REAL(%IW64) / 552.96;                 // 0-27648 → 0-50 °C\nClimate.PID(PV := Room, SP := INT_TO_REAL(%IW66) / 552.96, CV => Demand);\nIF NOT On OR NOT %I0.3 THEN Demand := 0.0; END_IF;   // no fan, no heating or cooling\n%QW64 := REAL_TO_INT(MAX(Demand, 0.0) * 276.48);     // heater\n%QW66 := REAL_TO_INT(MAX(-Demand, 0.0) * 276.48);    // cooler\n%Q0.1 := Demand > 1.0;\n%Q0.2 := Demand < -1.0;\n"
+    }
+  ],
+  "tags": {
+    "On": {
+      "type": "BOOL"
+    },
+    "Room": {
+      "type": "REAL"
+    },
+    "Demand": {
+      "type": "REAL"
+    },
+    "Climate": {
+      "type": "PID",
+      "value": {
+        "KP": 25.0,
+        "KI": 0.8,
+        "MINO": -100.0,
+        "MAXS": 50.0,
+        "DB": 0.2
+      }
+    }
+  },
+  "symbols": {
+    "%I0.0": "On (PB)",
+    "%I0.1": "Off (NC, PB)"
+  }
+}

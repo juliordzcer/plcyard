@@ -34,14 +34,17 @@ no licence key.
   mnemonics (`XIC`, `OTE`, `MOV`, timer `.PRE` `.ACC` `.DN`, I/O as `Local:1:I.Data.0`) or IEC
   symbols (NO/NC contacts, `MOVE`, timer `.PT` `.ET` `.Q`, I/O as `%I0.0`). The program is the same
   in both, so you can switch at any time and read either style of documentation.
-- **Check my program**: 13 exercises, from logic gates to tuning a PID level loop, each with
+- **Check my program**: 16 exercises, from logic gates to tuning a PID level loop, each with
   automatic checks of every written requirement. Runs faster than real time. **Compare
   languages** shows each reference solution in ladder, structured text and function block diagram.
 - **Simulations**: I/O panel (16 inputs, 16 outputs per card, thumbwheels and a 7-segment BCD
   display), a filling line (silo), a road crossing (traffic lights), an analog **tank level**
   process with a live trend, **two tanks in series** (cascade control), a **garage door** with
-  limit switches and a safety photo-eye, and a **batch mixer** with ingredients, mixer, heater and
-  temperature. Every label with an address can be dragged onto the program.
+  limit switches and a safety photo-eye, a **batch mixer**, an **elevator** for three floors, a
+  **bottle line** (filler, capper, reject gate), a **sorting conveyor**, a **pick and place** arm, a
+  **parking garage** with barriers and counter, a **pump station** with two alternating pumps, a
+  **room climate** loop and a **washing machine**. Each has an example program; every label with
+  an address can be dragged onto the program.
 - **Tags, data types and arrays**: BOOL, INT, DINT, REAL, TIME, TIMER, COUNTER, CONTROL, PID, your
   own data types and arrays (`Recipe[Step].FillTime`); marker and I/O addresses (`%M10.0`, `%MW20`).
 - **Instructions**: contacts and coils, set/reset, one shots and edge contacts, TON/TOF/RTO/TP,
@@ -104,8 +107,8 @@ Open a sample from **File → Open example**, or press **Ctrl+E** for the exerci
 
 ## Roadmap
 
-- More simulations (door, elevator, batch mixing, bottle line) and exercises.
-- A wiki. Full list in [TODO.md](TODO.md).
+- Exercises for the newer simulations; remote I/O on an Arduino or ESP32.
+- A worked example per instruction in the [wiki](docs/wiki/index.md). Full list in [TODO.md](TODO.md).
 - More UI languages.
 
 Contributions are welcome: open an issue first for anything large.
@@ -114,10 +117,11 @@ Contributions are welcome: open an issue first for anything large.
 
 ```bash
 .venv/bin/pip install pytest pytest-qt
-.venv/bin/python -m pytest              # about 290 tests, under a minute
+.venv/bin/python -m pytest              # about 400 tests, a minute and a half
 ```
 
-Every fixed bug and design decision is in [DEVLOG.md](DEVLOG.md).
+Every fixed bug and design decision is in [DEVLOG.md](DEVLOG.md). The documentation is in
+[docs/wiki](docs/wiki/index.md) (`mkdocs serve` to preview it).
 
 ## Licence
 

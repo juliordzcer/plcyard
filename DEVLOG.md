@@ -595,3 +595,33 @@ keys:      three languages, compare, solutions, .st.plcy, .fbd.plcy, BCD
 - More simulations and their exercises listed in TODO.md.
 - Tests: `test_more_sims.py` (6), e2e F20 (3). 350 in total.
 keys:      two tanks, cascade, garage door, photo-eye, batch mixer, heater, MODELS
+
+## C-030 — Exercises 14-16 and eight more simulations
+2026-10-22 · commits: da15ad1, aa787fc
+- Exercises 14 (two tanks), 15 (garage door), 16 (batch mixer) with checks and solutions in LD, ST
+  and FBD (48 graded solutions in all). Check texts use canonical addresses and the chosen notation.
+- Simulations (`sims/`, views in `ui/sim_views3.py`, all in `sims.MODELS` and the Simulations menu):
+  elevator (3 floors, hall and car calls, door with limits and safety edge, overtravel), bottle
+  line (filler, capper with a bad cap every fifth bottle, inspection and reject), sorting conveyor
+  (three box heights, two beams, three pushers and bins), pick and place (two cylinders, vacuum,
+  part counter), parking garage (barriers, beams, BCD display of free spaces, traffic), pump
+  station (two pumps, level switches, faults, running hours and starts), room climate (heater,
+  cooler, fan, window, outside temperature, trend), washing machine (lock, fill, wash both ways,
+  drain, spin, rpm, grading of a cycle). Each reports what went wrong.
+- Examples in structured text for each (state machines, queues per belt stretch, a split-range
+  PID); `tests/test_sims_extra.py` checks each one reaches its goal with no events. 400 tests.
+- Fix: a pneumatic cylinder at its end no longer creeps back.
+keys:      elevator, bottle line, sorter, pick and place, parking, pump station, climate, washer
+
+## C-031 — Wiki (Phase 7)
+2026-10-22 · commits: e632a11
+- MkDocs site in `docs/wiki/` (`mkdocs.yml`, readthedocs theme, published to GitHub Pages by
+  `.github/workflows/docs.yml`): getting started, scan cycle, notations, ladder, structured text,
+  FBD, tags and data types, routines and blocks, simulations, writing exercises, adding a
+  simulation, contributing.
+- Reference generated from the code by `python -m plcyard.docgen`: instructions (from `isa.SPECS`,
+  with the IEC name of each), FBD blocks (`fbd.LIBRARY`), ST functions (`st.FUNCS`) and simulations
+  (module docstrings of `sims.MODELS`). `tests/test_docgen.py` fails while the pages are stale or
+  any page names a vendor.
+- Older simulation docstrings (I/O panel, silo, traffic, tank) now use canonical addresses.
+keys:      wiki, mkdocs, docgen, reference, GitHub Pages

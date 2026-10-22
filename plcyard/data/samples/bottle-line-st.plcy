@@ -1,0 +1,32 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// Bottle line: the conveyor stops while the filler fills or the capper presses; the reject pusher\n// takes every bad bottle off at inspection.\nRun := (%I0.0 OR Run) AND %I0.1;\nFilling := Run AND %I0.2 AND NOT %I0.3;                  // a bottle under the filler, not full yet\nCapTime.TON(IN := %I0.4, PT := T#600ms);                 // press 0.6 s on each bottle at the capper\nCapping := Run AND %I0.4 AND NOT CapTime.DN;\n%Q0.1 := Filling;\n%Q0.2 := Capping;\n%Q0.0 := Run AND NOT Filling AND NOT Capping;            // conveyor\n%Q0.3 := %I0.5 AND NOT %I0.6;                            // reject a bad bottle at inspection\n%Q0.4 := Run;\n"
+    }
+  ],
+  "tags": {
+    "Run": {
+      "type": "BOOL"
+    },
+    "Filling": {
+      "type": "BOOL"
+    },
+    "Capping": {
+      "type": "BOOL"
+    },
+    "CapTime": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}

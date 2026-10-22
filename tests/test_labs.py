@@ -4,6 +4,8 @@ import itertools
 
 import pytest
 
+from plcyard.sims import MODELS
+
 from plcyard import formats, labs
 from plcyard.core.processor import Processor
 from plcyard.formats import rsl
@@ -42,9 +44,9 @@ def press(plc, sim, bit, hold_ms=50):
 
 
 def test_all_labs_have_header_and_solution():
-    assert len(LABS) == 13
+    assert len(LABS) == 16
     for lab in LABS.values():
-        assert lab.title and lab.simulation in ("io", "silo", "traffic", "tank")
+        assert lab.title and lab.simulation in MODELS
         assert lab.solution.exists()
         assert Processor().download(lab.starter()) == []
 

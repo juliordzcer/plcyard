@@ -1,0 +1,29 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// One cycle: down, grip, up, across, down, release, up, back. Start runs cycles while parts come.\nRun := (%I0.0 OR Run) AND %I0.1;\nCASE State OF\n    0: IF Run AND %I0.6 AND %I0.2 AND %I0.4 THEN State := 1; END_IF;   // part waiting, arm home\n    1: IF %I0.5 THEN State := 2; END_IF;          // down at the pick point\n    2: IF %I0.7 THEN State := 3; END_IF;          // vacuum holds the part\n    3: IF %I0.4 THEN State := 4; END_IF;          // up\n    4: IF %I0.3 THEN State := 5; END_IF;          // across to the tray\n    5: IF %I0.5 THEN State := 6; END_IF;          // down at the tray\n    6: IF Release.DN THEN State := 7; END_IF;     // vacuum off, let go\n    7: IF %I0.4 THEN State := 8; END_IF;          // up\n    8: IF %I0.2 THEN State := 0; END_IF;          // back home\nEND_CASE;\nRelease.TON(IN := State = 6, PT := T#300ms);\n%Q0.0 := State >= 4 AND State <= 7;              // extend\n%Q0.1 := State = 1 OR State = 2 OR State = 5 OR State = 6;   // down\n%Q0.2 := State >= 2 AND State <= 5;              // vacuum\n%Q0.3 := State <> 0;                             // cycle lamp\n"
+    }
+  ],
+  "tags": {
+    "Run": {
+      "type": "BOOL"
+    },
+    "State": {
+      "type": "DINT"
+    },
+    "Release": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}

@@ -703,7 +703,11 @@ def test_F19_H1_compare_shows_three_languages_and_opens_one(win, qtbot, monkeypa
 
 # -- F20 more simulations ------------------------------------------------------------------------------------
 @pytest.mark.parametrize("kind,sample", [("two_tanks", "two-tanks-cascade.plcy"), ("garage", "garage-door.plcy"),
-                                         ("mixer", "batch-mixer-st.plcy")])
+                                         ("mixer", "batch-mixer-st.plcy"), ("elevator", "elevator-st.plcy"),
+                                         ("bottles", "bottle-line-st.plcy"), ("sorter", "sorting-conveyor-st.plcy"),
+                                         ("pick_place", "pick-and-place-st.plcy"), ("parking", "parking-garage-st.plcy"),
+                                         ("pumps", "pump-station-st.plcy"), ("hvac", "room-climate-st.plcy"),
+                                         ("washer", "washing-machine-st.plcy")])
 def test_F20_H1_new_simulations_run_their_examples(win, kind, sample):
     win.select_sim(kind)
     win.open(str(SAMPLES / sample))
