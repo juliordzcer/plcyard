@@ -1,0 +1,44 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// Lock, fill, wash 12 s each way in turns of 4 s, drain, spin 9 s, wait for the drum to stop, unlock.\nStopped := NOT %I0.1;\nCASE State OF\n    0: IF %I0.0 AND %I0.2 THEN State := 1; END_IF;      // Start with the door closed\n    1: IF %I0.3 THEN State := 2; END_IF;                // locked\n    2: IF %I0.5 THEN State := 3; END_IF;                // full\n    3: IF WashTime.DN THEN State := 4; END_IF;          // wash\n    4: IF NOT %I0.4 AND DrainTime.DN THEN State := 5; END_IF;   // drained\n    5: IF SpinTime.DN THEN State := 6; END_IF;          // spin\n    6: IF %I0.6 THEN State := 7; END_IF;                // drum stopped\n    7: IF DoneTime.DN THEN State := 0; END_IF;          // unlocked, done\nEND_CASE;\nIF Stopped AND State >= 1 AND State <= 5 THEN State := 6; END_IF;   // Stop: let the drum stop, unlock\nWashTime.TON(IN := State = 3, PT := T#24s);\nTurn.TON(IN := State = 3 AND NOT Turn.DN, PT := T#4s);\nIF State = 3 AND Turn.DN THEN Right := NOT Right; END_IF;\nDrainTime.TON(IN := State = 4 AND NOT %I0.4, PT := T#2s);\nSpinTime.TON(IN := State = 5, PT := T#9s);\nDoneTime.TON(IN := State = 7, PT := T#3s);\n%Q0.0 := State >= 1 AND State <= 6;                  // door lock\n%Q0.1 := State = 2;                                  // fill\n%Q0.2 := State = 3 AND NOT Right;                    // wash left\n%Q0.3 := State = 3 AND Right;                        // wash right\n%Q0.4 := State = 5;                                  // spin\n%Q0.5 := State = 4 OR State = 5;                     // drain pump\n%Q0.6 := State = 7;                                  // done\n"
+    }
+  ],
+  "tags": {
+    "Stopped": {
+      "type": "BOOL"
+    },
+    "State": {
+      "type": "DINT"
+    },
+    "Right": {
+      "type": "BOOL"
+    },
+    "WashTime": {
+      "type": "TIMER"
+    },
+    "Turn": {
+      "type": "TIMER"
+    },
+    "DrainTime": {
+      "type": "TIMER"
+    },
+    "SpinTime": {
+      "type": "TIMER"
+    },
+    "DoneTime": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}

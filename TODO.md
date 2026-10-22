@@ -62,9 +62,9 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [ ] Desktop installers built by GitHub Actions on each release tag with PyInstaller: Windows
       installer (Inno Setup), macOS .dmg (Intel and Apple Silicon), Linux AppImage (and .deb);
       linked from the wiki. Unsigned at first (SmartScreen / Gatekeeper notes). Also PyPI.
-- [ ] Exercises for the newer simulations, with checks and LD/ST/FBD solutions: 17-20 done (pick
-      and place, bottle line, sorting conveyor, parking garage); 21-24 next (pump station, room
-      climate, washing machine, elevator).
+- [x] Exercises for the newer simulations, with checks and LD/ST/FBD solutions: 17-24 (pick and
+      place, bottle line, sorting conveyor, parking garage, pump station, room climate, washing
+      machine, elevator).
 - [ ] Phone-friendly web version: a layout for narrow screens (simulation, editor, exercise in
       tabs or a bottom bar), touch-sized buttons and pins, the instruction bar and operand form
       usable with the on-screen keyboard, pinch/scroll on the ladder and FBD canvas, tested on

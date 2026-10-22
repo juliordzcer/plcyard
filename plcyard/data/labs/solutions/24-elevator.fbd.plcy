@@ -1,0 +1,1124 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "FBD",
+      "fbd": {
+        "blocks": [
+          {
+            "id": 1,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 110.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "1"
+            }
+          },
+          {
+            "id": 2,
+            "type": "EQ",
+            "x": 520.0,
+            "y": 110.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "1"
+            }
+          },
+          {
+            "id": 3,
+            "type": "AND",
+            "x": 780.0,
+            "y": 110.0,
+            "operands": {
+              "IN3": "%I1.1"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 4,
+            "type": "OR",
+            "x": 1040.0,
+            "y": 110.0,
+            "operands": {
+              "IN1": "%I0.0",
+              "IN2": "%I0.3"
+            }
+          },
+          {
+            "id": 5,
+            "type": "SR",
+            "x": 1300.0,
+            "y": 110.0,
+            "operands": {
+              "Q1": "Call1"
+            }
+          },
+          {
+            "id": 6,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 290.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "1"
+            }
+          },
+          {
+            "id": 7,
+            "type": "EQ",
+            "x": 520.0,
+            "y": 290.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "2"
+            }
+          },
+          {
+            "id": 8,
+            "type": "AND",
+            "x": 780.0,
+            "y": 290.0,
+            "operands": {
+              "IN3": "%I1.1"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 9,
+            "type": "OR",
+            "x": 1040.0,
+            "y": 290.0,
+            "operands": {
+              "IN1": "%I0.1",
+              "IN2": "%I0.4"
+            }
+          },
+          {
+            "id": 10,
+            "type": "SR",
+            "x": 1300.0,
+            "y": 290.0,
+            "operands": {
+              "Q1": "Call2"
+            }
+          },
+          {
+            "id": 11,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 470.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "1"
+            }
+          },
+          {
+            "id": 12,
+            "type": "EQ",
+            "x": 520.0,
+            "y": 470.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "3"
+            }
+          },
+          {
+            "id": 13,
+            "type": "AND",
+            "x": 780.0,
+            "y": 470.0,
+            "operands": {
+              "IN3": "%I1.1"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 14,
+            "type": "OR",
+            "x": 1040.0,
+            "y": 470.0,
+            "operands": {
+              "IN1": "%I0.2",
+              "IN2": "%I0.5"
+            }
+          },
+          {
+            "id": 15,
+            "type": "SR",
+            "x": 1300.0,
+            "y": 470.0,
+            "operands": {
+              "Q1": "Call3"
+            }
+          },
+          {
+            "id": 16,
+            "type": "SEL",
+            "x": 260.0,
+            "y": 650.0,
+            "operands": {
+              "G": "%I0.6",
+              "IN0": "Floor",
+              "IN1": "1",
+              "OUT": "Floor"
+            }
+          },
+          {
+            "id": 17,
+            "type": "SEL",
+            "x": 520.0,
+            "y": 650.0,
+            "operands": {
+              "G": "%I0.7",
+              "IN0": "Floor",
+              "IN1": "2",
+              "OUT": "Floor"
+            }
+          },
+          {
+            "id": 18,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 650.0,
+            "operands": {
+              "G": "%I1.0",
+              "IN0": "Floor",
+              "IN1": "3",
+              "OUT": "Floor"
+            }
+          },
+          {
+            "id": 19,
+            "type": "OR",
+            "x": 1040.0,
+            "y": 650.0,
+            "operands": {
+              "IN1": "%I0.6",
+              "IN2": "%I0.7",
+              "IN3": "%I1.0",
+              "OUT": "AtFloor"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 20,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 854.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "1"
+            }
+          },
+          {
+            "id": 21,
+            "type": "AND",
+            "x": 520.0,
+            "y": 854.0,
+            "operands": {
+              "IN2": "Call1"
+            }
+          },
+          {
+            "id": 22,
+            "type": "EQ",
+            "x": 780.0,
+            "y": 854.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "2"
+            }
+          },
+          {
+            "id": 23,
+            "type": "AND",
+            "x": 1040.0,
+            "y": 854.0,
+            "operands": {
+              "IN2": "Call2"
+            }
+          },
+          {
+            "id": 24,
+            "type": "EQ",
+            "x": 1300.0,
+            "y": 854.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "3"
+            }
+          },
+          {
+            "id": 25,
+            "type": "AND",
+            "x": 1560.0,
+            "y": 854.0,
+            "operands": {
+              "IN2": "Call3"
+            }
+          },
+          {
+            "id": 26,
+            "type": "OR",
+            "x": 1820.0,
+            "y": 854.0,
+            "inputs": 3
+          },
+          {
+            "id": 27,
+            "type": "AND",
+            "x": 2080.0,
+            "y": 854.0,
+            "operands": {
+              "IN1": "AtFloor",
+              "OUT": "Here"
+            }
+          },
+          {
+            "id": 28,
+            "type": "LT",
+            "x": 260.0,
+            "y": 1034.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "2"
+            }
+          },
+          {
+            "id": 29,
+            "type": "LT",
+            "x": 520.0,
+            "y": 1034.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "3"
+            }
+          },
+          {
+            "id": 30,
+            "type": "AND",
+            "x": 780.0,
+            "y": 1034.0,
+            "operands": {
+              "IN2": "Call2"
+            }
+          },
+          {
+            "id": 31,
+            "type": "AND",
+            "x": 1040.0,
+            "y": 1034.0,
+            "operands": {
+              "IN2": "Call3"
+            }
+          },
+          {
+            "id": 32,
+            "type": "OR",
+            "x": 1300.0,
+            "y": 1034.0,
+            "operands": {
+              "OUT": "Above"
+            }
+          },
+          {
+            "id": 33,
+            "type": "GT",
+            "x": 260.0,
+            "y": 1214.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "2"
+            }
+          },
+          {
+            "id": 34,
+            "type": "GT",
+            "x": 520.0,
+            "y": 1214.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "1"
+            }
+          },
+          {
+            "id": 35,
+            "type": "AND",
+            "x": 780.0,
+            "y": 1214.0,
+            "operands": {
+              "IN2": "Call2"
+            }
+          },
+          {
+            "id": 36,
+            "type": "AND",
+            "x": 1040.0,
+            "y": 1214.0,
+            "operands": {
+              "IN2": "Call1"
+            }
+          },
+          {
+            "id": 37,
+            "type": "OR",
+            "x": 1300.0,
+            "y": 1214.0,
+            "operands": {
+              "OUT": "Below"
+            }
+          },
+          {
+            "id": 38,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 1394.0,
+            "operands": {
+              "IN": "%I1.3",
+              "OUT": "NotEdge"
+            }
+          },
+          {
+            "id": 39,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 1574.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "0"
+            }
+          },
+          {
+            "id": 40,
+            "type": "AND",
+            "x": 520.0,
+            "y": 1574.0,
+            "operands": {
+              "IN2": "Here"
+            }
+          },
+          {
+            "id": 41,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 1574.0,
+            "operands": {
+              "IN0": "State",
+              "IN1": "1",
+              "OUT": "State"
+            }
+          },
+          {
+            "id": 42,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 1754.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "0"
+            }
+          },
+          {
+            "id": 43,
+            "type": "AND",
+            "x": 520.0,
+            "y": 1754.0,
+            "operands": {
+              "IN2": "Above"
+            }
+          },
+          {
+            "id": 44,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 1754.0,
+            "operands": {
+              "IN0": "State",
+              "IN1": "3",
+              "OUT": "State"
+            }
+          },
+          {
+            "id": 45,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 1934.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "0"
+            }
+          },
+          {
+            "id": 46,
+            "type": "AND",
+            "x": 520.0,
+            "y": 1934.0,
+            "operands": {
+              "IN2": "Below"
+            }
+          },
+          {
+            "id": 47,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 1934.0,
+            "operands": {
+              "IN0": "State",
+              "IN1": "4",
+              "OUT": "State"
+            }
+          },
+          {
+            "id": 48,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 2114.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "1"
+            }
+          },
+          {
+            "id": 49,
+            "type": "AND",
+            "x": 520.0,
+            "y": 2114.0,
+            "operands": {
+              "IN2": "%I1.1"
+            }
+          },
+          {
+            "id": 50,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 2114.0,
+            "operands": {
+              "IN0": "State",
+              "IN1": "2",
+              "OUT": "State"
+            }
+          },
+          {
+            "id": 51,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 2294.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "2"
+            }
+          },
+          {
+            "id": 52,
+            "type": "AND",
+            "x": 520.0,
+            "y": 2294.0,
+            "operands": {
+              "IN2": "Dwell.DN",
+              "IN3": "%I1.3"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 53,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 2294.0,
+            "operands": {
+              "IN0": "State",
+              "IN1": "5",
+              "OUT": "State"
+            }
+          },
+          {
+            "id": 54,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 2474.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "5"
+            }
+          },
+          {
+            "id": 55,
+            "type": "AND",
+            "x": 520.0,
+            "y": 2474.0,
+            "operands": {
+              "IN2": "NotEdge"
+            }
+          },
+          {
+            "id": 56,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 2474.0,
+            "operands": {
+              "IN0": "State",
+              "IN1": "1",
+              "OUT": "State"
+            }
+          },
+          {
+            "id": 57,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 2654.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "5"
+            }
+          },
+          {
+            "id": 58,
+            "type": "AND",
+            "x": 520.0,
+            "y": 2654.0,
+            "operands": {
+              "IN2": "%I1.2"
+            }
+          },
+          {
+            "id": 59,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 2654.0,
+            "operands": {
+              "IN0": "State",
+              "IN1": "0",
+              "OUT": "State"
+            }
+          },
+          {
+            "id": 60,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 2834.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "3"
+            }
+          },
+          {
+            "id": 61,
+            "type": "AND",
+            "x": 520.0,
+            "y": 2834.0,
+            "operands": {
+              "IN2": "Here"
+            }
+          },
+          {
+            "id": 62,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 2834.0,
+            "operands": {
+              "IN0": "State",
+              "IN1": "1",
+              "OUT": "State"
+            }
+          },
+          {
+            "id": 63,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 3014.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "4"
+            }
+          },
+          {
+            "id": 64,
+            "type": "AND",
+            "x": 520.0,
+            "y": 3014.0,
+            "operands": {
+              "IN2": "Here"
+            }
+          },
+          {
+            "id": 65,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 3014.0,
+            "operands": {
+              "IN0": "State",
+              "IN1": "1",
+              "OUT": "State"
+            }
+          },
+          {
+            "id": 66,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 3194.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "2"
+            }
+          },
+          {
+            "id": 67,
+            "type": "TON",
+            "x": 520.0,
+            "y": 3194.0,
+            "instance": "Dwell",
+            "operands": {
+              "PT": "T#2s"
+            }
+          },
+          {
+            "id": 68,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 3374.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "3"
+            }
+          },
+          {
+            "id": 69,
+            "type": "AND",
+            "x": 520.0,
+            "y": 3374.0,
+            "operands": {
+              "IN2": "%I1.2",
+              "IN3": "%I1.4",
+              "OUT": "%Q0.0"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 70,
+            "type": "EQ",
+            "x": 780.0,
+            "y": 3374.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "4"
+            }
+          },
+          {
+            "id": 71,
+            "type": "AND",
+            "x": 1040.0,
+            "y": 3374.0,
+            "operands": {
+              "IN2": "%I1.2",
+              "IN3": "%I1.5",
+              "OUT": "%Q0.1"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 72,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 3554.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "1",
+              "OUT": "%Q0.2"
+            }
+          },
+          {
+            "id": 73,
+            "type": "EQ",
+            "x": 520.0,
+            "y": 3554.0,
+            "operands": {
+              "IN1": "State",
+              "IN2": "5"
+            }
+          },
+          {
+            "id": 74,
+            "type": "AND",
+            "x": 780.0,
+            "y": 3554.0,
+            "operands": {
+              "IN2": "%I1.3",
+              "OUT": "%Q0.3"
+            }
+          },
+          {
+            "id": 75,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 3734.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "1",
+              "OUT": "%Q0.4"
+            }
+          },
+          {
+            "id": 76,
+            "type": "EQ",
+            "x": 520.0,
+            "y": 3734.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "2",
+              "OUT": "%Q0.5"
+            }
+          },
+          {
+            "id": 77,
+            "type": "EQ",
+            "x": 780.0,
+            "y": 3734.0,
+            "operands": {
+              "IN1": "Floor",
+              "IN2": "3",
+              "OUT": "%Q0.6"
+            }
+          }
+        ],
+        "wires": [
+          [
+            1,
+            "OUT",
+            3,
+            "IN1"
+          ],
+          [
+            2,
+            "OUT",
+            3,
+            "IN2"
+          ],
+          [
+            4,
+            "OUT",
+            5,
+            "S1"
+          ],
+          [
+            3,
+            "OUT",
+            5,
+            "R"
+          ],
+          [
+            6,
+            "OUT",
+            8,
+            "IN1"
+          ],
+          [
+            7,
+            "OUT",
+            8,
+            "IN2"
+          ],
+          [
+            9,
+            "OUT",
+            10,
+            "S1"
+          ],
+          [
+            8,
+            "OUT",
+            10,
+            "R"
+          ],
+          [
+            11,
+            "OUT",
+            13,
+            "IN1"
+          ],
+          [
+            12,
+            "OUT",
+            13,
+            "IN2"
+          ],
+          [
+            14,
+            "OUT",
+            15,
+            "S1"
+          ],
+          [
+            13,
+            "OUT",
+            15,
+            "R"
+          ],
+          [
+            20,
+            "OUT",
+            21,
+            "IN1"
+          ],
+          [
+            22,
+            "OUT",
+            23,
+            "IN1"
+          ],
+          [
+            24,
+            "OUT",
+            25,
+            "IN1"
+          ],
+          [
+            21,
+            "OUT",
+            26,
+            "IN1"
+          ],
+          [
+            23,
+            "OUT",
+            26,
+            "IN2"
+          ],
+          [
+            25,
+            "OUT",
+            26,
+            "IN3"
+          ],
+          [
+            26,
+            "OUT",
+            27,
+            "IN2"
+          ],
+          [
+            28,
+            "OUT",
+            30,
+            "IN1"
+          ],
+          [
+            29,
+            "OUT",
+            31,
+            "IN1"
+          ],
+          [
+            30,
+            "OUT",
+            32,
+            "IN1"
+          ],
+          [
+            31,
+            "OUT",
+            32,
+            "IN2"
+          ],
+          [
+            33,
+            "OUT",
+            35,
+            "IN1"
+          ],
+          [
+            34,
+            "OUT",
+            36,
+            "IN1"
+          ],
+          [
+            35,
+            "OUT",
+            37,
+            "IN1"
+          ],
+          [
+            36,
+            "OUT",
+            37,
+            "IN2"
+          ],
+          [
+            39,
+            "OUT",
+            40,
+            "IN1"
+          ],
+          [
+            40,
+            "OUT",
+            41,
+            "G"
+          ],
+          [
+            42,
+            "OUT",
+            43,
+            "IN1"
+          ],
+          [
+            43,
+            "OUT",
+            44,
+            "G"
+          ],
+          [
+            45,
+            "OUT",
+            46,
+            "IN1"
+          ],
+          [
+            46,
+            "OUT",
+            47,
+            "G"
+          ],
+          [
+            48,
+            "OUT",
+            49,
+            "IN1"
+          ],
+          [
+            49,
+            "OUT",
+            50,
+            "G"
+          ],
+          [
+            51,
+            "OUT",
+            52,
+            "IN1"
+          ],
+          [
+            52,
+            "OUT",
+            53,
+            "G"
+          ],
+          [
+            54,
+            "OUT",
+            55,
+            "IN1"
+          ],
+          [
+            55,
+            "OUT",
+            56,
+            "G"
+          ],
+          [
+            57,
+            "OUT",
+            58,
+            "IN1"
+          ],
+          [
+            58,
+            "OUT",
+            59,
+            "G"
+          ],
+          [
+            60,
+            "OUT",
+            61,
+            "IN1"
+          ],
+          [
+            61,
+            "OUT",
+            62,
+            "G"
+          ],
+          [
+            63,
+            "OUT",
+            64,
+            "IN1"
+          ],
+          [
+            64,
+            "OUT",
+            65,
+            "G"
+          ],
+          [
+            66,
+            "OUT",
+            67,
+            "IN"
+          ],
+          [
+            68,
+            "OUT",
+            69,
+            "IN1"
+          ],
+          [
+            70,
+            "OUT",
+            71,
+            "IN1"
+          ],
+          [
+            73,
+            "OUT",
+            74,
+            "IN1"
+          ]
+        ]
+      }
+    }
+  ],
+  "tags": {
+    "Call1": {
+      "type": "BOOL"
+    },
+    "Call2": {
+      "type": "BOOL"
+    },
+    "Call3": {
+      "type": "BOOL"
+    },
+    "Floor": {
+      "type": "DINT",
+      "value": 1
+    },
+    "AtFloor": {
+      "type": "BOOL"
+    },
+    "Here": {
+      "type": "BOOL"
+    },
+    "Above": {
+      "type": "BOOL"
+    },
+    "Below": {
+      "type": "BOOL"
+    },
+    "State": {
+      "type": "DINT"
+    },
+    "Dwell": {
+      "type": "TIMER"
+    },
+    "NotEdge": {
+      "type": "BOOL"
+    }
+  },
+  "symbols": {}
+}

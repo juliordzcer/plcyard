@@ -1,0 +1,156 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "LD",
+      "rungs": [
+        {
+          "text": "XIO,%I0.1 OTE,Stopped",
+          "comment": "Stop is normally closed."
+        },
+        {
+          "text": "EQU,State,0 XIC,%I0.0 XIC,%I0.2 MOV,1,State",
+          "comment": "Start with the door closed: lock."
+        },
+        {
+          "text": "EQU,State,1 XIC,%I0.3 MOV,2,State",
+          "comment": "Locked: fill."
+        },
+        {
+          "text": "EQU,State,2 XIC,%I0.5 MOV,3,State",
+          "comment": "Full: wash."
+        },
+        {
+          "text": "EQU,State,3 XIC,WashTime.DN MOV,4,State",
+          "comment": "Washed: drain."
+        },
+        {
+          "text": "EQU,State,4 XIO,%I0.4 XIC,DrainTime.DN MOV,5,State",
+          "comment": "Drained: spin."
+        },
+        {
+          "text": "EQU,State,5 XIC,SpinTime.DN MOV,6,State",
+          "comment": "Spun: wait for the drum."
+        },
+        {
+          "text": "EQU,State,6 XIC,%I0.6 MOV,7,State",
+          "comment": "The drum stopped: unlock, done."
+        },
+        {
+          "text": "EQU,State,7 XIC,DoneTime.DN MOV,0,State",
+          "comment": "Back to idle."
+        },
+        {
+          "text": "XIC,Stopped GEQ,State,1 LEQ,State,5 MOV,6,State",
+          "comment": "Stop: let the drum stop, then unlock."
+        },
+        {
+          "text": "EQU,State,3 TON,WashTime,24000",
+          "comment": "Wash 24 s…"
+        },
+        {
+          "text": "EQU,State,3 XIO,Turn.DN TON,Turn,4000",
+          "comment": "…turning 4 s each way."
+        },
+        {
+          "text": "EQU,State,3 XIC,Turn.DN OTE,Flip",
+          "comment": ""
+        },
+        {
+          "text": "XIC,Flip XIO,Right OTE,SetRight",
+          "comment": ""
+        },
+        {
+          "text": "XIC,Flip XIC,Right OTU,Right",
+          "comment": ""
+        },
+        {
+          "text": "XIC,SetRight OTL,Right",
+          "comment": "Change direction."
+        },
+        {
+          "text": "EQU,State,4 XIO,%I0.4 TON,DrainTime,2000",
+          "comment": "Drain 2 s more once the water is gone."
+        },
+        {
+          "text": "EQU,State,5 TON,SpinTime,9000",
+          "comment": "Spin 9 s."
+        },
+        {
+          "text": "EQU,State,7 TON,DoneTime,3000",
+          "comment": "Done lamp 3 s."
+        },
+        {
+          "text": "GEQ,State,1 LEQ,State,6 OTE,%Q0.0",
+          "comment": "Door lock."
+        },
+        {
+          "text": "EQU,State,2 OTE,%Q0.1",
+          "comment": "Fill."
+        },
+        {
+          "text": "EQU,State,3 XIO,Right OTE,%Q0.2",
+          "comment": "Wash left."
+        },
+        {
+          "text": "EQU,State,3 XIC,Right OTE,%Q0.3",
+          "comment": "Wash right."
+        },
+        {
+          "text": "EQU,State,5 OTE,%Q0.4",
+          "comment": "Spin."
+        },
+        {
+          "text": "BST,1 EQU,State,4 NXB,1 EQU,State,5 BND,1 OTE,%Q0.5",
+          "comment": "Drain pump."
+        },
+        {
+          "text": "EQU,State,7 OTE,%Q0.6",
+          "comment": "Done lamp."
+        }
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "Stopped": {
+      "type": "BOOL"
+    },
+    "State": {
+      "type": "DINT"
+    },
+    "Right": {
+      "type": "BOOL"
+    },
+    "WashTime": {
+      "type": "TIMER"
+    },
+    "Turn": {
+      "type": "TIMER"
+    },
+    "DrainTime": {
+      "type": "TIMER"
+    },
+    "SpinTime": {
+      "type": "TIMER"
+    },
+    "DoneTime": {
+      "type": "TIMER"
+    },
+    "Flip": {
+      "type": "BOOL"
+    },
+    "SetRight": {
+      "type": "BOOL"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}

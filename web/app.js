@@ -639,7 +639,7 @@ function closeLab() {
 }
 
 function check() {
-  $("report").innerHTML = "<p class='muted'>Checking…</p>";
+  $("report").innerHTML = "<p class='muted'>Checking… the machine runs several minutes of simulated time, this can take a few seconds.</p>";
   setTimeout(() => {
     const r = js(S.check());
     if (r.error) { $("report").innerHTML = `<p class="bad">${esc(r.error)}</p>`; return; }

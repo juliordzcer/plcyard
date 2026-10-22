@@ -761,3 +761,18 @@ keys:      web, simulations, machines, elevator, washer, hvac
   machine, elevator). README and ROADMAP brought up to date.
 - Tests: 443 (every solution passes in its three languages, empty programs get no credit).
 keys:      exercises, grader, pick and place, bottles, sorter, parking
+
+## C-041 — Exercises 21-24: pump station, room climate, washing machine, elevator
+2026-10-22 · commits: 078435a
+- 21 Pump station with duty sharing (lead pump alternates, both at the high level, a failed pump
+  replaced, alarm with reset), 22 Room climate with heating and cooling (one PID from -100 % to
+  +100 %, fan interlock, window and hot weather), 23 Washing machine program (timed sequence,
+  direction changes, drain before spin, unlock only with the drum stopped), 24 Three-floor elevator
+  (remembered calls, direction, door safety edge).
+- Checks in `grader.py` (6-8 each, none passes for an empty program) and reference solutions in
+  LD, ST and FBD. The elevator example now never closes the door while someone is in the doorway
+  (it used to try once the dwell ended).
+- Every machine now has exercises: 24 in all. Web: the check says it can take a few seconds (up to
+  about 10 s in the browser for room climate).
+- Tests: 467 (suite ~110 s: the new checks simulate several minutes each).
+keys:      exercises, grader, pumps, hvac, washer, elevator

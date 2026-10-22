@@ -1,0 +1,522 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "FBD",
+      "fbd": {
+        "blocks": [
+          {
+            "id": 1,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 40.0,
+            "operands": {
+              "IN": "%I0.6",
+              "OUT": "N6"
+            }
+          },
+          {
+            "id": 2,
+            "type": "NOT",
+            "x": 520.0,
+            "y": 40.0,
+            "operands": {
+              "IN": "%I0.7",
+              "OUT": "N7"
+            }
+          },
+          {
+            "id": 3,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 220.0,
+            "operands": {
+              "IN": "P1On"
+            }
+          },
+          {
+            "id": 4,
+            "type": "NOT",
+            "x": 520.0,
+            "y": 220.0,
+            "operands": {
+              "IN": "P2On"
+            }
+          },
+          {
+            "id": 5,
+            "type": "AND",
+            "x": 780.0,
+            "y": 220.0,
+            "operands": {
+              "IN3": "%I0.3",
+              "OUT": "NewCycle"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 6,
+            "type": "SUB",
+            "x": 260.0,
+            "y": 400.0,
+            "operands": {
+              "IN1": "3",
+              "IN2": "Lead"
+            }
+          },
+          {
+            "id": 7,
+            "type": "SEL",
+            "x": 520.0,
+            "y": 400.0,
+            "operands": {
+              "G": "NewCycle",
+              "IN0": "Lead",
+              "OUT": "Lead"
+            }
+          },
+          {
+            "id": 8,
+            "type": "EQ",
+            "x": 260.0,
+            "y": 580.0,
+            "operands": {
+              "IN1": "Lead",
+              "IN2": "1"
+            }
+          },
+          {
+            "id": 9,
+            "type": "AND",
+            "x": 520.0,
+            "y": 580.0,
+            "operands": {
+              "IN2": "N6"
+            }
+          },
+          {
+            "id": 10,
+            "type": "OR",
+            "x": 780.0,
+            "y": 580.0,
+            "operands": {
+              "IN2": "%I0.7"
+            }
+          },
+          {
+            "id": 11,
+            "type": "AND",
+            "x": 1040.0,
+            "y": 580.0,
+            "operands": {
+              "IN1": "NewCycle"
+            }
+          },
+          {
+            "id": 12,
+            "type": "SEL",
+            "x": 1300.0,
+            "y": 580.0,
+            "operands": {
+              "IN0": "P1On",
+              "IN1": "1",
+              "OUT": "P1On"
+            }
+          },
+          {
+            "id": 13,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 760.0,
+            "operands": {
+              "IN": "P1On"
+            }
+          },
+          {
+            "id": 14,
+            "type": "AND",
+            "x": 520.0,
+            "y": 760.0,
+            "operands": {
+              "IN1": "NewCycle"
+            }
+          },
+          {
+            "id": 15,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 760.0,
+            "operands": {
+              "IN0": "P2On",
+              "IN1": "1",
+              "OUT": "P2On"
+            }
+          },
+          {
+            "id": 16,
+            "type": "AND",
+            "x": 260.0,
+            "y": 940.0,
+            "operands": {
+              "IN1": "%I0.4"
+            }
+          },
+          {
+            "id": 17,
+            "type": "SEL",
+            "x": 520.0,
+            "y": 940.0,
+            "operands": {
+              "IN0": "P1On",
+              "OUT": "P1On",
+              "IN1": "N6"
+            }
+          },
+          {
+            "id": 18,
+            "type": "AND",
+            "x": 260.0,
+            "y": 1120.0,
+            "operands": {
+              "IN1": "%I0.4"
+            }
+          },
+          {
+            "id": 19,
+            "type": "SEL",
+            "x": 520.0,
+            "y": 1120.0,
+            "operands": {
+              "IN0": "P2On",
+              "OUT": "P2On",
+              "IN1": "N7"
+            }
+          },
+          {
+            "id": 20,
+            "type": "AND",
+            "x": 260.0,
+            "y": 1300.0,
+            "operands": {
+              "IN1": "%I0.6",
+              "IN2": "P1On",
+              "OUT": "Swap1"
+            }
+          },
+          {
+            "id": 21,
+            "type": "SEL",
+            "x": 520.0,
+            "y": 1300.0,
+            "operands": {
+              "G": "Swap1",
+              "IN0": "P2On",
+              "IN1": "N7",
+              "OUT": "P2On"
+            }
+          },
+          {
+            "id": 22,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 1300.0,
+            "operands": {
+              "G": "Swap1",
+              "IN0": "P1On",
+              "IN1": "0",
+              "OUT": "P1On"
+            }
+          },
+          {
+            "id": 23,
+            "type": "AND",
+            "x": 260.0,
+            "y": 1504.0,
+            "operands": {
+              "IN1": "%I0.7",
+              "IN2": "P2On",
+              "OUT": "Swap2"
+            }
+          },
+          {
+            "id": 24,
+            "type": "SEL",
+            "x": 520.0,
+            "y": 1504.0,
+            "operands": {
+              "G": "Swap2",
+              "IN0": "P1On",
+              "IN1": "N6",
+              "OUT": "P1On"
+            }
+          },
+          {
+            "id": 25,
+            "type": "SEL",
+            "x": 780.0,
+            "y": 1504.0,
+            "operands": {
+              "G": "Swap2",
+              "IN0": "P2On",
+              "IN1": "0",
+              "OUT": "P2On"
+            }
+          },
+          {
+            "id": 26,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 1708.0,
+            "operands": {
+              "IN": "%I0.2"
+            }
+          },
+          {
+            "id": 27,
+            "type": "NOT",
+            "x": 520.0,
+            "y": 1708.0,
+            "operands": {
+              "IN": "%I0.1"
+            }
+          },
+          {
+            "id": 28,
+            "type": "OR",
+            "x": 780.0,
+            "y": 1708.0,
+            "operands": {
+              "OUT": "AllOff"
+            }
+          },
+          {
+            "id": 29,
+            "type": "SEL",
+            "x": 1040.0,
+            "y": 1708.0,
+            "operands": {
+              "G": "AllOff",
+              "IN0": "P1On",
+              "IN1": "0",
+              "OUT": "P1On"
+            }
+          },
+          {
+            "id": 30,
+            "type": "SEL",
+            "x": 1300.0,
+            "y": 1708.0,
+            "operands": {
+              "G": "AllOff",
+              "IN0": "P2On",
+              "IN1": "0",
+              "OUT": "P2On"
+            }
+          },
+          {
+            "id": 31,
+            "type": "MOVE",
+            "x": 260.0,
+            "y": 1912.0,
+            "operands": {
+              "IN": "P1On",
+              "OUT": "%Q0.0"
+            }
+          },
+          {
+            "id": 32,
+            "type": "MOVE",
+            "x": 520.0,
+            "y": 1912.0,
+            "operands": {
+              "IN": "P2On",
+              "OUT": "%Q0.1"
+            }
+          },
+          {
+            "id": 33,
+            "type": "OR",
+            "x": 260.0,
+            "y": 2092.0,
+            "operands": {
+              "IN1": "%I0.5",
+              "IN2": "%I0.6",
+              "IN3": "%I0.7"
+            },
+            "inputs": 3
+          },
+          {
+            "id": 34,
+            "type": "NOT",
+            "x": 520.0,
+            "y": 2092.0
+          },
+          {
+            "id": 35,
+            "type": "AND",
+            "x": 780.0,
+            "y": 2092.0,
+            "operands": {
+              "IN1": "%I0.0"
+            }
+          },
+          {
+            "id": 36,
+            "type": "SR",
+            "x": 1040.0,
+            "y": 2092.0,
+            "operands": {
+              "Q1": "%Q0.2"
+            }
+          }
+        ],
+        "wires": [
+          [
+            3,
+            "OUT",
+            5,
+            "IN1"
+          ],
+          [
+            4,
+            "OUT",
+            5,
+            "IN2"
+          ],
+          [
+            6,
+            "OUT",
+            7,
+            "IN1"
+          ],
+          [
+            8,
+            "OUT",
+            9,
+            "IN1"
+          ],
+          [
+            9,
+            "OUT",
+            10,
+            "IN1"
+          ],
+          [
+            10,
+            "OUT",
+            11,
+            "IN2"
+          ],
+          [
+            11,
+            "OUT",
+            12,
+            "G"
+          ],
+          [
+            13,
+            "OUT",
+            14,
+            "IN2"
+          ],
+          [
+            14,
+            "OUT",
+            15,
+            "G"
+          ],
+          [
+            16,
+            "OUT",
+            17,
+            "G"
+          ],
+          [
+            18,
+            "OUT",
+            19,
+            "G"
+          ],
+          [
+            26,
+            "OUT",
+            28,
+            "IN1"
+          ],
+          [
+            27,
+            "OUT",
+            28,
+            "IN2"
+          ],
+          [
+            33,
+            "OUT",
+            34,
+            "IN"
+          ],
+          [
+            34,
+            "OUT",
+            35,
+            "IN2"
+          ],
+          [
+            33,
+            "OUT",
+            36,
+            "S1"
+          ],
+          [
+            35,
+            "OUT",
+            36,
+            "R"
+          ]
+        ]
+      }
+    }
+  ],
+  "tags": {
+    "P1On": {
+      "type": "BOOL"
+    },
+    "P2On": {
+      "type": "BOOL"
+    },
+    "Lead": {
+      "type": "DINT",
+      "value": 2
+    },
+    "Alarm": {
+      "type": "BOOL"
+    },
+    "N6": {
+      "type": "BOOL"
+    },
+    "N7": {
+      "type": "BOOL"
+    },
+    "NewCycle": {
+      "type": "BOOL"
+    },
+    "Swap1": {
+      "type": "BOOL"
+    },
+    "Swap2": {
+      "type": "BOOL"
+    },
+    "AllOff": {
+      "type": "BOOL"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Reset alarm (PB)",
+    "%I0.1": "Stop (NC, PB)"
+  }
+}

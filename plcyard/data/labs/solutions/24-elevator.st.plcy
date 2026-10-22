@@ -1,0 +1,48 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// Three-floor elevator: remember every call, go to the nearest one in the direction of travel,\n// open the door at a called floor, wait, close (reopen if the safety edge sees someone).\nIF %I0.0 OR %I0.3 THEN Call1 := TRUE; END_IF;\nIF %I0.1 OR %I0.4 THEN Call2 := TRUE; END_IF;\nIF %I0.2 OR %I0.5 THEN Call3 := TRUE; END_IF;\nIF %I0.6 THEN Floor := 1; ELSIF %I0.7 THEN Floor := 2; ELSIF %I1.0 THEN Floor := 3; END_IF;\nAtFloor := %I0.6 OR %I0.7 OR %I1.0;\nHere := AtFloor AND ((Floor = 1 AND Call1) OR (Floor = 2 AND Call2) OR (Floor = 3 AND Call3));\nAbove := (Floor < 2 AND Call2) OR (Floor < 3 AND Call3);\nBelow := (Floor > 2 AND Call2) OR (Floor > 1 AND Call1);\nCASE State OF\n    0:  IF Here THEN State := 1;                  // idle: a call here opens the door\n        ELSIF Above THEN State := 3;\n        ELSIF Below THEN State := 4;\n        END_IF;\n    1:  IF %I1.1 THEN                             // opening; at the open limit the call is served\n            IF Floor = 1 THEN Call1 := FALSE; END_IF;\n            IF Floor = 2 THEN Call2 := FALSE; END_IF;\n            IF Floor = 3 THEN Call3 := FALSE; END_IF;\n            State := 2;\n        END_IF;\n    2:  IF Dwell.DN AND %I1.3 THEN State := 5; END_IF;   // door open 2 s, doorway clear\n    5:  IF NOT %I1.3 THEN State := 1;             // closing; someone in the doorway: open again\n        ELSIF %I1.2 THEN State := 0;\n        END_IF;\n    3:  IF Here THEN State := 1; END_IF;          // going up: stop at a called floor\n    4:  IF Here THEN State := 1; END_IF;          // going down\nEND_CASE;\nDwell.TON(IN := State = 2, PT := T#2s);\n%Q0.0 := State = 3 AND %I1.2 AND %I1.4;          // up, only with the door closed, not past the top\n%Q0.1 := State = 4 AND %I1.2 AND %I1.5;          // down\n%Q0.2 := State = 1;                              // door open\n%Q0.3 := State = 5 AND %I1.3;                    // door close, never on someone\n%Q0.4 := Floor = 1;\n%Q0.5 := Floor = 2;\n%Q0.6 := Floor = 3;\n"
+    }
+  ],
+  "tags": {
+    "Call1": {
+      "type": "BOOL"
+    },
+    "Call2": {
+      "type": "BOOL"
+    },
+    "Call3": {
+      "type": "BOOL"
+    },
+    "Floor": {
+      "type": "DINT",
+      "value": 1
+    },
+    "AtFloor": {
+      "type": "BOOL"
+    },
+    "Here": {
+      "type": "BOOL"
+    },
+    "Above": {
+      "type": "BOOL"
+    },
+    "Below": {
+      "type": "BOOL"
+    },
+    "State": {
+      "type": "DINT"
+    },
+    "Dwell": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {}
+}

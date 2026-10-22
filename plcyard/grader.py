@@ -526,9 +526,188 @@ def _20(new, out):
     out("No barrier comes down on a car", m.entered > 0 and not m.events, "; ".join(m.events))
 
 
+def _21(new, out):
+    r = new()
+    m = r.sim
+    lo, hi = 100.0, 0.0
+    for _ in range(36000):                           # 6 minutes at the normal inflow
+        r.ms(10)
+        lo, hi = min(lo, m.level), max(hi, m.level)
+    worked = m.starts[0] + m.starts[1] >= 2
+    out("The pumps keep the level between low and high", worked and hi < 76.0 and lo > 5.0 and m.overflowed == 0,
+        f"level went from {lo:.0f} % to {hi:.0f} %")
+    share = min(m.run_s) / max(max(m.run_s), 1e-9)
+    out("The pumps take turns (similar running time, both started)", worked and min(m.starts) >= 2 and share >= 0.6,
+        f"pump 1 {m.run_s[0]:.0f} s ({m.starts[0]} starts), pump 2 {m.run_s[1]:.0f} s ({m.starts[1]} starts)")
+    m.inflow = 100.0
+    both = False
+    for _ in range(12000):
+        r.ms(10)
+        both |= m.running(0) and m.running(1)
+    out("Both pumps run when the level keeps rising", worked and both and m.overflowed == 0,
+        "the second pump never helped" if not both else "the sump overflowed")
+    m.inflow, m.fault[0] = 60.0, True
+    r.ms(500)
+    lamp = m.lamp(2)
+    q1_off, before = True, m.run_s[1]
+    for _ in range(18000):
+        r.ms(10)
+        q1_off &= not m.out(0)
+    out("A failed pump is switched off and the other one takes over", worked and q1_off and m.overflowed == 0
+        and m.run_s[1] - before > 20, "pump 1 still driven" if not q1_off else "the level was not kept")
+    out("The alarm lamp lights for a pump fault", worked and lamp)
+    _tap(r, "reset_pressed")
+    r.ms(500)
+    still = m.lamp(2)
+    m.fault[0] = False
+    r.ms(500)
+    lit = m.lamp(2)
+    _tap(r, "reset_pressed")
+    r.ms(500)
+    out("Reset clears the alarm only once the fault is gone", worked and still and lit and not m.lamp(2),
+        "the alarm cleared while the pump was still faulty" if not still else "the alarm did not clear")
+    bad = [e for e in m.events]
+    out("No overflow, no pump running dry", worked and not bad, "; ".join(bad))
+    m.inflow = 100.0
+    r.ms(20000)
+    m.stop_pressed = True
+    r.ms(1000)
+    out("Stop (held) turns both pumps off", worked and not m.out(0) and not m.out(1))
+    m.stop_pressed = False
+
+
+def _22(new, out):
+    r = new()
+    m = r.sim
+    r.ms(100)
+    _tap(r, "on_pressed")
+    lamps_ok, fan_first = True, True
+
+    def run(seconds):
+        nonlocal lamps_ok
+        for _ in range(int(seconds * 100)):
+            r.ms(10)
+            if m.heater > 5 and not m.out(1) or m.cooler > 5 and not m.out(2):
+                lamps_ok = False
+
+    run(120)
+    on = m.out(0)
+    out("On starts the fan and the room reaches the setpoint (±0.5 °C) in 2 minutes", on
+        and abs(m.temperature - m.setpoint_knob) <= 0.5, f"room at {m.temperature:.1f} °C")
+    m.window, m.outside = True, 18.0
+    run(90)
+    out("…and holds it (±1 °C) with the window open (18 °C outside)", on and abs(m.temperature - m.setpoint_knob) <= 1.0,
+        f"room at {m.temperature:.1f} °C")
+    m.window, m.outside = False, 35.0
+    run(150)
+    out("Cools when it is hot outside (±1 °C)", on and abs(m.temperature - m.setpoint_knob) <= 1.0,
+        f"room at {m.temperature:.1f} °C")
+    m.setpoint_knob = 24.0
+    run(90)
+    out("Follows a new setpoint (24 °C, ±1 °C)", on and abs(m.temperature - 24.0) <= 1.0, f"room at {m.temperature:.1f} °C")
+    out("The heating and cooling lamps show what is working", on and lamps_ok)
+    bad = list(m.events)
+    out("Never heats and cools at once, never without the fan", on and not bad, "; ".join(bad))
+    _tap(r, "off_pressed")
+    r.ms(1000)
+    out("Off stops the fan, the heater and the cooler", on and not m.out(0) and m.heater < 1 and m.cooler < 1)
+
+
+def _23(new, out):
+    r = new()
+    m = r.sim
+    m.door_closed = False
+    r.ms(100)
+    _tap(r, "start_pressed")
+    r.ms(3000)
+    idle = m.outputs == 0
+    m.door_closed = True
+    r.ms(100)
+    _tap(r, "start_pressed")
+    left = right = spun = 0.0
+    done_lamp = False
+    for _ in range(12000):
+        r.ms(10)
+        left, right, spun = max(left, m.washed_left_s), max(right, m.washed_right_s), max(spun, m.spun_s)
+        done_lamp |= m.lamp(6)
+    out("Start with the door closed runs a whole wash in 2 minutes", m.cycles >= 1, f"{m.cycles} washes finished")
+    out("The clothes turn in water at least 10 s each way", m.cycles >= 1 or (left >= 10 and right >= 10),
+        f"left {left:.0f} s, right {right:.0f} s")
+    out("The water is drained before a spin of at least 5 s", m.cycles >= 1 and not any("Spinning" in e for e in m.events),
+        f"spun {spun:.0f} s")
+    out("The done lamp lights at the end", m.cycles >= 1 and done_lamp)
+    out("Start does nothing with the door open", m.cycles >= 1 and idle, "outputs came on with the door open")
+    r.ms(5000)
+    _tap(r, "start_pressed")
+    r.ms(20000)
+    _tap(r, "stop_pressed")
+    r.ms(15000)
+    out("Stop during a wash stops the drum and unlocks the door once it has stopped", m.cycles >= 1
+        and abs(m.rpm) < 1.0 and not m.out(0) and not any(m.out(b) for b in (1, 2, 3, 4)), "the machine kept going")
+    bad = list(m.events)
+    out("The door never unlocks while the drum turns; no flooding", m.cycles >= 1 and not bad, "; ".join(bad))
+
+
+def _24(new, out):
+    r = new()
+    m = r.sim
+    r.ms(500)
+    lamps_ok = True
+    doors_at = []
+
+    def run(seconds):
+        nonlocal lamps_ok
+        was_open = False
+        for _ in range(int(seconds * 100)):
+            r.ms(10)
+            f = m.floor_at()
+            if f is not None and abs(m.position - f * 100.0) < 0.5 and not all(m.lamp(4 + k) == (k == f) for k in range(3)):
+                lamps_ok = False
+            if m.door >= 100.0 and not was_open:
+                doors_at.append(m.floor_at())
+            was_open = m.door >= 100.0
+
+    def call(kind, floor):
+        if kind == "hall":
+            m.press_hall(floor, True)
+            r.ms(100)
+            m.press_hall(floor, False)
+        else:
+            m.car[floor] = True
+            r.ms(100)
+            m.car[floor] = False
+
+    call("hall", 2)
+    run(15)
+    served = m.served
+    out("A hall call brings the car and opens the door at that floor", served == 1 and doors_at[-1:] == [2],
+        f"door opened at {[f + 1 if f is not None else '-' for f in doors_at]}")
+    call("car", 0)
+    run(15)
+    out("A car button takes the car to its floor", served == 1 and doors_at[-1:] == [0],
+        f"door opened at {[f + 1 if f is not None else '-' for f in doors_at]}")
+    call("hall", 1)
+    call("hall", 2)
+    run(25)
+    out("Calls are remembered and all served", served == 1 and m.served == 3, f"{m.served - served} of 2 served")
+    call("hall", 0)
+    r.ms(2000)
+    m.blocked = True
+    run(8)
+    reopened = m.door > 50.0
+    m.blocked = False
+    run(12)
+    out("The door reopens for someone in the doorway", served == 1 and reopened and m.served == 4)
+    out("The position lamps show the floor", served == 1 and lamps_ok)
+    bad = list(m.events)
+    out("Never moves with the door open, never opens between floors, never closes on someone", served == 1
+        and not bad, "; ".join(bad))
+
+
 CHECKS = {"01": _01, "02": _02, "03": _03, "04": _04, "05": _05,
           "06": _06, "07": _07, "08": _08, "09": _09, "10": _10, "11": _11, "12": _12, "13": _12,
-          "14": _14, "15": _15, "16": _16, "17": _17, "18": _18, "19": _19, "20": _20}
+          "14": _14, "15": _15, "16": _16, "17": _17, "18": _18, "19": _19, "20": _20,
+          "21": _21, "22": _22, "23": _23, "24": _24}
 
 
 def grade(lab, program: Program) -> Report:
