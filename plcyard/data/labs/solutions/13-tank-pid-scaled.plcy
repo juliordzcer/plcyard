@@ -1,0 +1,42 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "LD",
+      "rungs": [
+        {
+          "text": "SCP,%IW66,0,27648,0,100,Setpoint",
+          "comment": "Setpoint from the knob, in %."
+        },
+        {
+          "text": "PID,LevelPID,%IW64,%QW64,Setpoint",
+          "comment": "The PID scales the raw level to % and its output back to raw (PID Setup → Scaling)."
+        }
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "LevelPID": {
+      "type": "PID",
+      "value": {
+        "KP": 4.0,
+        "KI": 0.27,
+        "MAXI": 27648.0,
+        "MAXCV": 27648.0
+      }
+    },
+    "Setpoint": {
+      "type": "REAL"
+    }
+  },
+  "symbols": {
+    "LevelPID": "Level controller",
+    "Setpoint": "Setpoint in %"
+  }
+}

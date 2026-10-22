@@ -1,0 +1,20 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "%Q0.2 := %I0.1 AND (%I0.0 OR %Q0.2);                         // run\n// Mode B: a Start tap while the box is full lets it leave; remembered until it is gone.\nIF %Q0.2 AND %I0.6 AND %I0.0 AND %Q0.4 THEN Hold := TRUE; END_IF;\nIF NOT %I0.3 THEN Hold := FALSE; END_IF;\n%Q0.0 := %Q0.2 AND ((%I0.5 AND (NOT %I0.3 OR %Q0.4))          // mode A: continuous\n                 OR (%I0.6 AND (NOT %I0.3 OR Hold))           // mode B: one box per Start\n                 OR %I0.7);                                   // mode C: conveyor only\n%Q0.4 := (%I0.4 OR %Q0.4) AND %I0.3;\n%Q0.1 := %Q0.2 AND NOT %I0.7 AND %I0.3 AND NOT %Q0.4;\n%Q0.3 := %Q0.1;\n"
+    }
+  ],
+  "tags": {
+    "Hold": {
+      "type": "BOOL"
+    }
+  },
+  "symbols": {}
+}

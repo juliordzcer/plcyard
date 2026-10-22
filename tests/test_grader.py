@@ -9,10 +9,16 @@ from plcyard.formats import rsl
 LABS = labs.load_all()
 
 
-@pytest.mark.parametrize("lab", LABS, ids=[lab.id for lab in LABS])
-def test_reference_solution_passes(lab):
-    report = grader.grade(lab, formats.load(lab.solution))
-    assert report.error == "" and report.passed, [c for c in report.checks if not c.passed]
+SOLUTIONS = [(lab, lang) for lab in LABS for lang in ("LD", "ST", "FBD")]
+
+
+@pytest.mark.parametrize("lab,lang", SOLUTIONS, ids=[f"{lab.id}-{lang}" for lab, lang in SOLUTIONS])
+def test_reference_solution_passes_in_every_language(lab, lang):
+    assert lang in lab.solutions, f"exercise {lab.id} has no {lang} solution"
+    prog = formats.load(lab.solutions[lang])
+    assert prog.main.language == lang
+    report = grader.grade(lab, prog)
+    assert report.error == "" and report.passed, (report.error, [c for c in report.checks if not c.passed])
 
 
 @pytest.mark.parametrize("lab", LABS, ids=[lab.id for lab in LABS])

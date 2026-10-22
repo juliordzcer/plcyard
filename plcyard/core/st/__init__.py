@@ -200,9 +200,22 @@ class Return:
 
 
 FUNCS = {"ABS": 1, "SQRT": 1, "MIN": 2, "MAX": 2, "LIMIT": 3, "SEL": 3, "TRUNC": 1, "ROUND": 1,
-         "LN": 1, "EXP": 1, "SIN": 1, "COS": 1, "TAN": 1}
+         "LN": 1, "EXP": 1, "SIN": 1, "COS": 1, "TAN": 1, "INT_TO_BCD": 1, "BCD_TO_INT": 1}
 _CAST = re.compile(r"^(?:BOOL|SINT|INT|DINT|LINT|REAL|LREAL|TIME|WORD|DWORD|BYTE)_TO_"
                    r"(BOOL|SINT|INT|DINT|LINT|REAL|LREAL|TIME|WORD|DWORD|BYTE)$")
+
+
+def to_bcd(v: int) -> int:
+    if not 0 <= v <= 9999:
+        raise ValueError(f"{v} does not fit in 4 BCD digits")
+    return int(str(v), 16)
+
+
+def from_bcd(v: int) -> int:
+    digits = f"{int(v) & 0xFFFF:04X}"
+    if not digits.isdigit():
+        raise ValueError(f"{digits}h is not BCD")
+    return int(digits)
 
 
 # -- parser ------------------------------------------------------------------------------------------
@@ -726,6 +739,10 @@ class Runner:
                 return int(round(v)) if isinstance(v, float) else int(v)
             if n == "ABS":
                 return abs(args[0])
+            if n == "INT_TO_BCD":
+                return to_bcd(int(args[0]))
+            if n == "BCD_TO_INT":
+                return from_bcd(int(args[0]))
             if n == "SQRT":
                 if args[0] < 0:
                     raise PlcFault(0x0601, f"line {e.line}: square root of a negative number")

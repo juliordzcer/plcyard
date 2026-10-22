@@ -1,0 +1,26 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// One pulse per press (rising edge), then toggle the lamp.\nPulse := %I0.0 AND NOT Memory;\nMemory := %I0.0;\nIF Pulse THEN\n    %Q0.0 := NOT %Q0.0;\nEND_IF;\n"
+    }
+  ],
+  "tags": {
+    "Pulse": {
+      "type": "BOOL"
+    },
+    "Memory": {
+      "type": "BOOL"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Button (NO, pushbutton)",
+    "%Q0.0": "Lamp"
+  }
+}

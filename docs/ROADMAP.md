@@ -45,12 +45,14 @@ with the full test suite green.
   live values and green BOOL wires. FBD routines anywhere: main, JSR routines, functions and
   function blocks.
 
-## Phase 6 — Exercises in three languages (M)
+## Phase 6 — Exercises in three languages (M) — done
 
-- The checker already talks only to the simulation's inputs and outputs, so it works for any
-  language once `grader.Rig` loads a `.plcy` program.
-- Each exercise gets reference solutions in LD, ST and FBD; tests prove all three pass the same
-  checks. A "compare languages" view shows them side by side.
+- Every exercise has reference solutions in ladder, structured text and function block diagram
+  (`labs/solutions/NN-name.plcy`, `.st.plcy`, `.fbd.plcy`); a test grades all 39 with the same
+  checks. "Compare languages" in the exercises panel shows the three side by side, each one can be
+  opened in the editor.
+- Exercise 13 became "PID scaled inside the block" (PID Setup → Scaling), so it makes sense in all
+  three languages. Structured text gained INT_TO_BCD / BCD_TO_INT, FBD the TO_BCD / FROM_BCD blocks.
 
 ## Phase 7 — Wiki (M, can run in parallel from Phase 1)
 

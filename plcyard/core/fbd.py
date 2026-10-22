@@ -72,6 +72,8 @@ _block("ABS", "Absolute value", "Math", "IN:NUM", "OUT:NUM")
 _block("SQRT", "Square root", "Math", "IN:NUM", "OUT:NUM")
 _block("MOVE", "Move", "Move", "IN:NUM", "OUT:NUM")
 _block("SEL", "Select", "Move", "G IN0:NUM IN1:NUM", "OUT:NUM")
+_block("TO_BCD", "Integer to BCD", "Move", "IN:NUM", "OUT:NUM")
+_block("FROM_BCD", "BCD to integer", "Move", "IN:NUM", "OUT:NUM")
 _block("SCALE", "Scale a range", "Move", "IN:NUM IN_MIN:NUM IN_MAX:NUM OUT_MIN:NUM OUT_MAX:NUM", "OUT:NUM")
 _block("PID", "PID controller", "Process", "PV:NUM SP:NUM", "CV:NUM", "PID")
 
@@ -327,6 +329,12 @@ class Runner:
             return {"OUT": math.sqrt(a)}
         if t == "MOVE":
             return {"OUT": a}
+        if t in ("TO_BCD", "FROM_BCD"):
+            from .st import from_bcd, to_bcd
+            try:
+                return {"OUT": (to_bcd if t == "TO_BCD" else from_bcd)(int(a))}
+            except ValueError as e:
+                raise PlcFault(0x0601, f"{t} block {b.id}: {e}") from None
         if t == "SEL":
             return {"OUT": i["IN1"] if i["G"] else i["IN0"]}
         if t == "SCALE":

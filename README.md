@@ -35,7 +35,8 @@ no licence key.
   symbols (NO/NC contacts, `MOVE`, timer `.PT` `.ET` `.Q`, I/O as `%I0.0`). The program is the same
   in both, so you can switch at any time and read either style of documentation.
 - **Check my program**: 13 exercises, from logic gates to tuning a PID level loop, each with
-  automatic checks of every written requirement. Runs faster than real time.
+  automatic checks of every written requirement. Runs faster than real time. **Compare
+  languages** shows each reference solution in ladder, structured text and function block diagram.
 - **Simulations**: I/O panel (16 inputs, 16 outputs per card, thumbwheels and a 7-segment BCD
   display), a filling line (silo), a road crossing (traffic lights) and an analog **tank level**
   process with a live trend of setpoint, level and valve.
@@ -102,7 +103,6 @@ Open a sample from **File → Open example**, or press **Ctrl+E** for the exerci
 ## Roadmap
 
 - More simulations (door, elevator, batch mixing, bottle line) and exercises.
-- The same exercises solved in ladder, structured text and function block diagram.
 - A wiki. Full list in [TODO.md](TODO.md).
 - More UI languages.
 

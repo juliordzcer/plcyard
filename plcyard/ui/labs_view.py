@@ -17,6 +17,7 @@ class LabsView(QWidget):
     load_simulation = Signal(str)
     open_starter = Signal(object)        # labs.Lab
     check_requested = Signal(object)     # labs.Lab
+    compare_requested = Signal(object)   # labs.Lab
 
     def __init__(self):
         super().__init__()
@@ -50,10 +51,14 @@ class LabsView(QWidget):
         self.check_btn = QPushButton("Check my program")
         self.check_btn.setToolTip("Runs the program in the editor against every requirement of this exercise")
         lay.addWidget(self.check_btn)
+        self.compare_btn = QPushButton("Compare languages")
+        self.compare_btn.setToolTip("The reference solution in ladder, structured text and function block diagram")
+        lay.addWidget(self.compare_btn)
         self.list.currentRowChanged.connect(self._show)
         self.sim_btn.clicked.connect(lambda: self.current and self.load_simulation.emit(self.current.simulation))
         self.start_btn.clicked.connect(lambda: self.current and self.open_starter.emit(self.current))
         self.check_btn.clicked.connect(lambda: self.current and self.check_requested.emit(self.current))
+        self.compare_btn.clicked.connect(lambda: self.current and self.compare_requested.emit(self.current))
         if self.items:
             self.list.setCurrentRow(0)
 

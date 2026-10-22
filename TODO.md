@@ -25,7 +25,8 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [x] Forcing I/O; online bar; drag I/O from the simulations onto the ladder; examples.
 - [x] PID setup dialog (tuning, configuration, alarms, scaling) for the PID instruction.
 - [x] Phase 5: function block diagram (FBD) editor and runtime, sharing the instructions with ladder and ST.
-- [ ] **Next — Phase 6:** the same exercises solved in ladder, structured text and FBD.
+- [x] Phase 6: every exercise solved in ladder, structured text and FBD; Compare languages view.
+- [ ] **Next — Phase 7:** wiki / documentation, see docs/ROADMAP.md.
 - [ ] Instructions still missing: ramps, CTUD, R_TRIG / F_TRIG boxes, strings, date/time;
       routines with parameters; function return values.
 

@@ -1,0 +1,225 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "FBD",
+      "fbd": {
+        "blocks": [
+          {
+            "id": 1,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 40.0,
+            "operands": {
+              "IN": "Steps[5].DN"
+            }
+          },
+          {
+            "id": 2,
+            "type": "TON",
+            "x": 520.0,
+            "y": 40.0,
+            "instance": "Steps[0]",
+            "operands": {
+              "PT": "T#6s"
+            }
+          },
+          {
+            "id": 3,
+            "type": "TON",
+            "x": 780.0,
+            "y": 210.0,
+            "instance": "Steps[1]",
+            "operands": {
+              "IN": "Steps[0].DN",
+              "PT": "T#2s"
+            }
+          },
+          {
+            "id": 4,
+            "type": "TON",
+            "x": 1040.0,
+            "y": 210.0,
+            "instance": "Steps[2]",
+            "operands": {
+              "IN": "Steps[1].DN",
+              "PT": "T#1s"
+            }
+          },
+          {
+            "id": 5,
+            "type": "TON",
+            "x": 520.0,
+            "y": 380.0,
+            "instance": "Steps[3]",
+            "operands": {
+              "IN": "Steps[2].DN",
+              "PT": "T#6s"
+            }
+          },
+          {
+            "id": 6,
+            "type": "TON",
+            "x": 780.0,
+            "y": 380.0,
+            "instance": "Steps[4]",
+            "operands": {
+              "IN": "Steps[3].DN",
+              "PT": "T#2s"
+            }
+          },
+          {
+            "id": 7,
+            "type": "TON",
+            "x": 1040.0,
+            "y": 380.0,
+            "instance": "Steps[5]",
+            "operands": {
+              "IN": "Steps[4].DN",
+              "PT": "T#1s"
+            }
+          },
+          {
+            "id": 8,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 550.0,
+            "operands": {
+              "IN": "Steps[0].DN",
+              "OUT": "%Q0.2"
+            }
+          },
+          {
+            "id": 9,
+            "type": "OR",
+            "x": 260.0,
+            "y": 720.0,
+            "operands": {
+              "IN1": "Steps[1].DN",
+              "OUT": "%Q0.0"
+            }
+          },
+          {
+            "id": 10,
+            "type": "NOT",
+            "x": 520.0,
+            "y": 550.0,
+            "operands": {
+              "IN": "Steps[1].DN"
+            }
+          },
+          {
+            "id": 11,
+            "type": "AND",
+            "x": 520.0,
+            "y": 720.0,
+            "operands": {
+              "IN1": "Steps[0].DN",
+              "OUT": "%Q0.1"
+            }
+          },
+          {
+            "id": 12,
+            "type": "NOT",
+            "x": 780.0,
+            "y": 550.0,
+            "operands": {
+              "IN": "Steps[3].DN"
+            }
+          },
+          {
+            "id": 13,
+            "type": "AND",
+            "x": 780.0,
+            "y": 720.0,
+            "operands": {
+              "IN1": "Steps[2].DN",
+              "OUT": "%Q0.6"
+            }
+          },
+          {
+            "id": 14,
+            "type": "NOT",
+            "x": 1040.0,
+            "y": 550.0,
+            "operands": {
+              "IN": "Steps[4].DN"
+            }
+          },
+          {
+            "id": 15,
+            "type": "AND",
+            "x": 1040.0,
+            "y": 720.0,
+            "operands": {
+              "IN1": "Steps[3].DN",
+              "OUT": "%Q0.5"
+            }
+          },
+          {
+            "id": 16,
+            "type": "NOT",
+            "x": 1300.0,
+            "y": 550.0,
+            "operands": {
+              "IN": "Steps[2].DN"
+            }
+          },
+          {
+            "id": 17,
+            "type": "OR",
+            "x": 1300.0,
+            "y": 720.0,
+            "operands": {
+              "IN2": "Steps[4].DN",
+              "OUT": "%Q0.4"
+            }
+          }
+        ],
+        "wires": [
+          [
+            1,
+            "OUT",
+            2,
+            "IN"
+          ],
+          [
+            10,
+            "OUT",
+            11,
+            "IN2"
+          ],
+          [
+            12,
+            "OUT",
+            13,
+            "IN2"
+          ],
+          [
+            14,
+            "OUT",
+            15,
+            "IN2"
+          ],
+          [
+            16,
+            "OUT",
+            17,
+            "IN1"
+          ]
+        ]
+      }
+    }
+  ],
+  "tags": {
+    "Steps": {
+      "type": "TIMER[6]"
+    }
+  },
+  "symbols": {}
+}

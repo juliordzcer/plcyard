@@ -681,3 +681,21 @@ def test_F18_H2_drop_io_on_a_pin_and_open_example(win):
     assert c.diagram.block(4).operands["OUT"] == "%Q0.5"
     win.download()
     assert win.warnings == []
+
+
+# -- F19 compare languages --------------------------------------------------------------------------------
+def test_F19_H1_compare_shows_three_languages_and_opens_one(win, qtbot, monkeypatch):
+    from plcyard.ui.compare_view import CompareDialog
+    shown = {}
+
+    def fake_exec(dlg):
+        shown["langs"] = list(dlg.docs)
+        assert dlg.docs["LD"].ladder is not None and dlg.docs["ST"].st is not None and dlg.docs["FBD"].fbd is not None
+        dlg.open_file.emit(str(LABS["05"].solutions["FBD"]))
+    monkeypatch.setattr(CompareDialog, "exec", fake_exec)
+    win.labs_dock.show()
+    lv = win.labs_view
+    lv.list.setCurrentRow(next(k for k, lab in enumerate(lv.items) if lab.id == "05"))
+    qtbot.mouseClick(lv.compare_btn, Qt.LeftButton)
+    assert shown["langs"] == ["LD", "ST", "FBD"]
+    assert win.program.main.language == "FBD" and win.doc.fbd is not None

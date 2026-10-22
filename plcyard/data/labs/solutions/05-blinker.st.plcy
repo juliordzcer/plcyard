@@ -1,0 +1,26 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// OnTime runs 1 s, then OffTime 1 s; OffTime done restarts the cycle.\nOnTime.TON(IN := %I0.0 AND NOT OffTime.DN, PT := T#1s);\nOffTime.TON(IN := OnTime.DN, PT := T#1s);\n%Q0.0 := OnTime.TT;\n"
+    }
+  ],
+  "tags": {
+    "OnTime": {
+      "type": "TIMER"
+    },
+    "OffTime": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Enable",
+    "%Q0.0": "Blinking light"
+  }
+}

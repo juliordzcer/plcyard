@@ -1,0 +1,75 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "FBD",
+      "fbd": {
+        "blocks": [
+          {
+            "id": 1,
+            "type": "AND",
+            "x": 260.0,
+            "y": 40.0,
+            "operands": {
+              "IN1": "%I0.0",
+              "IN2": "%I0.1",
+              "OUT": "%Q0.0"
+            }
+          },
+          {
+            "id": 2,
+            "type": "OR",
+            "x": 260.0,
+            "y": 210.0,
+            "operands": {
+              "IN1": "%I0.2",
+              "IN2": "%I0.3",
+              "OUT": "%Q0.1"
+            }
+          },
+          {
+            "id": 3,
+            "type": "NOT",
+            "x": 260.0,
+            "y": 380.0,
+            "operands": {
+              "IN": "%I0.4",
+              "OUT": "%Q0.2"
+            }
+          },
+          {
+            "id": 4,
+            "type": "XOR",
+            "x": 260.0,
+            "y": 550.0,
+            "operands": {
+              "IN1": "%I0.5",
+              "IN2": "%I0.6",
+              "OUT": "%Q0.3"
+            }
+          }
+        ],
+        "wires": []
+      }
+    }
+  ],
+  "tags": {},
+  "symbols": {
+    "%I0.0": "Input A",
+    "%I0.1": "Input B",
+    "%I0.2": "Input C",
+    "%I0.3": "Input D",
+    "%I0.4": "Input E",
+    "%I0.5": "Input F",
+    "%I0.6": "Input G",
+    "%Q0.0": "AND output",
+    "%Q0.1": "OR output",
+    "%Q0.2": "NOT output",
+    "%Q0.3": "XOR output"
+  }
+}

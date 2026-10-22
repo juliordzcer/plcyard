@@ -1,0 +1,22 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "%Q0.1 := (%I0.0 OR %Q0.1) AND %I0.1;                        // run (Stop is NC)\n// Hysteresis: pump on below 40 % (11059 of 27648), off above 60 % (16589).\nIF %Q0.1 AND %IW64 < 11059 THEN Demand := TRUE; END_IF;\nIF %IW64 > 16589 OR NOT %Q0.1 THEN Demand := FALSE; END_IF;\n%Q0.0 := %Q0.1 AND Demand;                                  // pump\n%Q0.2 := %I0.2;                                             // high level alarm\n"
+    }
+  ],
+  "tags": {
+    "Demand": {
+      "type": "BOOL"
+    }
+  },
+  "symbols": {
+    "%I0.1": "Stop (NC)"
+  }
+}

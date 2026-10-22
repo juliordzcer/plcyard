@@ -1,0 +1,22 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// Each direction seals in, needs Stop (NC) and is blocked while the other one runs.\n%Q0.0 := %I0.2 AND (%I0.0 OR %Q0.0) AND NOT %Q0.1;\n%Q0.1 := %I0.2 AND (%I0.1 OR %Q0.1) AND NOT %Q0.0;\n"
+    }
+  ],
+  "tags": {},
+  "symbols": {
+    "%I0.0": "Forward (NO)",
+    "%I0.1": "Reverse (NO)",
+    "%I0.2": "Stop (NC)",
+    "%Q0.0": "Forward contactor",
+    "%Q0.1": "Reverse contactor"
+  }
+}

@@ -33,9 +33,20 @@ class Lab:
         """Reference solution: labs/solutions/<same name as the exercise>.plcy."""
         if not self.path:
             return None
-        base = self.path.parent.parent / "solutions" / self.path.stem
-        plcy = base.with_suffix(".plcy")
-        return plcy if plcy.exists() else base.with_suffix(".rsl")
+        return self.path.parent.parent / "solutions" / f"{self.path.stem}.plcy"
+
+    @property
+    def solutions(self) -> dict[str, Path]:
+        """Reference solutions by language: LD, and ST / FBD when they exist (<name>.st.plcy, .fbd.plcy)."""
+        if not self.path:
+            return {}
+        folder = self.path.parent.parent / "solutions"
+        out = {"LD": self.solution}
+        for lang in ("ST", "FBD"):
+            f = folder / f"{self.path.stem}.{lang.lower()}.plcy"
+            if f.exists():
+                out[lang] = f
+        return out
 
 
 def parse(text: str, lab_id: str = "") -> Lab:

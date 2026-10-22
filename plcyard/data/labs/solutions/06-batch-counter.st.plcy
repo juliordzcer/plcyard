@@ -1,0 +1,24 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "Batch.CTU(CU := %I0.0, R := %I0.1, PV := 5);\n%Q0.0 := Batch.DN;                       // batch complete\n%QW4 := INT_TO_BCD(Batch.ACC);           // count on the display\n"
+    }
+  ],
+  "tags": {
+    "Batch": {
+      "type": "COUNTER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Part sensor (NO, pushbutton)",
+    "%I0.1": "Reset batch (NO, pushbutton)",
+    "%Q0.0": "Batch complete"
+  }
+}

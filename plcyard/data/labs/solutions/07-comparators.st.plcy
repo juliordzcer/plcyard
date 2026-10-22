@@ -1,0 +1,24 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "Value := BCD_TO_INT(%IW4);\n%Q0.0 := Value < 100;                      // low\n%Q0.1 := Value >= 100 AND Value <= 500;    // normal\n%Q0.2 := Value > 500;                      // high\n"
+    }
+  ],
+  "tags": {
+    "Value": {
+      "type": "INT"
+    }
+  },
+  "symbols": {
+    "%Q0.0": "Low",
+    "%Q0.1": "Normal",
+    "%Q0.2": "High"
+  }
+}

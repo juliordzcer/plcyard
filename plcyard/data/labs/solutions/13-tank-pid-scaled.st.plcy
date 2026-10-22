@@ -1,0 +1,29 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// The PID scales 0-27648 to 0-100 % on the way in and back on the way out (PID Setup → Scaling).\nSetpoint := INT_TO_REAL(%IW66) / 276.48;\nLevelPID.PID(PV := %IW64, SP := Setpoint, CV => %QW64);\n"
+    }
+  ],
+  "tags": {
+    "LevelPID": {
+      "type": "PID",
+      "value": {
+        "KP": 4.0,
+        "KI": 0.27,
+        "MAXI": 27648.0,
+        "MAXCV": 27648.0
+      }
+    },
+    "Setpoint": {
+      "type": "REAL"
+    }
+  },
+  "symbols": {}
+}

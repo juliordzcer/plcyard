@@ -122,6 +122,7 @@ class MainWindow(QMainWindow):
         self.labs_view.load_simulation.connect(self.select_sim)
         self.labs_view.open_starter.connect(self.start_lab)
         self.labs_view.check_requested.connect(self.check_lab)
+        self.labs_view.compare_requested.connect(self.compare_languages)
 
         self._menus()
         self.panel.download.clicked.connect(self.download)
@@ -317,6 +318,13 @@ class MainWindow(QMainWindow):
         finally:
             QApplication.restoreOverrideCursor()
         self.labs_view.show_report(report)
+
+    def compare_languages(self, lab) -> None:
+        from .compare_view import CompareDialog
+        dlg = CompareDialog(self, lab)
+        dlg.open_file.connect(self.open)
+        self.compare_dialog = dlg
+        dlg.exec()
 
     def select_sim(self, kind: str) -> None:
         self.sim_kind = kind

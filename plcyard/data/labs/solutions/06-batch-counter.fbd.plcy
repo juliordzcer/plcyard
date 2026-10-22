@@ -1,0 +1,57 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "FBD",
+      "fbd": {
+        "blocks": [
+          {
+            "id": 1,
+            "type": "CTU",
+            "x": 260.0,
+            "y": 40.0,
+            "instance": "Batch",
+            "operands": {
+              "CU": "%I0.0",
+              "R": "%I0.1",
+              "PV": "5",
+              "Q": "%Q0.0"
+            }
+          },
+          {
+            "id": 2,
+            "type": "TO_BCD",
+            "x": 520.0,
+            "y": 40.0,
+            "operands": {
+              "OUT": "%QW4"
+            }
+          }
+        ],
+        "wires": [
+          [
+            1,
+            "CV",
+            2,
+            "IN"
+          ]
+        ]
+      }
+    }
+  ],
+  "tags": {
+    "Batch": {
+      "type": "COUNTER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Part sensor (NO, pushbutton)",
+    "%I0.1": "Reset batch (NO, pushbutton)",
+    "%Q0.0": "Batch complete"
+  }
+}

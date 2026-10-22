@@ -1,0 +1,20 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// Six timers in a ring: green A 6 s, amber A 2 s, all red 1 s, green B 6 s, amber B 2 s, all red 1 s.\nSteps[0].TON(IN := NOT Steps[5].DN, PT := T#6s);\nSteps[1].TON(IN := Steps[0].DN, PT := T#2s);\nSteps[2].TON(IN := Steps[1].DN, PT := T#1s);\nSteps[3].TON(IN := Steps[2].DN, PT := T#6s);\nSteps[4].TON(IN := Steps[3].DN, PT := T#2s);\nSteps[5].TON(IN := Steps[4].DN, PT := T#1s);\n%Q0.2 := NOT Steps[0].DN;                          // green A\n%Q0.1 := Steps[0].DN AND NOT Steps[1].DN;          // amber A\n%Q0.0 := Steps[1].DN;                              // red A\n%Q0.6 := Steps[2].DN AND NOT Steps[3].DN;          // green B\n%Q0.5 := Steps[3].DN AND NOT Steps[4].DN;          // amber B\n%Q0.4 := NOT Steps[2].DN OR Steps[4].DN;           // red B\n"
+    }
+  ],
+  "tags": {
+    "Steps": {
+      "type": "TIMER[6]"
+    }
+  },
+  "symbols": {}
+}

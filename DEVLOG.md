@@ -564,3 +564,15 @@ keys:      PID Setup, KP KI KD, PE, UPD, MAXI MAXS MAXCV, deadband, alarms, casc
 - Examples: `start-stop-fbd.plcy`, `tank-pid-fbd.plcy` (PID scaling 0-27648 inside the block).
 - Tests: `test_fbd.py` (6), FBD examples, e2e F18 (2). 308 in total.
 keys:      FBD, function block diagram, wire, pin, data flow, R_TRIG, SR, SCALE
+
+## C-028 — Phase 6: every exercise in three languages
+2026-10-22 · commit: 2c81a83
+- 26 new reference solutions (structured text and FBD for exercises 1-13); `Lab.solutions` maps
+  LD/ST/FBD to their files; `test_grader` grades all 39 with the same checks (all pass).
+- Exercise 13 rewritten: the PID scales the raw values itself (PID Setup → Scaling); ladder solution
+  `SCP` + `PID LevelPID %IW64 %QW64 Setpoint`.
+- ST functions INT_TO_BCD / BCD_TO_INT; FBD blocks TO_BCD / FROM_BCD.
+- `ui/compare_view.py`: Compare languages dialog (three columns, each opens in the editor); button
+  in the exercises panel.
+- Tests: 39 graded solutions, e2e F19. 335 in total.
+keys:      three languages, compare, solutions, .st.plcy, .fbd.plcy, BCD

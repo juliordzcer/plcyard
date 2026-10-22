@@ -1,0 +1,22 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "// Seal-in: Start or the motor itself keeps it on; Stop (NC) breaks it.\n%Q0.0 := (%I0.0 OR %Q0.0) AND %I0.1;\n%Q0.1 := %Q0.0;                    // running light\n%Q0.2 := NOT %Q0.0;                // stopped light\n"
+    }
+  ],
+  "tags": {},
+  "symbols": {
+    "%I0.0": "Start (NO)",
+    "%I0.1": "Stop (NC)",
+    "%Q0.0": "Motor",
+    "%Q0.1": "Running light",
+    "%Q0.2": "Stopped light"
+  }
+}

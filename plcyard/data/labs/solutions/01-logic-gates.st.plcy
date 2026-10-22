@@ -1,0 +1,28 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "%Q0.0 := %I0.0 AND %I0.1;          // AND\n%Q0.1 := %I0.2 OR %I0.3;           // OR\n%Q0.2 := NOT %I0.4;                // NOT\n%Q0.3 := %I0.5 XOR %I0.6;          // XOR\n"
+    }
+  ],
+  "tags": {},
+  "symbols": {
+    "%I0.0": "Input A",
+    "%I0.1": "Input B",
+    "%I0.2": "Input C",
+    "%I0.3": "Input D",
+    "%I0.4": "Input E",
+    "%I0.5": "Input F",
+    "%I0.6": "Input G",
+    "%Q0.0": "AND output",
+    "%Q0.1": "OR output",
+    "%Q0.2": "NOT output",
+    "%Q0.3": "XOR output"
+  }
+}

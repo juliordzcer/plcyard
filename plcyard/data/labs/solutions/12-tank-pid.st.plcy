@@ -26,9 +26,5 @@
       "type": "REAL"
     }
   },
-  "symbols": {
-    "LevelPID": "Level controller",
-    "Level": "Tank level in %",
-    "Valve": "Valve command in %"
-  }
+  "symbols": {}
 }

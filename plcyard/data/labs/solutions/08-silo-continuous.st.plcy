@@ -1,0 +1,16 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "ST",
+      "source": "%Q0.2 := %I0.1 AND (%I0.0 OR %Q0.2);              // run (Stop is NC)\n%Q0.0 := %Q0.2 AND (NOT %I0.3 OR %Q0.4);          // conveyor: no box, or the box is full\n%Q0.4 := (%I0.4 OR %Q0.4) AND %I0.3;              // full: remembered while the box is there\n%Q0.1 := %Q0.2 AND %I0.3 AND NOT %Q0.4;           // fill valve\n%Q0.3 := %Q0.1;                                   // fill lamp\n"
+    }
+  ],
+  "tags": {},
+  "symbols": {}
+}
