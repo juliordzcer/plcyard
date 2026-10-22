@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 
 from . import grader, labs, webmachines
 from .core import edit, fbd
@@ -107,7 +108,12 @@ class Session:
         return self.file.language
 
     def examples(self) -> list[dict]:
-        return [{"key": k, "title": t} for k, (t, _, _) in EXAMPLES.items()]
+        out = []
+        for k, (t, sim, path) in EXAMPLES.items():
+            lang = "FBD" if ".fbd." in path or path.endswith("-fbd.plcy") else \
+                "ST" if ".st." in path or "-st." in path or "structured-text" in path else "LD"
+            out.append({"key": k, "title": t, "sim": sim, "machine": SIMS[sim][0], "language": lang})
+        return out
 
     def open_example(self, key: str) -> None:
         _, sim, path = EXAMPLES[key]
@@ -127,7 +133,8 @@ class Session:
         return plcy.dumps(self.program)
 
     def exercises(self) -> list[dict]:
-        return [{"id": lab.id, "title": lab.title} for lab in labs.load_all() if lab.simulation in SIMS]
+        return [{"id": lab.id, "title": lab.title, "level": lab.level, "sim": lab.simulation,
+                 "machine": SIMS[lab.simulation][0]} for lab in labs.load_all() if lab.simulation in SIMS]
 
     def open_exercise(self, lab_id: str, language: str = "LD") -> dict:
         lab = next(x for x in labs.load_all() if x.id == lab_id)
@@ -157,7 +164,7 @@ class Session:
     def download(self) -> None:
         self.problems = [str(d) for d in self.plc.download(self.program)]
         self.dirty = bool(self.problems)
-        self.message = "" if self.problems else "Downloaded. Switch to RUN."
+        self.message = "" if self.problems else "Sent to the PLC."
 
     def set_mode(self, mode: str) -> None:
         if mode == Processor.RUN and (self.dirty or self.plc.program is None):
@@ -693,7 +700,8 @@ class Session:
         """Instruction bar: families of the instruction set, in the current notation."""
         fams: dict[str, list] = {}
         for m, spec in self.plc.profile.specs.items():
-            fams.setdefault(spec.family, []).append({"m": m, "name": notation.mnemonic(m), "title": spec.title})
+            fams.setdefault(spec.family, []).append({"m": m, "name": notation.mnemonic(m), "title": spec.title,
+                                                     "shape": spec.shape})
         return [{"family": f, "items": items} for f, items in fams.items()]
 
     def selected_operands(self) -> dict | None:
@@ -808,11 +816,15 @@ class Session:
     def io(self) -> dict | None:
         if self.sim_kind != "io":
             return None
+        text = plcy.dumps(self.program) + (self.lab.body if self.lab else "")   # the exercise's devices too
+        used = lambda addr: re.search(re.escape(addr) + r"(?![\d.])", text) is not None
+
         def card(slot, direction):
             pts = []
             for bit in range(16):
                 addr = PLC.io_name(direction, slot, bit)
-                pt = {"bit": bit, "addr": notation.show(addr), "symbol": self.program.symbols.get(addr, "")}
+                pt = {"bit": bit, "addr": notation.show(addr), "symbol": self.program.symbols.get(addr, ""),
+                      "used": used(addr)}
                 if direction == "I":
                     cfg = self.sim.switch(slot, bit)
                     pt.update(pressed=self.sim.pressed.get((slot, bit), False), nc=cfg.normally_closed,
@@ -825,7 +837,8 @@ class Session:
         return {"inputs": [card(s, "I") for s in INPUT_SLOTS], "outputs": [card(s, "Q") for s in OUTPUT_SLOTS],
                 "thumbwheels": list(self.sim.thumbwheels),
                 "thumb_name": notation.show(PLC.io_name("I", 5)), "display_name": notation.show(PLC.io_name("Q", 6)),
-                "display": [(display >> s) & 0xF for s in (12, 8, 4, 0)]}
+                "display": [(display >> s) & 0xF for s in (12, 8, 4, 0)],
+                "bcd_used": used(PLC.io_name("I", 5)) or used(PLC.io_name("Q", 6))}
 
     def state(self, width: float) -> str:
         """Everything the page draws, as JSON."""

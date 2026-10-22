@@ -776,3 +776,23 @@ keys:      exercises, grader, pick and place, bottles, sorter, parking
   about 10 s in the browser for room climate).
 - Tests: 467 (suite ~110 s: the new checks simulate several minutes each).
 keys:      exercises, grader, pumps, hvac, washer, elevator
+
+## C-042 — Web version: a clearer first screen
+2026-10-22 · commits: 044162a · restore point: tag `before-ux-redesign` (site: `plcyard-before-ux-redesign`)
+- Header in three parts: File menu (new LD/ST/FBD, open, save, examples), Exercises and Examples
+  buttons; "Machine" selector with its label; Tags, undo/redo; the PLC on the right with labelled
+  RUN/FAULT LEDs and PROGRAM/RUN. RUN sends the program; the Download button is gone, "Send
+  changes" appears only while running with edits the PLC does not have. Notation and help moved to
+  a settings menu (⚙).
+- Welcome dialog on the first visit (how it works in four steps; start with exercise 1 or explore
+  an example), reachable again from ⚙ → How it works.
+- Exercises and examples open as pickers grouped by machine: exercises with their level and a ✔
+  once passed (kept in the browser), examples with their language.
+- Exercise pane: Check my program and the language switch stay at the top, the result right under
+  them; no duplicate title.
+- I/O panel shows only the points the program or the exercise uses, or that have a name ("Show all
+  64 points" for the rest); the BCD thumbwheels and display only when used.
+- New visitors start with IEC symbols (%I0.0); instruction buttons show the contact or coil they
+  insert. Problems show as a red banner.
+- TODO: inline address entry and problems on the instruction; phone layout.
+keys:      web, usability, welcome, header, exercises picker

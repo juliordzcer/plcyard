@@ -7,7 +7,8 @@ const VERSION = document.documentElement.dataset.version;
 const GUTTER = 48, MARGIN = 12, RUNG_GAP = 18, COMMENT_LINE = 16, WIRE_Y = 26;
 const $ = (id) => document.getElementById(id);
 let py, S, state = null, lastJson = "", family = null, palette = [], opsKey = "", HL = null, stKey = "", tagsKey = "";
-let fbdKey = "", paletteLang = "", routinesKey = "", ifaceKey = "", machineKind = "";
+let fbdKey = "", paletteLang = "", routinesKey = "", ifaceKey = "", machineKind = "", showAllIo = false;
+let EXERCISES = [], EXAMPLES = [];
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const store = {
@@ -25,10 +26,10 @@ async function start() {
     py.unpackArchive(zip, "zip", { extractDir: "/home/pyodide/app" });
     py.runPython("import sys; sys.path.insert(0, '/home/pyodide/app')");
     S = py.runPython("from plcyard.webapp import Session\nSession()");
-    for (const ex of js(S.examples())) $("b-example").add(new Option(ex.title, ex.key));
+    EXAMPLES = js(S.examples());
     buildHighlighter(js(S.st_syntax()));
-    for (const lab of js(S.exercises())) $("b-lab").add(new Option(`${lab.id}. ${lab.title}`, lab.id));
-    const n = store.get("plcyard.notation");
+    EXERCISES = js(S.exercises());
+    const n = store.get("plcyard.notation") || "B";          // new visitors start with IEC symbols
     if (n === "A" || n === "B") { S.set_notation(n); $("b-notation").value = n; }
     const saved = store.get("plcyard.program");
     if (saved) S.open_text(saved);
@@ -41,6 +42,7 @@ async function start() {
     render(true);
     setInterval(loop, TICK_MS);
     watchVersion();
+    if (!store.get("plcyard.welcomed")) { store.set("plcyard.welcomed", "1"); $("d-welcome").showModal(); }
   } catch (e) {
     $("loadmsg").textContent = "Could not start the simulator: " + e;
   }
@@ -78,7 +80,7 @@ function render(force) {
   $("scans").textContent = state.mode === "RUN" ? `${state.scans} scans` : "";
   $("b-undo").disabled = !state.can_undo;
   $("b-redo").disabled = !state.can_redo;
-  $("b-download").textContent = state.dirty ? "Download" : "Downloaded";
+  $("b-download").hidden = !(state.mode === "RUN" && state.dirty);
   if (state.fault) say("Fault: " + state.fault, true);
   else if (state.problems.length) say(state.problems.join(" · "), true);
   else if (state.message) say(state.message);
@@ -227,17 +229,22 @@ function renderTags(tags) {
 }
 
 function renderIo(io) {
-  const card = (c, input) => `<div class="card-io"><h3>${esc(c.name)}</h3>${c.points.map((p) => `
+  const all = io.inputs.concat(io.outputs).flatMap((c) => c.points);
+  const some = all.some((p) => p.used || p.symbol);
+  const full = showAllIo || !some;
+  const shown = (p) => full || p.used || p.symbol;
+  const card = (c, input) => !c.points.some(shown) ? "" : `<div class="card-io"><h3>${esc(c.name)}</h3>${c.points.filter(shown).map((p) => `
     <div class="pt">${input
       ? `<button class="sw${p.momentary ? " pb" : ""}${p.pressed !== p.nc ? " closed" : ""}" data-slot="${c.slot}" data-bit="${p.bit}"
            data-pb="${p.momentary ? 1 : 0}" aria-pressed="${p.pressed}" title="${p.nc ? "Normally closed" : "Normally open"}${p.momentary ? " pushbutton" : " switch"}"></button>`
       : `<span class="lamp${p.on ? " on" : ""}" role="img" aria-label="${p.on ? "on" : "off"}"></span>`}
       <span class="txt"><span class="addr" draggable="true" data-addr="${esc(p.addr)}" title="Drag onto an instruction · double-click to describe">${esc(p.addr)}</span>
       ${p.symbol ? `<span class="sym">${esc(p.symbol)}</span>` : ""}</span></div>`).join("")}</div>`;
-  const html = `<div class="cards">${card(io.inputs[0], true)}${card(io.outputs[0], false)}${card(io.inputs[1], true)}${card(io.outputs[1], false)}</div>
-    <div class="bcd"><span class="mono">${esc(io.thumb_name)} (BCD)</span><span class="digits">${io.thumbwheels.map((d, i) =>
+  const bcd = !full && !io.bcd_used ? "" : `<div class="bcd"><span class="mono">${esc(io.thumb_name)} (BCD)</span><span class="digits">${io.thumbwheels.map((d, i) =>
       `<input type="number" min="0" max="9" value="${d}" data-digit="${i}" aria-label="Thumbwheel digit ${i + 1}">`).join("")}</span>
     <span class="mono">${esc(io.display_name)} (BCD)</span><span class="digits">${io.display.map((d) => `<span class="seg">${d > 9 ? "-" : d}</span>`).join("")}</span></div>`;
+  const html = `<div class="cards">${card(io.inputs[0], true)}${card(io.outputs[0], false)}${card(io.inputs[1], true)}${card(io.outputs[1], false)}</div>
+    ${some ? `<button class="linkbtn" id="b-allio">${showAllIo ? "Show only the points in use" : `Show all ${all.length} points`}</button>` : ""}${bcd}`;
   const el = $("io");
   if (el.dataset.html === html) return;
   el.dataset.html = html;
@@ -359,6 +366,12 @@ function renderOperands(st) {
      <button type="button" id="b-leg">Add leg</button><button type="button" id="b-del">Delete</button>`;
 }
 
+const ICON = {
+  contact: `<svg class="ic" viewBox="0 0 24 14" aria-hidden="true"><path d="M0 7h8M16 7h8M8 1v12M16 1v12"/></svg>`,
+  contact_nc: `<svg class="ic" viewBox="0 0 24 14" aria-hidden="true"><path d="M0 7h8M16 7h8M8 1v12M16 1v12M9 12L15 2"/></svg>`,
+  coil: `<svg class="ic" viewBox="0 0 24 14" aria-hidden="true"><path d="M0 7h6M18 7h6M9 1a5 6 0 0 0 0 12M15 1a5 6 0 0 1 0 12"/></svg>`,
+};
+
 // -- input ---------------------------------------------------------------------------------------
 function buildPalette() {
   const fb = paletteLang === "FBD";
@@ -369,7 +382,7 @@ function buildPalette() {
   $("palette").innerHTML = fb
     ? fam.items.map((i) => `<button data-b="${esc(i.m)}" draggable="true" title="${esc(i.title)} · click to add, or drag onto the diagram">${esc(i.name)}</button>`).join("")
     : `<button data-m="RUNG" title="New rung">Rung +</button><button data-m="BRANCH" title="Put the selected instruction in a branch">Branch</button>` +
-      fam.items.map((i) => `<button data-m="${esc(i.m)}" title="${esc(i.title)}">${esc(i.name)}</button>`).join("");
+      fam.items.map((i) => `<button data-m="${esc(i.m)}" title="${esc(i.title)}">${ICON[i.shape] || ""}${esc(i.name)}</button>`).join("");
 }
 
 function act(fn) {
@@ -549,10 +562,10 @@ function wire() {
   $("b-download").onclick = () => { S.download(); render(true); };
   $("b-run").onclick = () => { S.set_mode("RUN"); render(true); };
   $("b-pgm").onclick = () => { S.set_mode("PGM"); render(true); };
-  $("b-new").onchange = (e) => {
-    if (e.target.value) { S.new(e.target.value); closeLab(); changed(); }
-    e.target.value = "";
-  };
+  document.querySelectorAll("[data-new]").forEach((b) => b.onclick = () => {
+    closeMenus();
+    S.new(b.dataset.new); closeLab(); changed("New program. Pick an instruction above to start.");
+  });
   const ta = $("stsrc");
   ta.setAttribute("wrap", "off");
   ta.addEventListener("input", () => { S.set_source(ta.value); paintCode(ta.value, []); store.set("plcyard.program", S.save_text()); });
@@ -584,14 +597,27 @@ function wire() {
     showLab(js(S.open_exercise(state.lab.id, b.dataset.lablang)));
     changed();
   });
-  $("b-example").onchange = (e) => {
-    if (e.target.value) { S.open_example(e.target.value); closeLab(); changed(); }
-    e.target.value = "";
-  };
-  $("b-lab").onchange = (e) => {
-    if (e.target.value) openLab(e.target.value);
-    e.target.value = "";
-  };
+  $("b-exercises").onclick = openExercises;
+  $("b-examples").onclick = $("b-examples2").onclick = () => { closeMenus(); openExamples(); };
+  $("d-ex-list").addEventListener("click", (e) => {
+    const c = e.target.closest("[data-lab]");
+    if (c) { $("d-exercises").close(); openLab(c.dataset.lab); }
+  });
+  $("d-exa-list").addEventListener("click", (e) => {
+    const c = e.target.closest("[data-example]");
+    if (c) { $("d-examples").close(); S.open_example(c.dataset.example); closeLab(); changed(); }
+  });
+  document.querySelectorAll("dialog [data-close]").forEach((b) => b.onclick = () => b.closest("dialog").close());
+  document.querySelectorAll("dialog").forEach((d) => d.addEventListener("click", (e) => { if (e.target === d) d.close(); }));
+  $("b-w-first").onclick = () => { $("d-welcome").close(); openLab(EXERCISES[0].id); };
+  $("b-w-example").onclick = () => { $("d-welcome").close(); openExamples(); };
+  $("b-welcome").onclick = () => { closeMenus(); $("d-welcome").showModal(); };
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll("details.dd[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; });
+  });
+  $("simpane").addEventListener("click", (e) => {
+    if (e.target.id === "b-allio") { showAllIo = !showAllIo; render(true); }
+  });
   $("b-notation").onchange = (e) => {
     S.set_notation(e.target.value);
     store.set("plcyard.notation", e.target.value);
@@ -600,7 +626,7 @@ function wire() {
     if (state.lab && !$("labpane").hidden) showLab(js(S.lab_view()));
     render(true);
   };
-  $("b-open").onclick = () => $("f-open").click();
+  $("b-open").onclick = () => { closeMenus(); $("f-open").click(); };
   $("f-open").onchange = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
@@ -609,6 +635,7 @@ function wire() {
     if (err) say(err, true); else { closeLab(); changed("Opened " + f.name); }
   };
   $("b-save").onclick = () => {
+    closeMenus();
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([S.save_text()], { type: "application/json" }));
     a.download = (state.lab ? `exercise-${state.lab.id}` : "program") + ".plcy";
@@ -621,6 +648,37 @@ function wire() {
 }
 
 // -- exercises -----------------------------------------------------------------------------------
+const done = () => { try { return new Set(JSON.parse(store.get("plcyard.done") || "[]")); } catch { return new Set(); } };
+
+function closeMenus() {
+  document.querySelectorAll("details.dd[open]").forEach((d) => { d.open = false; });
+}
+
+function groups(items) {
+  const out = new Map();
+  for (const it of items) { if (!out.has(it.machine)) out.set(it.machine, []); out.get(it.machine).push(it); }
+  return out;
+}
+
+function openExercises() {
+  const ok = done();
+  $("d-ex-progress").textContent = `${EXERCISES.filter((x) => ok.has(x.id)).length} of ${EXERCISES.length} done`;
+  $("d-ex-list").innerHTML = [...groups(EXERCISES)].map(([machine, list]) => `<h3>${esc(machine)}</h3><div class="cardgrid">` +
+    list.map((x) => `<button class="pick${ok.has(x.id) ? " done" : ""}" data-lab="${esc(x.id)}">
+      <span class="num">${esc(x.id)}</span><span class="ptitle">${esc(x.title)}</span>
+      <span class="lvl" title="Level ${x.level} of 5">${"●".repeat(x.level)}${"○".repeat(5 - x.level)}</span>
+      ${ok.has(x.id) ? `<span class="tick" title="Passed">✔</span>` : ""}</button>`).join("") + `</div>`).join("");
+  $("d-exercises").showModal();
+}
+
+function openExamples() {
+  const LANG = { LD: "Ladder", ST: "Structured text", FBD: "Function blocks" };
+  $("d-exa-list").innerHTML = [...groups(EXAMPLES)].map(([machine, list]) => `<h3>${esc(machine)}</h3><div class="cardgrid">` +
+    list.map((x) => `<button class="pick" data-example="${esc(x.key)}"><span class="ptitle">${esc(x.title)}</span>
+      <span class="lang">${esc(LANG[x.language])}</span></button>`).join("") + `</div>`).join("");
+  $("d-examples").showModal();
+}
+
 function openLab(id) {
   showLab(js(S.open_exercise(id)));
   changed();
@@ -643,7 +701,8 @@ function check() {
   setTimeout(() => {
     const r = js(S.check());
     if (r.error) { $("report").innerHTML = `<p class="bad">${esc(r.error)}</p>`; return; }
-    $("report").innerHTML = `<p><strong>${r.passed ? "All requirements met" : "Score"}: ${esc(r.score)}</strong></p><ul>` +
+    if (r.passed) { const ok = done(); ok.add(state.lab.id); store.set("plcyard.done", JSON.stringify([...ok])); }
+    $("report").innerHTML = `<p class="${r.passed ? "passed" : ""}"><strong>${r.passed ? "✔ All requirements met" : "Score"}: ${esc(r.score)}</strong></p><ul>` +
       r.checks.map((c) => `<li><span class="${c.passed ? "ok" : "bad"}">${c.passed ? "✔" : "✘"}</span> ${esc(c.text)}${!c.passed && c.detail ? `<span class="detail">${esc(c.detail)}</span>` : ""}</li>`).join("") + "</ul>";
   }, 20);
 }

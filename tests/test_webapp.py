@@ -288,3 +288,16 @@ def test_exercises_on_the_newer_machines():
     s.open_text(lab.solution.read_text(encoding="utf-8"))
     s.lab = lab
     assert s.check()["passed"]
+
+
+def test_pickers_and_compact_io_data():
+    s = Session()
+    ex = s.exercises()
+    assert all({"level", "machine", "sim"} <= set(e) for e in ex) and ex[0]["machine"] == "I/O panel"
+    langs = {e["key"]: e["language"] for e in s.examples()}
+    assert langs["start-stop"] == "LD" and langs["start-stop-st"] == "ST" and langs["tank-pid-fbd"] == "FBD"
+    assert s.palette()[0]["items"][0]["shape"] == "contact"
+    s.open_exercise("06")
+    io = json.loads(s.state(800))["io"]
+    used = [p["bit"] for p in io["inputs"][0]["points"] if p["used"]]
+    assert used == [0, 1] and io["bcd_used"]          # the exercise's devices and its display

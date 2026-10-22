@@ -273,3 +273,65 @@ button.ghost { border: none; background: none; }
 .iface .prow { display: grid; grid-template-columns: 70px minmax(0, 160px) minmax(0, 120px) 28px; gap: 4px; margin: 3px 0; align-items: center; }
 .iface .prow input, .iface .prow select { min-width: 0; padding: 2px 6px; min-height: 24px; font-family: "JetBrains Mono", monospace; font-size: 12px; }
 .iface .sec { color: var(--text-muted); }
+
+/* -- header: menus, machine, PLC ------------------------------------------------------------------ */
+.top { flex-wrap: nowrap; }
+.menu { flex-wrap: nowrap; }
+button.accent { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+button.icon, summary.icon { min-width: 30px; padding: 2px 6px; font-size: 16px; }
+.field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.field.col { flex-direction: column; align-items: stretch; gap: 4px; }
+.dd { position: relative; }
+.dd > summary { list-style: none; cursor: pointer; border: 1px solid var(--border-input); border-radius: 4px; padding: 4px 10px;
+  min-height: 28px; display: flex; align-items: center; background: var(--surface); user-select: none; }
+.dd > summary::-webkit-details-marker { display: none; }
+.dd > summary:not(.icon)::after { content: "▾"; margin-left: 6px; color: var(--text-muted); }
+.dd[open] > summary { background: var(--surface-2); }
+.ddlist { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; min-width: 260px; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px; box-shadow: 0 6px 20px rgba(0,0,0,.16); }
+.dd.right .ddlist { left: auto; right: 0; min-width: 300px; padding: 8px; gap: 4px; }
+.ddlist > button { border: none; background: none; text-align: left; border-radius: 4px; }
+.ddlist > button:hover { background: var(--accent-soft); }
+.ddlist hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; width: 100%; }
+.ddlink { color: var(--accent); padding: 4px 10px; text-decoration: none; }
+.ledbox { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: .04em; }
+#b-download { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { filter: brightness(1.18); } }
+.linkbtn { border: none; background: none; color: var(--accent); padding: 4px 0; min-height: 0; margin-top: 6px; }
+.linkbtn:hover:not(:disabled) { background: none; text-decoration: underline; }
+.palette .ic { width: 22px; height: 13px; margin-right: 4px; vertical-align: -2px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.status.err { background: color-mix(in srgb, var(--danger) 12%, transparent); border-left: 3px solid var(--danger); color: var(--text); }
+
+/* -- exercise pane ------------------------------------------------------------------------------------ */
+.labpane { padding-top: 0; }
+.labtop { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 10px 0 8px; border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px; }
+.labtop .ctl { justify-content: space-between; }
+.labtop .group button { padding: 2px 8px; font-size: 12px; }
+.report:empty { display: none; }
+.report { max-height: 40vh; overflow: auto; }
+.report .passed { color: var(--success); }
+
+/* -- dialogs ------------------------------------------------------------------------------------------ */
+dialog { border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; background: var(--bg); color: var(--text);
+  box-shadow: 0 12px 40px rgba(0,0,0,.25); max-width: min(860px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
+dialog::backdrop { background: rgba(0,0,0,.35); }
+dialog h2 { margin: 0; font-size: 18px; }
+dialog h3 { margin: 14px 0 6px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+.dhead { display: flex; align-items: center; gap: 12px; }
+.dhead button { margin-left: auto; }
+.cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.pick { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; text-align: left; padding: 8px 10px;
+  border-radius: 8px; align-items: center; }
+.pick:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.pick .num { font: 700 15px "JetBrains Mono", monospace; color: var(--accent); grid-row: span 2; }
+.pick .ptitle { font-weight: 600; }
+.pick .lvl, .pick .lang { font-size: 11px; color: var(--text-muted); letter-spacing: .1em; }
+.pick .lang { letter-spacing: 0; }
+.pick.done { border-color: var(--success); }
+.pick .tick { position: absolute; top: 6px; right: 8px; color: var(--success); font-weight: 700; }
+.welcome { max-width: 520px; }
+.welcome .steps { padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.welcome .ctl { margin-top: 12px; }
+@media (max-width: 1180px) { .top, .menu { flex-wrap: wrap; } }
+.labbody > h1:first-child { display: none; }

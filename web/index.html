@@ -11,34 +11,49 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="../"><img src="icon.svg" alt="" width="22" height="22"> PLCYard <span class="tag">web</span></a>
-  <nav class="menu">
-    <select id="b-new" title="New program"><option value="">New…</option><option value="LD">Ladder</option><option value="ST">Structured text</option><option value="FBD">Function blocks</option></select>
-    <select id="b-example" title="Open an example"><option value="">Examples…</option></select>
-    <select id="b-lab" title="Open an exercise"><option value="">Exercises…</option></select>
-    <select id="b-sim" title="The machine wired to the PLC"></select>
-    <button id="b-open" title="Open a .plcy file">Open…</button>
-    <button id="b-save" title="Save as a .plcy file (opens in the desktop app too)">Save</button>
+  <a class="brand" href="../" title="PLCYard wiki"><img src="icon.svg" alt="" width="22" height="22"> PLCYard <span class="tag">web</span></a>
+  <nav class="menu" aria-label="Main">
+    <details class="dd" id="m-file"><summary>File</summary>
+      <div class="ddlist" role="menu">
+        <button data-new="LD" role="menuitem">New ladder program</button>
+        <button data-new="ST" role="menuitem">New structured text program</button>
+        <button data-new="FBD" role="menuitem">New function block program</button>
+        <hr>
+        <button id="b-open" role="menuitem">Open a .plcy file…</button>
+        <button id="b-save" role="menuitem">Save as .plcy (opens in the desktop app too)</button>
+        <hr>
+        <button id="b-examples2" role="menuitem">Examples…</button>
+      </div></details>
+    <button id="b-exercises" class="accent" title="Pick an exercise: the requirements, then check your program">Exercises</button>
+    <button id="b-examples" title="Open a finished example program">Examples</button>
     <input id="f-open" type="file" accept=".plcy,application/json" hidden>
     <span class="sep"></span>
-    <button id="b-tags" title="Show the tag list">Tags</button>
-    <button id="b-undo" title="Undo (Ctrl+Z)">Undo</button>
-    <button id="b-redo" title="Redo (Ctrl+Y)">Redo</button>
+    <label class="field">Machine <select id="b-sim" title="The machine wired to the PLC"></select></label>
     <span class="sep"></span>
-    <select id="b-notation" title="How instructions and addresses are written">
-      <option value="A">Mnemonics (XIC)</option>
-      <option value="B">IEC symbols (%I0.0)</option>
-    </select>
+    <button id="b-tags" title="Show the tag list (named memory)">Tags</button>
+    <button id="b-undo" class="icon" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+    <button id="b-redo" class="icon" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
   </nav>
-  <div class="plc">
-    <span id="led-run" class="led" title="RUN"></span>
-    <span id="led-fault" class="led" title="FAULT"></span>
-    <button id="b-download" class="primary" title="Send the program to the PLC">Download</button>
+  <div class="plc" aria-label="PLC">
+    <span class="ledbox"><span id="led-run" class="led"></span>RUN</span>
+    <span class="ledbox"><span id="led-fault" class="led"></span>FAULT</span>
+    <button id="b-download" class="primary" hidden title="The editor has changes the running PLC does not have yet">Send changes</button>
     <div class="modes" role="group" aria-label="PLC mode">
-      <button id="b-pgm" title="Program mode: outputs off">PGM</button>
-      <button id="b-run" title="Run the program">RUN</button>
+      <button id="b-pgm" title="Program mode: the PLC stops, outputs off">PROGRAM</button>
+      <button id="b-run" title="Send the program to the PLC and run it">RUN</button>
     </div>
     <span id="scans" class="mono muted"></span>
+    <details class="dd right" id="m-settings"><summary class="icon" title="Settings and help" aria-label="Settings and help">⚙</summary>
+      <div class="ddlist">
+        <label class="field col">Notation
+          <select id="b-notation" title="How instructions and addresses are written">
+            <option value="B">IEC symbols (%I0.0, contacts and coils)</option>
+            <option value="A">Mnemonics (XIC, OTE, Local:1:I.Data.0)</option>
+          </select></label>
+        <hr>
+        <button id="b-welcome">How it works…</button>
+        <a class="ddlink" href="../" target="_blank" rel="noopener">The wiki: manual and reference ↗</a>
+      </div></details>
   </div>
 </header>
 
@@ -78,14 +93,38 @@
     <div id="tagmsg" class="status err"></div>
   </aside>
   <aside id="labpane" class="labpane" hidden>
-    <div class="labhead"><strong id="labtitle"></strong><button id="b-labclose" class="ghost" title="Close">✕</button></div>
-    <div class="ctl"><span class="muted">Write it in</span><span class="group" role="group" aria-label="Language">
-      <button data-lablang="LD">Ladder</button><button data-lablang="ST">Structured text</button><button data-lablang="FBD">Function blocks</button></span></div>
+    <div class="labtop">
+      <div class="labhead"><strong id="labtitle"></strong><button id="b-labclose" class="ghost" title="Close the exercise">✕</button></div>
+      <div class="ctl"><button id="b-check" class="primary">Check my program</button>
+        <span class="group" role="group" aria-label="Write it in" title="Start again in another language">
+        <button data-lablang="LD">Ladder</button><button data-lablang="ST">ST</button><button data-lablang="FBD">FBD</button></span></div>
+      <div id="report" class="report"></div>
+    </div>
     <div id="labbody" class="labbody"></div>
-    <button id="b-check" class="primary">Check my program</button>
-    <div id="report" class="report"></div>
   </aside>
 </main>
+
+<dialog id="d-exercises" class="picker" aria-labelledby="d-ex-title">
+  <div class="dhead"><h2 id="d-ex-title">Exercises</h2><span class="muted" id="d-ex-progress"></span><button class="ghost" data-close aria-label="Close">✕</button></div>
+  <p class="muted">Each exercise wires a machine to the PLC and lists what your program must do. Write it, press RUN to try it, then <strong>Check my program</strong>.</p>
+  <div id="d-ex-list"></div>
+</dialog>
+<dialog id="d-examples" class="picker" aria-labelledby="d-exa-title">
+  <div class="dhead"><h2 id="d-exa-title">Examples</h2><button class="ghost" data-close aria-label="Close">✕</button></div>
+  <p class="muted">Finished programs to run and read. Opening one replaces the program in the editor (save it first if you want to keep it).</p>
+  <div id="d-exa-list"></div>
+</dialog>
+<dialog id="d-welcome" class="welcome" aria-labelledby="d-w-title">
+  <h2 id="d-w-title">Welcome to PLCYard</h2>
+  <p>A PLC trainer that runs in your browser: write a program, run it on a simulated PLC wired to a machine, and see what happens.</p>
+  <ol class="steps">
+    <li><strong>Pick an exercise.</strong> It wires a machine to the PLC and says what your program must do.</li>
+    <li><strong>Write the program</strong> in ladder, structured text or function blocks. Drag an address from the machine onto an instruction.</li>
+    <li><strong>Press RUN</strong> and play with the machine: buttons, switches, sliders.</li>
+    <li><strong>Check my program</strong> runs every requirement against your program.</li>
+  </ol>
+  <div class="ctl"><button id="b-w-first" class="primary">Start with exercise 1</button><button id="b-w-example">Explore an example</button><button data-close>Close</button></div>
+</dialog>
 
 <div id="update" class="update" role="status" hidden>A new version of PLCYard is available.
   <button id="b-reload" class="primary">Reload</button><span class="muted">your program is kept</span></div>
