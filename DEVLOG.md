@@ -678,3 +678,18 @@ keys:      web, silo, traffic, tank, sims.js
   changed, a "new version, Reload" bar appears (the program is kept in the browser).
 - plcyard.zip is built without timestamps: the same sources give the same zip and the same version.
 keys:      web, cache, version, update
+
+## C-036 — Web version, step 4: structured text and tags
+2026-10-22 · commits: ca83604
+- New → Ladder or Structured text. The ST editor colours keywords, functions, numbers, times,
+  addresses and comments as you type (a text box over a highlighted copy), numbers lines, marks
+  lines with problems and lists them (same checks as the desktop, cached until code or tags
+  change), and shows a watch list with live values while the PLC runs this code.
+- Tag list pane (Tags): name, type (suggestions, arrays like TIMER[6] typed in), description; add,
+  rename, change, delete; a change that makes the tags invalid is refused with the reason.
+- Exercises can be written in ladder or ST (Write it in). Examples in ST: start/stop, silo with
+  modes, traffic lights, tank PID.
+- Narrow editor (panes open, small screens): the watch list moves under the code.
+- Tests: `tests/test_webapp.py` (10): an ST program with tags, an exercise solved in ST; browser
+  run: example, new program fixed by adding a tag, exercise 10 solved in ST (4/4).
+keys:      web, structured text, tags, highlighter, watch

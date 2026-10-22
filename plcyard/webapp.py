@@ -12,6 +12,7 @@ import json
 from . import grader, labs
 from .core import edit
 from .core.plc import PLC
+from .core import st
 from .core.processor import Processor
 from .core.program import Parallel, Program, Series
 from .formats import plcy
@@ -32,7 +33,12 @@ EXAMPLES = {"start-stop": ("Start/stop with seal-in", "io", "samples/start-stop.
             "silo": ("Silo filling line", "silo", "samples/silo.plcy"),
             "traffic-lights": ("Traffic lights", "traffic", "samples/traffic-lights.plcy"),
             "tank-on-off": ("Tank level, on/off", "tank", "labs/solutions/11-tank-on-off.plcy"),
-            "tank-pid": ("Tank level, PID", "tank", "labs/solutions/12-tank-pid.plcy")}
+            "tank-pid": ("Tank level, PID", "tank", "labs/solutions/12-tank-pid.plcy"),
+            "start-stop-st": ("Start/stop in structured text", "io", "samples/start-stop-st.plcy"),
+            "silo-st": ("Silo with modes in structured text", "silo", "labs/solutions/09-silo-modes.st.plcy"),
+            "traffic-st": ("Traffic lights in structured text", "traffic", "labs/solutions/10-traffic-light.st.plcy"),
+            "tank-pid-st": ("Tank level PID in structured text", "tank", "samples/tank-pid-structured-text.plcy")}
+LANGUAGES = ("LD", "ST")
 MAIN = 2
 
 
@@ -51,6 +57,7 @@ class Session:
         self.problems: list[str] = []
         self.message = ""
         self.lab: labs.Lab | None = None
+        self._st_key, self._st = None, {}
 
     # -- files ----------------------------------------------------------------------------------
     def _open(self, program: Program, lab=None, sim: str | None = None) -> None:
@@ -69,8 +76,12 @@ class Session:
             self.sim.configure_from_symbols(self.program.symbols)
         self.plc.device = self.sim
 
-    def new(self) -> None:
-        self._open(Program.new())
+    def new(self, language: str = "LD") -> None:
+        self._open(Program.new(language=language if language in LANGUAGES else "LD"))
+
+    @property
+    def language(self) -> str:
+        return self.program.main.language
 
     def examples(self) -> list[dict]:
         return [{"key": k, "title": t} for k, (t, _, _) in EXAMPLES.items()]
@@ -84,8 +95,9 @@ class Session:
             program = plcy.loads(text)
         except plcy.PlcyError as e:
             return str(e)
-        if program.main.language != "LD" or len(program.files) > 1:
-            return "The web version edits ladder programs with one routine; open this one in the desktop app."
+        if program.main.language not in LANGUAGES or len(program.files) > 1:
+            return ("The web version edits one ladder or structured text routine; open this one in the "
+                    "desktop app.")
         self._open(program)
         return ""
 
@@ -95,9 +107,13 @@ class Session:
     def exercises(self) -> list[dict]:
         return [{"id": lab.id, "title": lab.title} for lab in labs.load_all() if lab.simulation in SIMS]
 
-    def open_exercise(self, lab_id: str) -> dict:
+    def open_exercise(self, lab_id: str, language: str = "LD") -> dict:
         lab = next(x for x in labs.load_all() if x.id == lab_id)
-        self._open(lab.starter(), lab, lab.simulation)
+        program = lab.starter()
+        if language == "ST":
+            program.main.language = "ST"
+            program.main.source = "// Write your program here.\n"
+        self._open(program, lab, lab.simulation)
         return self.lab_view()
 
     def lab_view(self) -> dict | None:
@@ -292,6 +308,114 @@ class Session:
             self.program = self.redo.pop()
             self.sel, self.dirty = None, True
 
+    # -- structured text ---------------------------------------------------------------------------
+    def set_source(self, text: str) -> None:
+        """The routine's code as typed (the text box keeps its own undo)."""
+        if self.language == "ST" and text != self.file.source:
+            self.file.source = text
+            self.dirty = True
+
+    def st_syntax(self) -> dict:
+        return {"keywords": sorted(st.KEYWORDS), "functions": sorted(st.FUNCS)}
+
+    def _st_check(self) -> dict:
+        """Problems (with their lines) and the names the code uses; cached until code or tags change."""
+        key = (self.file.source, json.dumps(self.program.tags, sort_keys=True), json.dumps(self.program.types))
+        if key == self._st_key:
+            return self._st
+        problems, lines, names = [], [], []
+        try:
+            body = st.parse(self.file.source)
+        except st.StError as e:
+            problems, lines = [f"line {e.line}: {e.message}"], [e.line]
+        else:
+            names = list(dict.fromkeys(n.ref.replace('"', "") for n in st.walk(body)
+                                       if isinstance(n, st.Var) and not n.index))
+            names += [c.instance.replace('"', "") for c in st.calls(body)
+                      if not c.index and c.instance.replace('"', "") not in names]
+            prof = self.plc.profile
+            try:
+                mem = prof.new_memory()
+                prof.load(self.program, mem)
+            except Exception as e:                   # the tag list itself is wrong
+                problems = [f"Tags: {e}"]
+            else:
+                for d in prof.check_st(self.program, mem):
+                    problems.append(f"line {d.line}: {d.message}")
+                    lines.append(d.line or 1)
+        problems = list(dict.fromkeys(problems))
+        self._st_key, self._st = key, {"problems": [notation.show_text(p) for p in problems], "lines": lines,
+                                       "names": names}
+        return self._st
+
+    def _watch(self, names: list[str]) -> list[list[str]]:
+        rows, mem, live = [], self.plc.dt, self._live()
+        for n in names:
+            text = ""
+            if live:
+                try:
+                    t = mem.ref(n).type.lower()
+                    if t in ("timer", "counter", "control", "pid"):
+                        text = self.plc.profile.tag_value(mem, n)
+                    elif t == "bool":
+                        text = "TRUE" if mem.read_bit(n) else "FALSE"
+                    else:
+                        v = mem.read_word(n)
+                        text = f"{v:g}" if isinstance(v, float) else str(v)
+                except Exception:
+                    text = "?"
+            rows.append([notation.show(n, self.program), text])
+        return rows
+
+    # -- tags -------------------------------------------------------------------------------------
+    def tag_types(self) -> list[str]:
+        return list(self.plc.profile.tag_types) + sorted(self.program.types)
+
+    def tags(self) -> list[dict]:
+        return [{"name": n, "type": str(d.get("type", "")), "comment": d.get("comment", "")}
+                for n, d in self.program.tags.items()]
+
+    def _tags_problem(self) -> str:
+        try:
+            self.plc.profile.build_memory(self.program)
+        except Exception as e:
+            return str(e)
+        return ""
+
+    def set_tag(self, old: str, name: str, type_: str, comment: str) -> str:
+        """Add (old == "") or change a tag. Returns a problem, and then changes nothing."""
+        name, type_ = name.strip(), type_.strip()
+        if not name.replace("_", "a").isalnum() or name[0].isdigit():
+            return "A tag name is letters, digits and _, not starting with a digit."
+        if name != old and name in self.program.tags:
+            return f"There is already a tag {name}."
+        before = copy.deepcopy(self.program)
+        tags = list(self.program.tags.items())
+        decl = dict(self.program.tags.get(old, {}))
+        if decl.get("type", "").upper() != type_.upper():
+            decl.pop("value", None)
+        decl["type"] = type_
+        if comment.strip():
+            decl["comment"] = comment.strip()
+        else:
+            decl.pop("comment", None)
+        self.program.tags = ({(name if n == old else n): (decl if n == old else d) for n, d in tags}
+                             if old else {**self.program.tags, name: decl})
+        problem = self._tags_problem()
+        if problem:
+            self.program = before
+            return problem
+        self.undo.append(before)
+        self.redo.clear()
+        self.dirty = True
+        return ""
+
+    def delete_tag(self, name: str) -> None:
+        if name in self.program.tags:
+            self.undo.append(copy.deepcopy(self.program))
+            del self.program.tags[name]
+            self.dirty = True
+
     # -- the page -------------------------------------------------------------------------------
     def palette(self) -> list[dict]:
         """Instruction bar: families of the instruction set, in the current notation."""
@@ -436,7 +560,10 @@ class Session:
             "dirty": self.dirty, "problems": self.problems, "message": self.message,
             "notation": notation.current(), "live": self._live(),
             "sel": [self.sel[0], self.sel[1], list(self.sel[2])] if self.sel and len(self.sel) == 3 else self.sel,
-            "rungs": self.rungs(width), "io": self.io(), "machine": self.machine(), "sims": [[k, t] for k, (t, _) in SIMS.items()],
+            "language": self.language, "tags": self.tags(),
+            "st": ({"source": self.file.source, **(c := self._st_check()), "watch": self._watch(c["names"])}
+                   if self.language == "ST" else None),
+            "rungs": self.rungs(width) if self.language == "LD" else [], "io": self.io(), "machine": self.machine(), "sims": [[k, t] for k, (t, _) in SIMS.items()],
             "operands": self.selected_operands(),
             "can_undo": bool(self.undo), "can_redo": bool(self.redo),
             "lab": {"id": self.lab.id, "title": self.lab.title} if self.lab else None,

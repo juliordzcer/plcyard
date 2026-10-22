@@ -18,7 +18,7 @@ It runs natively on Linux, macOS and Windows, stays sharp on high-resolution scr
 no licence key.
 
 Try it in your browser, nothing to install: **[PLCYard web](https://juliordz.com/plcyard/app/)**
-(ladder editor, I/O panel, silo, traffic lights, tank, exercises 1-13). Documentation: **[the wiki](https://juliordz.com/plcyard/)**.
+(ladder and structured text, I/O panel, silo, traffic lights, tank, exercises 1-13). Documentation: **[the wiki](https://juliordz.com/plcyard/)**.
 
 ## How it works
 

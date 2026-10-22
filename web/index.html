@@ -13,7 +13,7 @@
 <header class="top">
   <a class="brand" href="../"><img src="icon.svg" alt="" width="22" height="22"> PLCYard <span class="tag">web</span></a>
   <nav class="menu">
-    <button id="b-new" title="New program">New</button>
+    <select id="b-new" title="New program"><option value="">New…</option><option value="LD">Ladder</option><option value="ST">Structured text</option></select>
     <select id="b-example" title="Open an example"><option value="">Examples…</option></select>
     <select id="b-lab" title="Open an exercise"><option value="">Exercises…</option></select>
     <select id="b-sim" title="The machine wired to the PLC"></select>
@@ -21,6 +21,7 @@
     <button id="b-save" title="Save as a .plcy file (opens in the desktop app too)">Save</button>
     <input id="f-open" type="file" accept=".plcy,application/json" hidden>
     <span class="sep"></span>
+    <button id="b-tags" title="Show the tag list">Tags</button>
     <button id="b-undo" title="Undo (Ctrl+Z)">Undo</button>
     <button id="b-redo" title="Redo (Ctrl+Y)">Redo</button>
     <span class="sep"></span>
@@ -52,10 +53,25 @@
     <div id="palette" class="palette"></div>
     <div id="status" class="status" role="status"></div>
     <div id="ladder" class="ladder" tabindex="0"></div>
+    <div id="stwrap" class="stwrap" hidden>
+      <div class="code" id="stcode"><div class="gutter" id="stgut" aria-hidden="true"></div>
+        <div class="area"><pre id="sthl" aria-hidden="true"></pre><textarea id="stsrc" spellcheck="false" autocomplete="off" aria-label="Structured text"></textarea></div></div>
+      <div class="stside"><div id="stprob" class="stprob" role="status"></div>
+        <table class="watch"><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody id="stwatch"></tbody></table></div>
+    </div>
     <form id="operands" class="operands" hidden></form>
   </section>
+  <aside id="tagpane" class="labpane" hidden>
+    <div class="labhead"><strong>Tags</strong><button id="b-tagclose" class="ghost" title="Close">✕</button></div>
+    <p class="muted">Named PLC memory: BOOL, INT, REAL, TIME, TIMER, COUNTER, PID… I/O addresses need no tag.</p>
+    <div id="taglist"></div>
+    <datalist id="tagtypes"></datalist>
+    <div id="tagmsg" class="status err"></div>
+  </aside>
   <aside id="labpane" class="labpane" hidden>
     <div class="labhead"><strong id="labtitle"></strong><button id="b-labclose" class="ghost" title="Close">✕</button></div>
+    <div class="ctl"><span class="muted">Write it in</span><span class="group" role="group" aria-label="Language">
+      <button data-lablang="LD">Ladder</button><button data-lablang="ST">Structured text</button></span></div>
     <div id="labbody" class="labbody"></div>
     <button id="b-check" class="primary">Check my program</button>
     <div id="report" class="report"></div>

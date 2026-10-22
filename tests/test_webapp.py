@@ -135,3 +135,32 @@ def test_machine_controls_and_exercise_on_its_machine():
     s.open_text(lab.solution.read_text(encoding="utf-8"))
     s.lab = lab
     assert s.check()["passed"]
+
+
+def test_structured_text_program_with_tags():
+    s = Session()
+    s.new("ST")
+    s.set_source("Lamp := %I0.0 AND NOT %I0.1;\n%Q0.0 := Lamp;\nT.TON(IN := Lamp, PT := T#1s);\n")
+    st = json.loads(s.state(800))["st"]
+    assert st["lines"] and any("Lamp" in p for p in st["problems"])
+    assert s.set_tag("", "Lamp", "BOOL", "") == "" and s.set_tag("", "T", "TIMER", "") == ""
+    assert s.set_tag("", "Bad", "NOPE", "") and "Bad" not in s.program.tags
+    assert json.loads(s.state(800))["st"]["problems"] == []
+    s.set_mode("RUN")
+    s.press(1, 0, True)
+    s.tick(1200)
+    st = json.loads(s.state(800))
+    assert lamp(s, 0) and any(n == "T" and "DN" in v for n, v in st["st"]["watch"])
+    assert s.set_tag("T", "Delay", "TIMER", "a delay") == "" and "Delay" in s.program.tags and "T" not in s.program.tags
+    assert "ST" in s.save_text() and s.open_text(s.save_text()) == ""
+
+
+def test_exercise_in_structured_text():
+    s = Session()
+    s.open_exercise("02", "ST")
+    assert s.language == "ST" and s.sim_kind == "io"
+    from plcyard import labs
+    lab = next(x for x in labs.load_all() if x.id == "02")
+    s.open_text(lab.solutions["ST"].read_text(encoding="utf-8"))
+    s.lab = lab
+    assert s.check()["passed"]

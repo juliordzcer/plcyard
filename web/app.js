@@ -6,7 +6,7 @@ const TICK_MS = 50;
 const VERSION = document.documentElement.dataset.version;
 const GUTTER = 48, MARGIN = 12, RUNG_GAP = 18, COMMENT_LINE = 16, WIRE_Y = 26;
 const $ = (id) => document.getElementById(id);
-let py, S, state = null, lastJson = "", family = null, palette = [], opsKey = "";
+let py, S, state = null, lastJson = "", family = null, palette = [], opsKey = "", HL = null, stKey = "", tagsKey = "";
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const store = {
@@ -25,6 +25,7 @@ async function start() {
     py.runPython("import sys; sys.path.insert(0, '/home/pyodide/app')");
     S = py.runPython("from plcyard.webapp import Session\nSession()");
     for (const ex of js(S.examples())) $("b-example").add(new Option(ex.title, ex.key));
+    buildHighlighter(js(S.st_syntax()));
     for (const lab of js(S.exercises())) $("b-lab").add(new Option(`${lab.id}. ${lab.title}`, lab.id));
     const n = store.get("plcyard.notation");
     if (n === "A" || n === "B") { S.set_notation(n); $("b-notation").value = n; }
@@ -90,8 +91,66 @@ function render(force) {
     : "Hold a button to press it. Drag an address onto an instruction to use it.";
   if (state.io) renderIo(state.io);
   else Sims.render($("machine"), state.machine);
-  renderLadder(state);
-  renderOperands(state);
+  const st = state.language === "ST";
+  for (const id of ["families", "palette", "ladder"]) $(id).hidden = st;
+  $("stwrap").hidden = !st;
+  if (st) { $("operands").hidden = true; opsKey = ""; renderSt(state.st); }
+  else { renderLadder(state); renderOperands(state); }
+  if (!$("tagpane").hidden) renderTags(state.tags);
+}
+
+// -- structured text -------------------------------------------------------------------------------
+function buildHighlighter(syn) {
+  HL = new RegExp([
+    String.raw`(\/\/[^\n]*|\(\*[\s\S]*?(?:\*\)|$)|\/\*[\s\S]*?(?:\*\/|$))`,
+    String.raw`("[^"\n]*"|%[IQM][BWD]?\d+(?:\.\d)?)`,
+    String.raw`\b((?:T|TIME)#[0-9A-Za-z_.]+|\d+#[0-9A-Fa-f_]+|\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b`,
+    String.raw`\b(${syn.keywords.join("|")})\b`,
+    String.raw`\b(${syn.functions.join("|")}|\w+_TO_\w+)(?=\s*\()`,
+  ].join("|"), "gi");
+}
+
+function highlight(src) {
+  let out = "", last = 0;
+  src.replace(HL, (m, c, a, n, k, f, off) => {
+    out += esc(src.slice(last, off)) + `<span class="${c ? "hl-c" : a ? "hl-a" : n ? "hl-n" : k ? "hl-k" : "hl-f"}">${esc(m)}</span>`;
+    last = off + m.length;
+    return m;
+  });
+  return out + esc(src.slice(last)) + "\n";
+}
+
+function paintCode(src, errLines) {
+  $("sthl").innerHTML = highlight(src);
+  const bad = new Set(errLines || []);
+  $("stgut").innerHTML = src.split("\n").map((_, i) => `<div${bad.has(i + 1) ? ' class="err"' : ""}>${i + 1}</div>`).join("");
+}
+
+function renderSt(st) {
+  const ta = $("stsrc");
+  if (document.activeElement !== ta && ta.value !== st.source) ta.value = st.source;
+  const key = JSON.stringify([ta.value, st.lines, st.problems, st.watch]);
+  if (key === stKey) return;
+  stKey = key;
+  paintCode(ta.value, st.lines);
+  $("stprob").textContent = st.problems.slice(0, 6).join("\n") + (st.problems.length > 6 ? `\n…and ${st.problems.length - 6} more` : "");
+  $("stwatch").innerHTML = st.watch.map(([n, v]) => `<tr><td>${esc(n)}</td><td>${esc(v)}</td></tr>`).join("");
+}
+
+// -- tags --------------------------------------------------------------------------------------------
+function renderTags(tags) {
+  const pane = $("tagpane");
+  const key = JSON.stringify(tags);
+  if (key === tagsKey || pane.contains(document.activeElement)) return;
+  tagsKey = key;
+  const types = js(S.tag_types());
+  const row = (t) => `<div class="tagrow" data-old="${esc(t.name)}">
+      <input name="name" value="${esc(t.name)}" placeholder="Name" aria-label="Name" spellcheck="false">
+      <input name="type" list="tagtypes" value="${esc(t.type)}" aria-label="Type" title="A type, or an array like DINT[10]" spellcheck="false">
+      ${t.name ? `<button class="ghost" data-del title="Delete">✕</button>` : `<button class="primary" data-add title="Add">+</button>`}
+      <input class="tc" name="comment" value="${esc(t.comment)}" placeholder="Description" aria-label="Description"></div>`;
+  $("taglist").innerHTML = tags.map(row).join("") + row({ name: "", type: "BOOL", comment: "" });
+  $("tagtypes").innerHTML = types.map((x) => `<option value="${esc(x)}">`).join("");
 }
 
 function renderIo(io) {
@@ -344,7 +403,41 @@ function wire() {
   $("b-download").onclick = () => { S.download(); render(true); };
   $("b-run").onclick = () => { S.set_mode("RUN"); render(true); };
   $("b-pgm").onclick = () => { S.set_mode("PGM"); render(true); };
-  $("b-new").onclick = () => { S.new(); closeLab(); changed(); };
+  $("b-new").onchange = (e) => {
+    if (e.target.value) { S.new(e.target.value); closeLab(); changed(); }
+    e.target.value = "";
+  };
+  const ta = $("stsrc");
+  ta.setAttribute("wrap", "off");
+  ta.addEventListener("input", () => { S.set_source(ta.value); paintCode(ta.value, []); store.set("plcyard.program", S.save_text()); });
+  ta.addEventListener("keydown", (e) => {
+    if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); ta.setRangeText("    ", ta.selectionStart, ta.selectionEnd, "end"); ta.dispatchEvent(new Event("input")); }
+  });
+  $("b-tags").onclick = () => { $("tagpane").hidden = !$("tagpane").hidden; tagsKey = ""; render(true); };
+  $("b-tagclose").onclick = () => { $("tagpane").hidden = true; };
+  const tagChange = (rowEl, adding) => {
+    const v = (n) => rowEl.querySelector(`[name=${n}]`).value;
+    if (!adding && !rowEl.dataset.old) return;
+    const err = S.set_tag(rowEl.dataset.old, v("name"), v("type"), v("comment"));
+    $("tagmsg").textContent = err;
+    if (!err) { tagsKey = ""; document.activeElement.blur(); changed(); }
+  };
+  $("taglist").addEventListener("change", (e) => { const r = e.target.closest(".tagrow"); if (r) tagChange(r, false); });
+  $("taglist").addEventListener("click", (e) => {
+    const r = e.target.closest(".tagrow");
+    if (!r) return;
+    if (e.target.closest("[data-add]")) tagChange(r, true);
+    if (e.target.closest("[data-del]")) { S.delete_tag(r.dataset.old); tagsKey = ""; changed(); }
+  });
+  $("taglist").addEventListener("keydown", (e) => {
+    const r = e.target.closest(".tagrow");
+    if (e.key === "Enter" && r && !r.dataset.old) tagChange(r, true);
+  });
+  document.querySelectorAll("[data-lablang]").forEach((b) => b.onclick = () => {
+    if (!state.lab || !confirm("Start this exercise again with an empty program in " + b.textContent + "?")) return;
+    showLab(js(S.open_exercise(state.lab.id, b.dataset.lablang)));
+    changed();
+  });
   $("b-example").onchange = (e) => {
     if (e.target.value) { S.open_example(e.target.value); closeLab(); changed(); }
     e.target.value = "";
@@ -388,6 +481,7 @@ function openLab(id) {
 }
 
 function showLab(lab) {
+  document.querySelectorAll("[data-lablang]").forEach((b) => b.classList.toggle("on", b.dataset.lablang === S.language));
   $("labtitle").textContent = `${lab.id}. ${lab.title}`;
   $("labbody").innerHTML = window.marked ? marked.parse(lab.body) : `<pre>${esc(lab.body)}</pre>`;
   $("report").innerHTML = "";
