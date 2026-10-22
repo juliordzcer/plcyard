@@ -69,3 +69,27 @@ def test_pid_example_holds_the_level():
     for _ in range(12000):
         plc.tick(10)
     assert abs(tank.level - 50.0) <= 2.0
+
+
+def test_fbd_examples_run():
+    plc, panel = Processor(), IoPanelModel()
+    plc.device = panel
+    prog = formats.load(labs.SAMPLES / "start-stop-fbd.plcy")
+    panel.configure_from_symbols(prog.symbols)
+    assert plc.download(prog) == []
+    plc.set_mode(Processor.RUN)
+    panel.set_pressed(1, 0, True)
+    for _ in range(3):
+        plc.tick(10)
+    panel.set_pressed(1, 0, False)
+    for _ in range(210):
+        plc.tick(10)
+    assert panel.lamp(2, 0) and panel.lamp(2, 1) and not panel.lamp(2, 2)
+    plc, tank = Processor(), TankModel()
+    plc.device = tank
+    tank.level, tank.setpoint_knob = 30.0, 50.0
+    assert plc.download(formats.load(labs.SAMPLES / "tank-pid-fbd.plcy")) == []
+    plc.set_mode(Processor.RUN)
+    for _ in range(12000):
+        plc.tick(10)
+    assert abs(tank.level - 50.0) <= 2.0

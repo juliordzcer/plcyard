@@ -36,6 +36,8 @@ class Processor:
         self.tracing = False
         self.trace: dict[tuple, tuple[bool, bool]] = {}   # (file, rung, *path) -> (in, out)
         self._st: dict[int, list] = {}                     # file number -> parsed structured text
+        self._fbd: dict = {}                               # (file number, instance) -> diagram state
+        self.fbd_values: dict[int, dict] = {}              # file number -> {(block, pin): value} last scan
         self._scope: list[tuple[str, set[str]]] = []       # block instances being run, innermost last
         self.forces: dict[str, bool] = {}                  # forced I/O points -> forced state
         self._use(profiles.get(profile) if isinstance(profile, str) else profile)
@@ -65,6 +67,7 @@ class Processor:
         self._ctx.timer_marks.clear()
         self._st = {f.number: st.parse(f.source) for f in self.program.files.values() if f.language == "ST"}
         self._scope = []
+        self._fbd, self.fbd_values = {}, {}
         try:
             self._each_instruction("on_download")
         except self.profile.memory_errors + (ValueError,) as e:
@@ -83,6 +86,12 @@ class Processor:
                             fn = getattr(self.profile.specs[ins.mnemonic], hook)
                             if fn:
                                 fn(self._ctx, self._ops(ins.operands))
+                    if hook == "on_prescan" and f.language == "FBD" and f.diagram is not None:
+                        self._fbd.pop((f.number, inst), None)
+                        for b in f.diagram.blocks:
+                            spec = self.profile.specs.get(b.type)
+                            if b.instance and spec is not None and spec.on_prescan:
+                                spec.on_prescan(self._ctx, [self._fix(b.instance), "0"])
                     if hook == "on_prescan" and f.number in self._st:   # timers called from structured text
                         for call in st.calls(self._st[f.number]):
                             if call.block not in self.profile.st_blocks:
@@ -250,6 +259,15 @@ class Processor:
             self.dt.write_word(f"{inst}.{n}", value)
 
     def _run_file(self, f) -> None:
+        if f.language == "FBD":
+            from . import fbd
+            from .plc.instructions import run_pid
+            inst = self._scope[-1][0] if self._scope else None
+            state = self._fbd.setdefault((f.number, inst), {})
+            vals = fbd.Runner(self._ctx, self.profile.specs, run_pid, state).run(f.diagram or fbd.Diagram(), self._fix)
+            if self.tracing:
+                self.fbd_values[f.number] = dict(vals)
+            return
         if f.language == "ST":
             mem = ScopedMemory(self.dt, self._fix) if self._scope else self.dt
             runner = st.Runner(mem, lambda inst, block, ins, line: self._st_block(inst, block, ins),

@@ -549,3 +549,18 @@ keys:      one PLC, notation, mnemonics, IEC, convert, Values[5], Timers[0], can
 - Tests: PID scaling, gains, manual, update time, deadband, alarms, limits, cascade, conversion,
   e2e F17. 295 in total.
 keys:      PID Setup, KP KI KD, PE, UPD, MAXI MAXS MAXCV, deadband, alarms, cascade
+
+## C-027 — Phase 5: function block diagram
+2026-10-22 · commit: be36c17
+- `core/fbd.py`: Diagram (blocks, wires), block library (30 types), checks (instances, operands,
+  wire types BOOL vs number, unknown pins, two wires into one input), Runner (data-flow order, last
+  scan's value in loops, flip-flop and edge memories, timers/counters/PID through the shared
+  executors). `ProgramFile.diagram`; `.plcy` stores `"fbd": {"blocks", "wires"}`; `Diagnostic.block`.
+- Engine: FBD files run anywhere a routine runs (main, JSR, FC, FB with `#local` operands); prescan
+  resets timer instances and block memories; `Processor.fbd_values` feeds the live view.
+- `ui/fbd_view.py`: palette, drag pin to pin, operand/instance dialogs, drop I/O on a pin, move with
+  a grid, delete, per-routine undo, live values, energized BOOL wires, PID Setup from a PID block.
+  File → New in function block diagram; New routine offers FBD.
+- Examples: `start-stop-fbd.plcy`, `tank-pid-fbd.plcy` (PID scaling 0-27648 inside the block).
+- Tests: `test_fbd.py` (6), FBD examples, e2e F18 (2). 308 in total.
+keys:      FBD, function block diagram, wire, pin, data flow, R_TRIG, SR, SCALE

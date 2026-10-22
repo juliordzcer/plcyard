@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from ..core import profiles
+from ..core.fbd import Diagram
 from ..core.program import Program, ProgramFile, Rung
 from .rsl import RslError, parse_rung_text, rung_text
 
@@ -30,7 +31,8 @@ def dumps(prog: Program) -> str:
                 "title": f.title,
                 "language": f.language,
                 **({"interface": f.interface} if f.interface else {}),
-                **({"source": f.source} if f.language == "ST" else {
+                **({"source": f.source} if f.language == "ST" else
+                   {"fbd": (f.diagram or Diagram()).to_dict()} if f.language == "FBD" else {
                     "rungs": [{"text": rung_text(r.body), "comment": r.comment} for r in f.rungs],
                     "end_comment": f.end_comment}),
             }
@@ -63,14 +65,16 @@ def loads(text: str) -> Program:
     prog.types = {k: dict(v) for k, v in doc.get("types", {}).items()}
     for d in doc.get("programs", []):
         language = d.get("language", "LD")
-        if language not in ("LD", "ST"):
+        if language not in ("LD", "ST", "FBD"):
             raise PlcyError(f"{language} programs are not supported yet")
         f = ProgramFile(int(d["number"]), d.get("kind", "LAD"), d.get("title"), end_comment=d.get("end_comment", ""),
                         language=language, source=d.get("source", ""),
                         interface={k: dict(v) for k, v in d.get("interface", {}).items()})
         try:
             f.rungs = [Rung(parse_rung_text(r.get("text", "")), r.get("comment", "")) for r in d.get("rungs", [])]
-        except RslError as e:
+            if language == "FBD":
+                f.diagram = Diagram.from_dict(d.get("fbd", {}))
+        except (RslError, ValueError, KeyError, TypeError, IndexError) as e:
             raise PlcyError(f"program {f.number}: {e}") from None
         prog.files[f.number] = f
     if 2 not in prog.files:

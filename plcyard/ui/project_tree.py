@@ -12,7 +12,7 @@ ROLE = Qt.UserRole          # (kind, key): ("routine", number) ("tags", None) ("
 
 def routine_label(f) -> str:
     """How the tree and the tabs name a routine or block."""
-    lang = " (ST)" if f.language == "ST" else ""
+    lang = {"ST": " (ST)", "FBD": " (FBD)"}.get(f.language, "")
     if f.kind in ("FC", "FB"):
         return f"{f.title} [{f.kind}]{lang}"
     return f"{f.title}{lang}"

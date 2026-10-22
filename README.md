@@ -19,7 +19,7 @@ no licence key.
 
 ## How it works
 
-1. **Write** a program in ladder or structured text: click an instruction, type its operand (`%I0.0`,
+1. **Write** a program in ladder, structured text or function block diagram: click an instruction, type its operand (`%I0.0`,
    `Motor`, `Delay`), or drag a switch or lamp from the simulation onto the rung.
 2. **Run** it: Download, switch to RUN, and flip the switches. Energized paths turn green, timers
    and counters count live, the tag list shows every value.
@@ -47,6 +47,9 @@ no licence key.
 - **Several routines per program, in any language**: routines called with `JSR`, functions and
   function blocks with their interface (inputs, outputs, static data) called with a `CALL` box or
   from structured text; each function block instance keeps its own data.
+- **Function block diagram**: logic, flip-flops, edges, timers, counters, compare, math, select,
+  scale and PID blocks; wire pin to pin, or put a tag or I/O point on a pin (drag it from the
+  simulation). Live values on every pin.
 - **Structured text** next to ladder: IF, CASE, FOR, WHILE, REPEAT, math and conversion functions,
   timer, counter and PID blocks called on their tag (`Delay.TON(IN := Start, PT := T#2s)`). Syntax
   colours, line numbers, errors as you type and a watch list with live values.
@@ -99,7 +102,7 @@ Open a sample from **File → Open example**, or press **Ctrl+E** for the exerci
 ## Roadmap
 
 - More simulations (door, elevator, batch mixing, bottle line) and exercises.
-- Function block diagram (FBD), next to ladder and structured text.
+- The same exercises solved in ladder, structured text and function block diagram.
 - A wiki. Full list in [TODO.md](TODO.md).
 - More UI languages.
 

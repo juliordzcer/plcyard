@@ -24,10 +24,10 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [x] PID, analog I/O, tank simulation with trend; exercises 1-13.
 - [x] Forcing I/O; online bar; drag I/O from the simulations onto the ladder; examples.
 - [x] PID setup dialog (tuning, configuration, alarms, scaling) for the PID instruction.
-- [ ] **Next — Phase 5:** function block diagram (FBD), see docs/ROADMAP.md.
+- [x] Phase 5: function block diagram (FBD) editor and runtime, sharing the instructions with ladder and ST.
+- [ ] **Next — Phase 6:** the same exercises solved in ladder, structured text and FBD.
 - [ ] Instructions still missing: ramps, CTUD, R_TRIG / F_TRIG boxes, strings, date/time;
       routines with parameters; function return values.
-- [ ] Same exercises solvable in ladder, structured text and FBD, so a learner can compare them.
 
 ## Documentation
 - [ ] Wiki: getting started, every instruction with an example, how the scan works, how to write an

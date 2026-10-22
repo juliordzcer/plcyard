@@ -1,0 +1,73 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "FBD",
+      "fbd": {
+        "blocks": [
+          {
+            "id": 1,
+            "type": "PID",
+            "x": 300,
+            "y": 60,
+            "instance": "LevelPID",
+            "operands": {
+              "PV": "%IW64",
+              "SP": "Setpoint",
+              "CV": "%QW64"
+            }
+          },
+          {
+            "id": 2,
+            "type": "SCALE",
+            "x": 300,
+            "y": 220,
+            "operands": {
+              "IN": "%IW66",
+              "IN_MIN": "0",
+              "IN_MAX": "27648",
+              "OUT_MIN": "0",
+              "OUT_MAX": "100",
+              "OUT": "Setpoint"
+            }
+          },
+          {
+            "id": 3,
+            "type": "GT",
+            "x": 300,
+            "y": 400,
+            "operands": {
+              "IN1": "LevelPID.PV",
+              "IN2": "90.0",
+              "OUT": "%Q0.2"
+            }
+          }
+        ],
+        "wires": []
+      }
+    }
+  ],
+  "tags": {
+    "LevelPID": {
+      "type": "PID",
+      "value": {
+        "KP": 4.0,
+        "KI": 0.27,
+        "MAXI": 27648.0,
+        "MAXCV": 27648.0
+      }
+    },
+    "Setpoint": {
+      "type": "REAL"
+    }
+  },
+  "symbols": {
+    "LevelPID": "Level loop: scales 0-27648 to 0-100 % in and out (PID Setup → Scaling)",
+    "%Q0.2": "High level alarm"
+  }
+}

@@ -641,3 +641,43 @@ def test_F17_H1_pid_setup_writes_start_values_and_the_running_pid(win, monkeypat
     start = win.program.tags["LevelPID"]["value"]
     assert start["KP"] == 2.5 and start["PE"] is True and start["PVH"] == 95.0
     assert win.plc.dt.element("LevelPID")["KP"] == 2.5, "applied to the running PID too"
+
+
+# -- F18 function block diagram ------------------------------------------------------------------------
+def test_F18_H1_build_and_run_a_diagram(win, qtbot, monkeypatch):
+    from PySide6.QtCore import QPointF
+    from plcyard.ui.fbd_view import pin_point
+    win.new(language="FBD")
+    doc = win.doc
+    assert doc.fbd is not None and win.docs.tabText(0) == "Main (FBD)" and not win.bar.isVisible()
+    c = doc.fbd.canvas
+    a = c.add_block("NOT")
+    b = c.add_block("NOT")
+    c.set_operand(a, "IN", "%I0.0")
+    c.set_operand(b, "OUT", "%Q0.0")
+    src = pin_point(c.diagram.block(a), "OUT", True)
+    dst = pin_point(c.diagram.block(b), "IN", False)
+    qtbot.mousePress(c, Qt.LeftButton, pos=src.toPoint())
+    qtbot.mouseMove(c, pos=dst.toPoint())
+    qtbot.mouseRelease(c, Qt.LeftButton, pos=dst.toPoint())
+    assert len(c.diagram.wires) == 1
+    win.download()
+    assert win.warnings == []
+    go(win, "RUN")
+    click(qtbot, win, 1, 0)
+    run(win, 50)
+    assert win.sim_view.lamps[(2, 0)].on, "NOT NOT %I0.0 → %Q0.0"
+    assert c.values.get((a, "OUT")) is False and c.values.get((b, "OUT")) is True
+    c.undo.undo()
+    assert len(c.diagram.wires) == 0
+    c.undo.redo()
+    assert len(c.diagram.wires) == 1
+
+
+def test_F18_H2_drop_io_on_a_pin_and_open_example(win):
+    win.open(str(SAMPLES / "start-stop-fbd.plcy"))
+    c = win.doc.fbd.canvas
+    c.set_operand(4, "OUT", "Local:2:O.Data.5")
+    assert c.diagram.block(4).operands["OUT"] == "%Q0.5"
+    win.download()
+    assert win.warnings == []

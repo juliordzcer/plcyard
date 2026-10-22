@@ -42,7 +42,7 @@ def test_unicode_is_kept(tmp_path):
     ('{"format": "plcyard", "version": 99}', "newer PLCYard"),
     ('{"format": "plcyard", "version": 1, "profile": "s5"}', "unknown controller"),
     ('{"format": "plcyard", "version": 1, "programs": []}', "no main program"),
-    ('{"format": "plcyard", "version": 1, "programs": [{"number": 2, "language": "FBD"}]}', "not supported yet"),
+    ('{"format": "plcyard", "version": 1, "programs": [{"number": 2, "language": "SFC"}]}', "not supported yet"),
     ('{"format": "plcyard", "version": 1, "programs": [{"number": 2, "rungs": [{"text": "BST,1 XIC,I:1/0"}]}]}',
      "branch not closed"),
 ])

@@ -202,7 +202,14 @@ class RoutineDoc(QWidget):
         lay.setContentsMargins(0, 0, 0, 0)
         self.ladder: LadderView | None = None
         self.st: StEditor | None = None
-        if f.language == "ST":
+        self.fbd = None
+        if f.language == "FBD":
+            from .fbd_view import FbdView
+            self.fbd = FbdView()
+            self.fbd.canvas.set_routine(program, number)
+            self.fbd.canvas.changed.connect(self.changed)
+            editor = self.fbd
+        elif f.language == "ST":
             self.st = StEditor()
             self.st.set_program(program, number)
             self.st.changed.connect(self.changed)
@@ -233,15 +240,25 @@ class RoutineDoc(QWidget):
     def file(self):
         return self.program.files.get(self.number)
 
+    @property
+    def undo_stack(self):
+        if self.ladder:
+            return self.ladder.canvas.undo
+        return self.fbd.canvas.undo if self.fbd else None
+
     def _interface_changed(self) -> None:
         if self.st:
             self.st.check()
-        else:
+        elif self.ladder:
             self.ladder.canvas._relayout()
+        else:
+            self.fbd.canvas.update()
         self.changed.emit()
 
     def set_live(self, memory, live: bool, trace) -> None:
         if self.ladder:
             self.ladder.canvas.set_live(memory, live, trace)
+        elif self.fbd:
+            self.fbd.canvas.set_live(memory, live, trace)
         else:
             self.st.set_live(memory)

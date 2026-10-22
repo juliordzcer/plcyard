@@ -163,6 +163,7 @@ class MainWindow(QMainWindow):
         f = mb.addMenu("&File")
         act(f, "&New", self.new, QKeySequence.New)
         act(f, "New in &structured text", lambda: self.new(language="ST"))
+        act(f, "New in &function block diagram", lambda: self.new(language="FBD"))
         act(f, "&Open…", lambda: self.open(), QKeySequence.Open)
         ex = f.addMenu("Open &example")
         for path in sorted([*labs.SAMPLES.glob("*.rsl"), *labs.SAMPLES.glob("*.plcy")]):
@@ -437,8 +438,8 @@ class MainWindow(QMainWindow):
                 self.program.files[number] = ProgramFile(number, "SBR", "")
             doc = RoutineDoc(self.program, number)
             doc.changed.connect(self._edited)
-            if doc.canvas is not None:
-                self.undo_group.addStack(doc.canvas.undo)
+            if doc.undo_stack is not None:
+                self.undo_group.addStack(doc.undo_stack)
             i = self.docs.addTab(doc, self._doc_title(doc))
         self.docs.setCurrentIndex(i)
 
@@ -464,15 +465,16 @@ class MainWindow(QMainWindow):
 
     def _remove_doc(self, i: int) -> None:
         w = self.docs.widget(i)
-        if isinstance(w, RoutineDoc) and w.canvas is not None:
-            self.undo_group.removeStack(w.canvas.undo)
+        if isinstance(w, RoutineDoc) and w.undo_stack is not None:
+            self.undo_group.removeStack(w.undo_stack)
         self.docs.removeTab(i)
         w.deleteLater()
 
     def _doc_changed(self, _i: int) -> None:
         canvas = self.canvas
         self.bar.setVisible(canvas is not None)
-        self.undo_group.setActiveStack(canvas.undo if canvas is not None else None)
+        doc = self.doc
+        self.undo_group.setActiveStack(doc.undo_stack if isinstance(doc, RoutineDoc) else None)
 
     def _insert(self, mnemonic: str) -> None:
         if self.canvas is not None:
@@ -509,6 +511,9 @@ class MainWindow(QMainWindow):
                 return QMessageBox.warning(self, "Cannot add", problem)
             number = max(self.program.files) + 1
             self.program.files[number] = ProgramFile(number, kind, name, language=language)
+            if language == "FBD":
+                from ..core.fbd import Diagram
+                self.program.files[number].diagram = Diagram()
             self._structure_changed()
             self.open_routine(number)
         elif action == "rename_routine":
@@ -757,6 +762,8 @@ class MainWindow(QMainWindow):
         if isinstance(doc, RoutineDoc):
             if doc.canvas is not None:
                 doc.canvas.set_live(self._doc_memory(doc), live and same_controller, self.plc.trace if same else None)
+            elif doc.fbd is not None:
+                doc.fbd.canvas.set_live(self._doc_memory(doc), live, self.plc.fbd_values.get(doc.number) if same else None)
             else:
                 doc.st.set_live(self._doc_memory(doc) if same_controller and self.downloaded and self.online else None)
         self.panel.forces.setVisible(bool(self.plc.forces))
@@ -786,6 +793,7 @@ class NewRoutineDialog(QDialog):
         self.language = QComboBox()
         self.language.addItem("Ladder diagram", "LD")
         self.language.addItem("Structured text", "ST")
+        self.language.addItem("Function block diagram", "FBD")
         form.addRow("Language", self.language)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)

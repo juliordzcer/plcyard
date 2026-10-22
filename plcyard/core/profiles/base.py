@@ -30,10 +30,12 @@ class Diagnostic:
     rung: int
     message: str
     line: int | None = None          # structured text: the source line instead of a rung
+    block: int | None = None         # function block diagram: the block instead of a rung
 
     def __str__(self) -> str:
-        where = "LAD 2" if self.file == 2 else f"SBR {self.file}"
-        at = f"line {self.line}" if self.line is not None else f"rung {self.rung}"
+        where = "Main" if self.file == 2 else f"Routine {self.file}"
+        at = (f"line {self.line}" if self.line is not None else
+              f"block {self.block}" if self.block is not None else f"rung {self.rung}")
         return f"{where}, {at}: {self.message}"
 
 

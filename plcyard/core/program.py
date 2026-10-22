@@ -35,8 +35,9 @@ class ProgramFile:
     title: str | None = None   # None: header written without ':'
     rungs: list[Rung] = field(default_factory=list)   # END rung is implicit
     end_comment: str = ""
-    language: str = "LD"       # LD (rungs) or ST (structured text in `source`)
+    language: str = "LD"       # LD (rungs), ST (structured text in `source`) or FBD (`diagram`)
     source: str = ""
+    diagram: object = None     # core.fbd.Diagram for FBD
     interface: dict[str, dict[str, str]] = field(default_factory=dict)   # FC/FB: section → {name: type}
 
 
@@ -54,6 +55,9 @@ class Program:
     def new(cls, profile: str = "plcyard", language: str = "LD") -> "Program":
         p = cls(symbols_section=False)
         p.files[2] = ProgramFile(2, "LAD", "Main", language=language)
+        if language == "FBD":
+            from .fbd import Diagram
+            p.files[2].diagram = Diagram()
         return p
 
     @property

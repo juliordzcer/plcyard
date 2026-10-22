@@ -31,13 +31,19 @@ with the full test suite green.
 - Older programs (data-table .rsl files and the earlier tag and IEC project styles) convert on
   load (`formats/convert.py`): N7:5 → Values[5], T4:0 → Timers[0], timer presets to ms.
 
-## Phase 5 — Function block diagram (L)
+## Phase 5 — Function block diagram (L) — done
 
-- Model: blocks (instances of the same function blocks ST uses), pins, wires, execution order
-  (left to right, top to bottom, editable).
-- Editor canvas reusing the ladder canvas pieces: drag blocks from the bar, draw wires, live values
-  on pins, energized BOOL wires in green.
-- One block library for LD, ST and FBD, so a TON behaves identically in all three.
+- Model (`core/fbd.py`): blocks with pins, wires from an output to an input, operands on unwired
+  pins (tags, addresses, constants; outputs write theirs), instance tags for timers, counters and
+  PID. Execution in data-flow order, then top to bottom and left to right; loops use the last
+  scan's value.
+- Blocks: AND/OR (more inputs), XOR, NOT, SR, RS, R_TRIG, F_TRIG, TON/TOF/TP/RTO, CTU/CTD,
+  EQ…GE, LIMIT, ADD/SUB/MUL/DIV/MOD/MAX/MIN, ABS, SQRT, MOVE, SEL, SCALE, PID. Timers, counters
+  and PID run the same executors as ladder and ST.
+- Editor (`ui/fbd_view.py`): palette by family (click or drag), wires by dragging pin to pin,
+  operands by double-click or by dropping an I/O point from the simulation, move, delete, undo,
+  live values and green BOOL wires. FBD routines anywhere: main, JSR routines, functions and
+  function blocks.
 
 ## Phase 6 — Exercises in three languages (M)
 

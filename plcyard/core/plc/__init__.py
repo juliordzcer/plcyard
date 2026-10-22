@@ -262,6 +262,10 @@ class PlcYard(Profile):
         problems = self.check_st(program, mem)
         for f in program.files.values():
             local = self.scoped_memory(program, mem, f)
+            if f.language == "FBD":
+                from .. import fbd
+                problems += [Diagnostic(f.number, 0, m, block=bid) for bid, m in
+                             fbd.check(f.diagram or fbd.Diagram(), local, lambda k, t: check_operand(local, k, t))]
             for i, rung in enumerate(f.rungs):
                 for ins in walk(rung.body):
                     problems += [Diagnostic(f.number, i, m)

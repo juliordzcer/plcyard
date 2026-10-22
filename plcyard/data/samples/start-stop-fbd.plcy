@@ -1,0 +1,89 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "FBD",
+      "fbd": {
+        "blocks": [
+          {
+            "id": 1,
+            "type": "OR",
+            "x": 300,
+            "y": 60,
+            "operands": {
+              "IN1": "%I0.0",
+              "IN2": "%Q0.0"
+            }
+          },
+          {
+            "id": 2,
+            "type": "AND",
+            "x": 600,
+            "y": 60,
+            "operands": {
+              "IN2": "%I0.1",
+              "OUT": "%Q0.0"
+            }
+          },
+          {
+            "id": 3,
+            "type": "TON",
+            "x": 600,
+            "y": 220,
+            "instance": "Delay",
+            "operands": {
+              "PT": "T#2s",
+              "Q": "%Q0.1"
+            }
+          },
+          {
+            "id": 4,
+            "type": "NOT",
+            "x": 600,
+            "y": 380,
+            "operands": {
+              "OUT": "%Q0.2"
+            }
+          }
+        ],
+        "wires": [
+          [
+            1,
+            "OUT",
+            2,
+            "IN1"
+          ],
+          [
+            2,
+            "OUT",
+            3,
+            "IN"
+          ],
+          [
+            2,
+            "OUT",
+            4,
+            "IN"
+          ]
+        ]
+      }
+    }
+  ],
+  "tags": {
+    "Delay": {
+      "type": "TIMER"
+    }
+  },
+  "symbols": {
+    "%I0.0": "Start (NO, PB)",
+    "%I0.1": "Stop (NC, PB)",
+    "%Q0.0": "Motor",
+    "%Q0.1": "Running light",
+    "%Q0.2": "Stopped light"
+  }
+}
