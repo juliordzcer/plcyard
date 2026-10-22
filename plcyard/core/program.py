@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Iterator, Union
 
@@ -80,3 +81,52 @@ def walk(node: Union[Series, Parallel, Instr]) -> Iterator[Instr]:
     else:
         for br in node.branches:
             yield from walk(br)
+
+
+def name_problem(program: Program, name: str) -> str:
+    """Why `name` cannot be a new routine, block or data type ("" if it can)."""
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+        return f"{name!r} is not a valid name (letters, digits and _; no leading digit)"
+    taken = {(f.title or "").lower() for f in program.files.values()} | {t.lower() for t in program.types}
+    if name.lower() in taken:
+        return f"{name} is already used by a routine, block or data type"
+    return ""
+
+
+def _rename_word(text: str, old: str, new: str) -> str:
+    return re.sub(rf'(?<![\w.])("?){re.escape(old)}("?)(?!\w)', lambda m: f"{m[1]}{new}{m[2]}", text, flags=re.I)
+
+
+def rename_routine(program: Program, old: str, new: str) -> None:
+    """Rename a routine or block and every call to it (JSR, CALL, ST calls, FB instance types)."""
+    f = program.routine(old)
+    f.title = new
+    for g in program.files.values():
+        for rung in g.rungs:
+            for ins in walk(rung.body):
+                if ins.mnemonic in ("JSR", "CALL") and ins.operands and ins.operands[0].strip('"').lower() == old.lower():
+                    ins.operands[0] = new
+        if g.language == "ST":
+            g.source = _rename_word(g.source, old, new)
+        for sec in g.interface.values():
+            for n, t in sec.items():
+                if t.lower() == old.lower():
+                    sec[n] = new
+    for d in program.tags.values():
+        if str(d.get("type", "")).lower() == old.lower():
+            d["type"] = new
+
+
+def rename_type(program: Program, old: str, new: str) -> None:
+    """Rename a data type where tags, other types and block interfaces use it."""
+    program.types = {(new if k == old else k): v for k, v in program.types.items()}
+    pattern = re.compile(rf"\b{re.escape(old)}\b", re.I)
+    for d in program.tags.values():
+        d["type"] = pattern.sub(new, str(d.get("type", "")))
+    for ms in program.types.values():
+        for n, t in ms.items():
+            ms[n] = pattern.sub(new, t)
+    for g in program.files.values():
+        for sec in g.interface.values():
+            for n, t in sec.items():
+                sec[n] = pattern.sub(new, t)

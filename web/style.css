@@ -244,3 +244,18 @@ button.ghost { border: none; background: none; }
 .fbd .w.picked { stroke: var(--accent); stroke-width: 3; }
 .fbd .rubber { stroke: var(--drop-target); stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
 .operands .probs { color: var(--danger); font-size: 12px; align-self: center; flex-basis: 100%; }
+
+.routinebar { display: flex; align-items: center; gap: 4px; padding: 4px 8px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+.routines { display: flex; flex-wrap: wrap; gap: 2px; flex: 1; min-width: 0; }
+.routines .rt { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-bottom: none; border-radius: 6px 6px 0 0; padding: 3px 8px; font-size: 12px; background: var(--bg); color: var(--text-muted); cursor: pointer; }
+.routines .rt.on { color: var(--text); border-color: var(--accent); box-shadow: inset 0 2px 0 var(--accent); }
+.routines .rt .k { font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--text-muted); }
+.routines .rt button { border: none; background: none; padding: 0 2px; min-height: 0; font-size: 11px; color: var(--text-muted); }
+.newroutine { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.newroutine input { width: 140px; }
+.iface { border-bottom: 1px solid var(--border); padding: 4px 8px; font-size: 12px; }
+.iface summary { cursor: pointer; color: var(--text-muted); }
+#ifacelist { max-height: 35vh; overflow: auto; }
+.iface .prow { display: grid; grid-template-columns: 70px minmax(0, 160px) minmax(0, 120px) 28px; gap: 4px; margin: 3px 0; align-items: center; }
+.iface .prow input, .iface .prow select { min-width: 0; padding: 2px 6px; min-height: 24px; font-family: "JetBrains Mono", monospace; font-size: 12px; }
+.iface .sec { color: var(--text-muted); }

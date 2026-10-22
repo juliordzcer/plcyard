@@ -491,7 +491,7 @@ def test_F14_H1_main_ladder_calls_an_st_routine(win, qtbot, monkeypatch):
     click(qtbot, win, 1, 0)
     run(win, 50)
     assert win.sim_view.lamps[(2, 0)].on
-    from plcyard.ui.main_window import rename_routine
+    from plcyard.core.program import rename_routine
     rename_routine(win.program, "Calc", "Compute")
     assert win.program.main.rungs[0].body.items[0].operands == ["Compute"]
 

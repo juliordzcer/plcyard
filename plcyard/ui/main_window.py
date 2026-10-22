@@ -19,7 +19,7 @@ from .. import grader, labs
 from ..core import profiles
 from ..core.processor import Processor
 from ..core.profiles.base import ScopedMemory, scoped
-from ..core.program import Program, ProgramFile
+from ..core.program import Program, ProgramFile, name_problem, rename_routine, rename_type
 from .. import formats
 from ..sims.io_panel import IoPanelModel
 from . import theme
@@ -569,12 +569,7 @@ class MainWindow(QMainWindow):
                 self._structure_changed()
 
     def _name_problem(self, name: str) -> str:
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
-            return f"{name!r} is not a valid name (letters, digits and _; no leading digit)"
-        taken = {(f.title or "").lower() for f in self.program.files.values()} | {t.lower() for t in self.program.types}
-        if name.lower() in taken:
-            return f"{name} is already used by a routine, block or data type"
-        return ""
+        return name_problem(self.program, name)
 
     def _structure_changed(self) -> None:
         self.tree.set_program(self.program)
@@ -817,46 +812,6 @@ class NewRoutineDialog(QDialog):
 
     def values(self) -> tuple[str, str, str]:
         return self.name.text().strip(), self.kind.currentData(), self.language.currentData()
-
-
-def _rename_word(text: str, old: str, new: str) -> str:
-    return re.sub(rf'(?<![\w.])("?){re.escape(old)}("?)(?!\w)', lambda m: f"{m[1]}{new}{m[2]}", text, flags=re.I)
-
-
-def rename_routine(program: Program, old: str, new: str) -> None:
-    """Rename a routine or block and every call to it (JSR, CALL, ST calls, FB instance types)."""
-    from ..core.program import walk
-    f = program.routine(old)
-    f.title = new
-    for g in program.files.values():
-        for rung in g.rungs:
-            for ins in walk(rung.body):
-                if ins.mnemonic in ("JSR", "CALL") and ins.operands and ins.operands[0].strip('"').lower() == old.lower():
-                    ins.operands[0] = new
-        if g.language == "ST":
-            g.source = _rename_word(g.source, old, new)
-        for sec in g.interface.values():
-            for n, t in sec.items():
-                if t.lower() == old.lower():
-                    sec[n] = new
-    for d in program.tags.values():
-        if str(d.get("type", "")).lower() == old.lower():
-            d["type"] = new
-
-
-def rename_type(program: Program, old: str, new: str) -> None:
-    """Rename a data type where tags, other types and block interfaces use it."""
-    program.types = {(new if k == old else k): v for k, v in program.types.items()}
-    pattern = re.compile(rf"\b{re.escape(old)}\b", re.I)
-    for d in program.tags.values():
-        d["type"] = pattern.sub(new, str(d.get("type", "")))
-    for ms in program.types.values():
-        for n, t in ms.items():
-            ms[n] = pattern.sub(new, t)
-    for g in program.files.values():
-        for sec in g.interface.values():
-            for n, t in sec.items():
-                sec[n] = pattern.sub(new, t)
 
 
 class OptionsDialog(QDialog):

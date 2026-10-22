@@ -14,7 +14,8 @@ from .core import edit, fbd
 from .core.plc import PLC
 from .core import st
 from .core.processor import Processor
-from .core.program import Parallel, Program, Series
+from .core.profiles.base import ScopedMemory, scoped
+from .core.program import Parallel, Program, ProgramFile, Series, name_problem, rename_routine
 from .formats import plcy
 from .sims import silo as silo_sim
 from .sims import traffic as traffic_sim
@@ -41,8 +42,12 @@ EXAMPLES = {"start-stop": ("Start/stop with seal-in", "io", "samples/start-stop.
             "start-stop-fbd": ("Start/stop in function blocks", "io", "samples/start-stop-fbd.plcy"),
             "silo-fbd": ("Silo with modes in function blocks", "silo", "labs/solutions/09-silo-modes.fbd.plcy"),
             "traffic-fbd": ("Traffic lights in function blocks", "traffic", "labs/solutions/10-traffic-light.fbd.plcy"),
-            "tank-pid-fbd": ("Tank level PID in function blocks", "tank", "samples/tank-pid-fbd.plcy")}
+            "tank-pid-fbd": ("Tank level PID in function blocks", "tank", "samples/tank-pid-fbd.plcy"),
+            "traffic-routines": ("Traffic lights in routines", "traffic", "samples/traffic-lights-routines.plcy"),
+            "silo-fb": ("Silo with a function block", "silo", "samples/silo-function-block.plcy"),
+            "motor-fb": ("Motor starters with a function block", "io", "samples/motor-starters-function-block.plcy")}
 LANGUAGES = ("LD", "ST", "FBD")
+KINDS = {"SBR": "Routine", "FC": "Function", "FB": "Function block"}
 MAIN = 2
 
 
@@ -55,6 +60,7 @@ class Session:
         self.plc.device = self.sim
         self.program = Program.new()
         self.sel: list | None = None
+        self.cur = MAIN                    # the routine in the editor
         self.undo: list[Program] = []
         self.redo: list[Program] = []
         self.dirty = True                  # the editor differs from what the PLC runs
@@ -66,7 +72,7 @@ class Session:
 
     # -- files ----------------------------------------------------------------------------------
     def _open(self, program: Program, lab=None, sim: str | None = None) -> None:
-        self.program, self.lab, self.sel = program, lab, None
+        self.program, self.lab, self.sel, self.cur = program, lab, None, MAIN
         self.undo.clear()
         self.redo.clear()
         self.plc.set_mode(Processor.PGM)
@@ -86,7 +92,7 @@ class Session:
 
     @property
     def language(self) -> str:
-        return self.program.main.language
+        return self.file.language
 
     def examples(self) -> list[dict]:
         return [{"key": k, "title": t} for k, (t, _, _) in EXAMPLES.items()]
@@ -100,9 +106,8 @@ class Session:
             program = plcy.loads(text)
         except plcy.PlcyError as e:
             return str(e)
-        if program.main.language not in LANGUAGES or len(program.files) > 1:
-            return ("The web version edits one ladder, structured text or function block routine; open this one in the "
-                    "desktop app.")
+        if any(f.language not in LANGUAGES for f in program.files.values()):
+            return "This program uses a language the web version does not edit; open it in the desktop app."
         self._open(program)
         return ""
 
@@ -187,7 +192,7 @@ class Session:
     # -- editing --------------------------------------------------------------------------------
     @property
     def file(self):
-        return self.program.main
+        return self.program.files.get(self.cur) or self.program.main
 
     def _edit(self, fn, rung: int | None = None, select=None) -> str:
         before = copy.deepcopy(self.program)
@@ -281,7 +286,7 @@ class Session:
 
         def apply(body):
             problems.extend(edit.set_operands(body, path, [notation.store(o, self.program) for o in operands],
-                                              self.plc.profile, self.program, MAIN))
+                                              self.plc.profile, self.program, self.cur))
         self._edit(apply, n, lambda _: ["instr", n, path])
         return problems
 
@@ -309,13 +314,104 @@ class Session:
         if self.undo:
             self.redo.append(self.program)
             self.program = self.undo.pop()
-            self.sel, self.dirty = None, True
+            self._after_swap()
 
     def redo_step(self) -> None:
         if self.redo:
             self.undo.append(self.program)
             self.program = self.redo.pop()
-            self.sel, self.dirty = None, True
+            self._after_swap()
+
+    def _after_swap(self) -> None:
+        self.sel, self.dirty = None, True
+        if self.cur not in self.program.files:
+            self.cur = MAIN
+
+    # -- routines and blocks ------------------------------------------------------------------------
+    def routines(self) -> list[dict]:
+        return [{"number": n, "title": (f.title or "Main") if n == MAIN else (f.title or str(n)), "kind": f.kind,
+                 "language": f.language} for n, f in sorted(self.program.files.items())]
+
+    def open_routine(self, number: int) -> None:
+        if number in self.program.files:
+            self.cur, self.sel = number, None
+
+    def _structure(self, fn) -> str:
+        """A change to the routines (undoable). `fn` returns a problem, and then nothing changes."""
+        before = copy.deepcopy(self.program)
+        problem = fn()
+        if problem:
+            self.program = before
+            return problem
+        self.undo.append(before)
+        self.redo.clear()
+        self.dirty = True
+        return ""
+
+    def add_routine(self, name: str, kind: str, language: str) -> str:
+        name = name.strip()
+        if kind not in KINDS or language not in LANGUAGES:
+            return "Choose a type and a language."
+        problem = name_problem(self.program, name)
+        if problem:
+            return problem
+        number = max(self.program.files) + 1
+
+        def fn():
+            f = ProgramFile(number, kind, name, language=language)
+            if language == "FBD":
+                f.diagram = fbd.Diagram()
+            self.program.files[number] = f
+        problem = self._structure(fn)
+        if not problem:
+            self.open_routine(number)
+        return problem
+
+    def rename_routine(self, number: int, name: str) -> str:
+        f, name = self.program.files.get(number), name.strip()
+        if f is None or number == MAIN or name == f.title:
+            return ""
+        return self._structure(lambda: name_problem(self.program, name) or rename_routine(self.program, f.title, name))
+
+    def delete_routine(self, number: int) -> str:
+        if number == MAIN or number not in self.program.files:
+            return ""
+        problem = self._structure(lambda: self.program.files.pop(number) and None)
+        self.cur, self.sel = MAIN, None
+        return problem
+
+    def interface(self) -> dict | None:
+        """The parameters of the function or function block in the editor."""
+        f = self.file
+        if f.kind not in ("FC", "FB"):
+            return None
+        secs = [s for s in self.plc.profile.interface_sections if f.kind == "FB" or s != "Static"]
+        return {"sections": secs, "rows": [{"section": sec, "name": n, "type": t}
+                                           for sec in secs for n, t in f.interface.get(sec, {}).items()]}
+
+    def set_param(self, section: str, old: str, name: str, type_: str) -> str:
+        """Add (old == ""), change or (empty name) delete a parameter. Checked against the whole program."""
+        f, name, type_ = self.file, name.strip(), type_.strip() or "BOOL"
+        view = self.interface()
+        if view is None or section not in view["sections"]:
+            return "Not a section of this block."
+        if name and (not name.replace("_", "a").isalnum() or name[0].isdigit()):
+            return "A name is letters, digits and _, not starting with a digit."
+        taken = {n.lower() for sec in f.interface.values() for n in sec if not (n == old and sec is f.interface.get(section))}
+        if name and name.lower() in taken:
+            return f"There is already a parameter {name}."
+
+        def fn():
+            rows = list(f.interface.get(section, {}).items())
+            if old:
+                rows = [(name, type_) if n == old else (n, t) for n, t in rows if n != old or name]
+            else:
+                rows.append((name, type_))
+            f.interface[section] = dict(rows)
+            if not f.interface[section]:
+                del f.interface[section]
+            return self.plc.profile.check_tags(self.program)
+        return self._structure(fn)
 
     # -- structured text ---------------------------------------------------------------------------
     def set_source(self, text: str) -> None:
@@ -329,7 +425,8 @@ class Session:
 
     def _st_check(self) -> dict:
         """Problems (with their lines) and the names the code uses; cached until code or tags change."""
-        key = (self.file.source, json.dumps(self.program.tags, sort_keys=True), json.dumps(self.program.types))
+        key = (self.cur, self.file.source, json.dumps(self.program.tags, sort_keys=True), json.dumps(self.program.types),
+               json.dumps([[f.title, f.kind, f.interface] for f in self.program.files.values()]))
         if key == self._st_key:
             return self._st
         problems, lines, names = [], [], []
@@ -350,6 +447,8 @@ class Session:
                 problems = [f"Tags: {e}"]
             else:
                 for d in prof.check_st(self.program, mem):
+                    if d.file != self.cur:
+                        continue
                     problems.append(f"line {d.line}: {d.message}")
                     lines.append(d.line or 1)
         problems = list(dict.fromkeys(problems))
@@ -357,8 +456,22 @@ class Session:
                                        "names": names}
         return self._st
 
+    def _mem(self):
+        """The PLC memory as code in this routine sees it: inside a block, through its (first) instance."""
+        f = self.file
+        if f.kind not in ("FC", "FB") or self.plc.program is None:
+            return self.plc.dt
+        try:
+            insts = self.plc._instances(f)
+        except Exception:                            # the PLC runs an older program
+            return self.plc.dt
+        if not insts or insts[0] is None:
+            return self.plc.dt
+        names = {n.lower() for sec in f.interface.values() for n in sec}
+        return ScopedMemory(self.plc.dt, lambda text: scoped(text, insts[0], names))
+
     def _watch(self, names: list[str]) -> list[list[str]]:
-        rows, mem, live = [], self.plc.dt, self._live()
+        rows, mem, live = [], self._mem(), self._live()
         for n in names:
             text = ""
             if live:
@@ -481,17 +594,19 @@ class Session:
 
     def _fbd_check(self) -> dict:
         """Problems by block, as on download; cached until the program changes."""
-        key = plcy.dumps(self.program)
+        key = (self.cur, plcy.dumps(self.program))
         if key != self._fbd_key:
             by: dict[str, list[str]] = {}
             for d in self.plc.profile.check(self.program, None):
+                if d.file != self.cur:
+                    continue
                 by.setdefault(str(d.block or 0), []).append(notation.show_text(d.message))
             self._fbd_key, self._fbd = key, by
         return self._fbd
 
     def _fbd_view(self) -> dict:
         d, live = self.diagram, self._live()
-        vals = self.plc.fbd_values.get(MAIN, {}) if live else {}
+        vals = self.plc.fbd_values.get(self.cur, {}) if live else {}
 
         def value(bid, pin):
             v = vals.get((bid, pin))
@@ -585,17 +700,17 @@ class Session:
     def _rung(self, n: int, width: float) -> dict:
         rung = self.file.rungs[n]
         g = L.layout_rung(rung.body, width, self.plc.profile.specs)
-        live, trace, dt = self._live(), self.plc.trace, self.plc.dt
+        live, trace, dt = self._live(), self.plc.trace, self._mem()
 
         def wire_on(tag) -> bool:
-            hit = trace.get((MAIN, n) + tag[0]) if live else None
+            hit = trace.get((self.cur, n) + tag[0]) if live else None
             return bool(hit and hit[0 if tag[1] == "in" else 1])
 
         instrs = []
         for pl in g.instrs:
             ins, spec = pl.instr, self.plc.profile.specs.get(pl.instr.mnemonic)
             block = L.is_block(ins, self.plc.profile.specs)
-            hit = trace.get((MAIN, n) + pl.path) if live else None
+            hit = trace.get((self.cur, n) + pl.path) if live else None
             on = bool(hit and hit[1]) if block else self._contact_on(spec, ins.operands) if live else False
             extra, pins = [], []
             if live and block and ins.operands:
@@ -627,7 +742,7 @@ class Session:
         if not (spec and operands) or spec.shape not in ("contact", "contact_nc", "coil"):
             return False
         try:
-            on = self.plc.dt.read_bit(operands[0])
+            on = self._mem().read_bit(operands[0])
         except Exception:
             return False
         return not on if spec.shape == "contact_nc" else on
@@ -704,6 +819,7 @@ class Session:
             "notation": notation.current(), "live": self._live(),
             "sel": [self.sel[0], self.sel[1], list(self.sel[2])] if self.sel and len(self.sel) == 3 else self.sel,
             "language": self.language, "tags": self.tags(),
+            "routine": self.cur, "routines": self.routines(), "interface": self.interface(),
             "st": ({"source": self.file.source, **(c := self._st_check()), "watch": self._watch(c["names"])}
                    if self.language == "ST" else None),
             "fbd": self._fbd_view() if self.language == "FBD" else None, "block": self.selected_block(),

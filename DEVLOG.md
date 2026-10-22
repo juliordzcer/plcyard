@@ -711,3 +711,22 @@ keys:      web, structured text, tags, highlighter, watch
   clean, exercise 2 solved in FBD; browser run: add/move/wire blocks, operands, Input +, RUN lights
   the lamp, tank PID example live.
 keys:      web, function block diagram, fbd, wires, blocks
+
+## C-038 — Web version, step 6: several routines
+2026-10-22 · commits: 01e624a
+- Routine tabs above the editor: Main and every routine, function (FC) and function block (FB),
+  each in ladder, structured text or function blocks. "+ Routine" adds one (name, type,
+  language); the open tab can be renamed (calls to it, JSR/CALL/ST calls and FB instance types,
+  are renamed too) or deleted. All undoable.
+- Parameters pane for FC/FB (Input, Output, InOut, Static for FB, Temp): add, rename, retype,
+  delete, checked against the whole program before it is kept.
+- Live view inside a block shows its first instance; problems and the ST watch list are per
+  routine. Programs with routines now open in the web version (any LD/ST/FBD mix).
+- Examples: traffic lights in routines, silo with a function block, motor starters with a
+  function block.
+- rename_routine, rename_type and the name check moved from ui/main_window.py to core/program.py
+  (the web bridge stays Qt-free).
+- Tests: `tests/test_webapp.py` (14): routine called with JSR, FB with parameters in ST, rename,
+  delete and undo; FB example runs live. Browser run: add an FB in ST, parameters, rename, traffic
+  routines live, silo FB parameters.
+keys:      web, routines, function block, interface, parameters

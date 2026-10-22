@@ -110,7 +110,8 @@ def test_every_example_runs_on_its_machine():
         s.tick(5000)
         st = json.loads(s.state(800))
         assert st["machine"]["kind"] == sim and not st["problems"] and not st["fault"], key
-    assert st["machine"]["trend"] and st["machine"]["level"] > 20      # the tank loop fills the tank
+        if sim == "tank":
+            assert st["machine"]["trend"] and st["machine"]["level"] > 20, key   # the tank loop fills the tank
 
 
 def test_machine_controls_and_exercise_on_its_machine():
@@ -206,3 +207,38 @@ def test_function_block_examples_and_exercise():
     s.open_text((lab.solution.parent / "02-start-stop.fbd.plcy").read_text(encoding="utf-8"))
     s.lab = lab
     assert s.check()["passed"]
+
+
+def test_routines_and_block_parameters():
+    s = Session()
+    assert s.add_routine("Lights", "SBR", "LD") == "" and s.cur == 3
+    s.insert("OTE")
+    s.set_operands(["%Q0.0"])
+    s.open_routine(2)
+    s.insert("JSR")
+    assert s.set_operands(["Lights"]) == []
+    assert s.add_routine("Lights", "SBR", "ST").startswith("Lights is already used")
+    assert s.add_routine("Motor", "FB", "ST") == ""
+    assert s.set_param("Input", "", "Run", "BOOL") == "" and s.set_param("Output", "", "On", "BOOL") == ""
+    assert s.set_param("Input", "", "On", "BOOL").startswith("There is already")
+    s.set_source("On := Run;\n")
+    assert not json.loads(s.state(800))["st"]["problems"]
+    s.set_mode("RUN")
+    s.tick(50)
+    assert not s.problems and lamp(s, 0)          # main calls Lights, which turns the output on
+    assert s.rename_routine(3, "Lamps") == "" and "JSR,Lamps" in s.save_text().replace(" ", "")
+    assert s.delete_routine(4) == "" and s.cur == 2 and len(s.routines()) == 2
+    s.undo_step()
+    assert [r["title"] for r in s.routines()] == ["Main", "Lamps", "Motor"]
+
+
+def test_examples_with_routines_run():
+    s = Session()
+    s.open_example("silo-fb")
+    s.set_mode("RUN")
+    assert not s.problems
+    s.open_routine(3)
+    s.sim_action("start", True)
+    s.tick(300)
+    st = json.loads(s.state(800))
+    assert st["routine"] == 3 and st["interface"]["rows"] and any(i["on"] for r in st["rungs"] for i in r["instrs"])

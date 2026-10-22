@@ -7,7 +7,7 @@ const VERSION = document.documentElement.dataset.version;
 const GUTTER = 48, MARGIN = 12, RUNG_GAP = 18, COMMENT_LINE = 16, WIRE_Y = 26;
 const $ = (id) => document.getElementById(id);
 let py, S, state = null, lastJson = "", family = null, palette = [], opsKey = "", HL = null, stKey = "", tagsKey = "";
-let fbdKey = "", paletteLang = "";
+let fbdKey = "", paletteLang = "", routinesKey = "", ifaceKey = "";
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const store = {
@@ -93,6 +93,8 @@ function render(force) {
   if (state.io) renderIo(state.io);
   else Sims.render($("machine"), state.machine);
   const st = state.language === "ST", fb = state.language === "FBD";
+  renderRoutines(state);
+  renderInterface(state);
   if (paletteLang !== state.language) { paletteLang = state.language; family = null; buildPalette(); }
   for (const id of ["families", "palette"]) $(id).hidden = st;
   $("ladder").hidden = st || fb;
@@ -140,6 +142,42 @@ function renderSt(st) {
   paintCode(ta.value, st.lines);
   $("stprob").textContent = st.problems.slice(0, 6).join("\n") + (st.problems.length > 6 ? `\n…and ${st.problems.length - 6} more` : "");
   $("stwatch").innerHTML = st.watch.map(([n, v]) => `<tr><td>${esc(n)}</td><td>${esc(v)}</td></tr>`).join("");
+}
+
+// -- routines --------------------------------------------------------------------------------------
+const KIND = { LAD: "", SBR: "SBR", FC: "FC", FB: "FB" };
+const LANG = { LD: "LD", ST: "ST", FBD: "FBD" };
+
+function renderRoutines(st) {
+  const key = JSON.stringify([st.routines, st.routine]);
+  if (key === routinesKey) return;
+  routinesKey = key;
+  $("routines").innerHTML = st.routines.map((r) => {
+    const on = r.number === st.routine, main = r.number === 2;
+    return `<span class="rt${on ? " on" : ""}" role="tab" aria-selected="${on}" data-routine="${r.number}" title="${esc(r.title)}: ${esc(KIND[r.kind] ? r.kind + " " : "")}in ${esc(LANG[r.language])}">
+      ${esc(r.title)} <span class="k">${esc([KIND[r.kind], LANG[r.language]].filter(Boolean).join(" · "))}</span>
+      ${on && !main ? `<button data-rename title="Rename">✎</button><button data-delroutine title="Delete">✕</button>` : ""}</span>`;
+  }).join("");
+}
+
+function renderInterface(st) {
+  const box = $("iface"), f = st.interface;
+  box.hidden = !f;
+  if (!f) { ifaceKey = ""; return; }
+  const key = JSON.stringify(f);
+  if (key === ifaceKey || box.contains(document.activeElement)) return;
+  ifaceKey = key;
+  box.querySelector("summary").textContent = `Parameters (${f.rows.length})`;
+  const types = js(S.tag_types());
+  const row = (p) => `<div class="prow" data-section="${esc(p.section)}" data-old="${esc(p.name)}">
+    ${p.name ? `<span class="sec">${esc(p.section)}</span>` : `<select name="section" aria-label="Section">${f.sections.map((x) => `<option>${esc(x)}</option>`).join("")}</select>`}
+    <input name="name" value="${esc(p.name)}" placeholder="Name" aria-label="Name" spellcheck="false">
+    <input name="type" list="tagtypes" value="${esc(p.type)}" aria-label="Data type" spellcheck="false">
+    ${p.name ? `<button class="ghost" data-delparam title="Delete">✕</button>` : `<button class="primary" data-addparam title="Add">+</button>`}</div>`;
+  $("ifacelist").innerHTML = f.rows.map(row).join("") + row({ section: f.sections[0], name: "", type: "BOOL" });
+  $("tagtypes").innerHTML = types.map((x) => `<option value="${esc(x)}">`).join("");
+  const which = JSON.stringify(st.routines.find((r) => r.number === st.routine));
+  if (box.dataset.routine !== which) { box.dataset.routine = which; box.open = !f.rows.length; }
 }
 
 // -- function blocks -------------------------------------------------------------------------------
@@ -408,6 +446,46 @@ function wire() {
   });
   ladder.addEventListener("dblclick", (e) => {
     if (e.target.closest("rect[data-path]")) $("operands").querySelector("input")?.focus();
+  });
+
+  $("routines").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-routine]");
+    if (!t) return;
+    const n = +t.dataset.routine, r = state.routines.find((x) => x.number === n);
+    if (e.target.closest("[data-rename]")) {
+      const name = prompt("New name (calls to it are renamed too):", r.title);
+      if (name !== null) act(() => S.rename_routine(n, name));
+    } else if (e.target.closest("[data-delroutine]")) {
+      if (confirm(`Delete ${r.title}? Calls to it stop the download until they are removed.`)) act(() => S.delete_routine(n));
+    } else if (n !== state.routine) { S.open_routine(n); opsKey = ""; render(true); }
+  });
+  $("b-addroutine").onclick = () => { $("newroutine").hidden = false; $("newroutine").elements.name.focus(); };
+  $("b-cancelroutine").onclick = () => { $("newroutine").hidden = true; };
+  $("newroutine").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const f = e.target, el = f.elements, err = S.add_routine(el.name.value, el.kind.value, el.language.value);
+    if (err) { say(err, true); return; }
+    f.hidden = true;
+    el.name.value = "";
+    changed();
+  });
+  const paramChange = (r, adding) => {
+    if (!adding && !r.dataset.old) return;
+    const v = (n) => r.querySelector(`[name=${n}]`)?.value ?? "";
+    const err = S.set_param(r.dataset.old ? r.dataset.section : v("section"), r.dataset.old, v("name"), v("type"));
+    $("ifacemsg").textContent = err;
+    if (!err) { ifaceKey = ""; document.activeElement.blur(); changed(); }
+  };
+  $("ifacelist").addEventListener("change", (e) => { const r = e.target.closest(".prow"); if (r && e.target.name !== "section") paramChange(r, false); });
+  $("ifacelist").addEventListener("click", (e) => {
+    const r = e.target.closest(".prow");
+    if (!r) return;
+    if (e.target.closest("[data-addparam]")) paramChange(r, true);
+    if (e.target.closest("[data-delparam]")) { r.querySelector("[name=name]").value = ""; paramChange(r, false); }
+  });
+  $("ifacelist").addEventListener("keydown", (e) => {
+    const r = e.target.closest(".prow");
+    if (e.key === "Enter" && r && !r.dataset.old) paramChange(r, true);
   });
 
   Fbd.wire($("fbd"), {
