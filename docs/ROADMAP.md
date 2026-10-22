@@ -65,6 +65,8 @@ with the full test suite green.
 
 ## Later
 
+- GRAFCET / SFC as a fourth language (desktop and web): steps, transitions, actions with
+  qualifiers, parallel and alternative branches, live active steps; exercises solved in it too.
 - Desktop installers (PyInstaller via GitHub Actions: Windows installer, macOS .dmg, Linux AppImage)
   and PyPI.
 - Mobile from the web version: PWA first, then Android APK and iOS with Capacitor.

@@ -53,6 +53,12 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [ ] Humidity in the room climate simulation; a second floor of parking; a fourth elevator floor.
 
 ## Later
+- [ ] GRAFCET / SFC (IEC 60848 / IEC 61131-3 sequential function chart) as a fourth language, on the
+      desktop and in the web version: steps (initial, normal), transitions with a condition in ST
+      or a ladder rung, actions per step (N, S, R, P, time-limited L / delayed D), divergence and
+      convergence (OR choice, AND parallel), jumps; editor with drag and wire, live active steps
+      and step times (Step.X, Step.T); runs in the same scan; exercises (silo, traffic lights,
+      elevator, washing machine) solved in GRAFCET too and in Compare languages.
 - [ ] Desktop installers built by GitHub Actions on each release tag with PyInstaller: Windows
       installer (Inno Setup), macOS .dmg (Intel and Apple Silicon), Linux AppImage (and .deb);
       linked from the wiki. Unsigned at first (SmartScreen / Gatekeeper notes). Also PyPI.
