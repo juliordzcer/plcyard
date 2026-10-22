@@ -73,6 +73,11 @@ def test_build_packs_the_python_and_the_page(tmp_path):
     assert "plcyard/webapp.py" in names and "plcyard/data/samples/start-stop.plcy" in names
     assert not any("/ui/main_window" in n or "__pycache__" in n for n in names)
     assert (tmp_path / "index.html").exists() and "--energized" in (tmp_path / "tokens.css").read_text()
+    version = json.loads((tmp_path / "version.json").read_text())["version"]
+    page = (tmp_path / "index.html").read_text()
+    assert f'app.js?v={version}' in page and "__VERSION__" not in page
+    webbuild.build(tmp_path)                       # same sources, same version
+    assert json.loads((tmp_path / "version.json").read_text())["version"] == version
 
 
 def test_a_new_program_does_not_keep_old_outputs_on():

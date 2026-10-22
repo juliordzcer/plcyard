@@ -192,3 +192,6 @@ button.ghost { border: none; background: none; }
 .draw .t-pv { fill: none; stroke: var(--sim-product); stroke-width: 2; }
 .draw .t-cv { fill: none; stroke: var(--lamp-amber); stroke-width: 1.5; }
 .draw .k-sp { fill: var(--text); } .draw .k-pv { fill: var(--sim-product); } .draw .k-cv { fill: var(--lamp-amber); }
+
+.update { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 20; display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--accent); border-radius: 6px; padding: 8px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }

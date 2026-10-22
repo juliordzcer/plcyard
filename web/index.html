@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-version="__VERSION__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PLCYard Web</title>
 <meta name="description" content="A free PLC trainer in the browser: write ladder logic, run it on a simulated PLC with an I/O panel, and check it against an exercise.">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="tokens.css?v=__VERSION__">
+<link rel="stylesheet" href="style.css?v=__VERSION__">
 </head>
 <body>
 <header class="top">
@@ -62,6 +62,9 @@
   </aside>
 </main>
 
+<div id="update" class="update" role="status" hidden>A new version of PLCYard is available.
+  <button id="b-reload" class="primary">Reload</button><span class="muted">your program is kept</span></div>
+
 <div id="loading" class="loading">
   <div class="card">
     <img src="icon.svg" alt="" width="48" height="48">
@@ -72,7 +75,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
-<script src="sims.js"></script>
-<script src="app.js"></script>
+<script src="sims.js?v=__VERSION__"></script>
+<script src="app.js?v=__VERSION__"></script>
 </body>
 </html>

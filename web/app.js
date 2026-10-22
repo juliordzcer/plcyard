@@ -3,6 +3,7 @@
 "use strict";
 
 const TICK_MS = 50;
+const VERSION = document.documentElement.dataset.version;
 const GUTTER = 48, MARGIN = 12, RUNG_GAP = 18, COMMENT_LINE = 16, WIRE_Y = 26;
 const $ = (id) => document.getElementById(id);
 let py, S, state = null, lastJson = "", family = null, palette = [], opsKey = "";
@@ -19,7 +20,7 @@ async function start() {
   try {
     py = await loadPyodide();
     $("loadmsg").textContent = "Unpacking PLCYard…";
-    const zip = await (await fetch("plcyard.zip")).arrayBuffer();
+    const zip = await (await fetch(`plcyard.zip?v=${VERSION}`)).arrayBuffer();
     py.unpackArchive(zip, "zip", { extractDir: "/home/pyodide/app" });
     py.runPython("import sys; sys.path.insert(0, '/home/pyodide/app')");
     S = py.runPython("from plcyard.webapp import Session\nSession()");
@@ -37,6 +38,7 @@ async function start() {
     $("loading").classList.add("gone");
     render(true);
     setInterval(loop, TICK_MS);
+    watchVersion();
   } catch (e) {
     $("loadmsg").textContent = "Could not start the simulator: " + e;
   }
@@ -404,6 +406,19 @@ function check() {
     $("report").innerHTML = `<p><strong>${r.passed ? "All requirements met" : "Score"}: ${esc(r.score)}</strong></p><ul>` +
       r.checks.map((c) => `<li><span class="${c.passed ? "ok" : "bad"}">${c.passed ? "✔" : "✘"}</span> ${esc(c.text)}${!c.passed && c.detail ? `<span class="detail">${esc(c.detail)}</span>` : ""}</li>`).join("") + "</ul>";
   }, 20);
+}
+
+// A tab left open keeps running the version it loaded: ask the site, now and then, for the current one.
+function watchVersion() {
+  const check = async () => {
+    try {
+      const v = (await (await fetch("version.json", { cache: "no-store" })).json()).version;
+      if (v && v !== VERSION) $("update").hidden = false;
+    } catch { /* offline: try again later */ }
+  };
+  $("b-reload").onclick = () => location.reload();
+  setInterval(check, 5 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
 }
 
 start();

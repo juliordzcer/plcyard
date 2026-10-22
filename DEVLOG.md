@@ -668,3 +668,13 @@ keys:      web, pyodide, webapp, webbuild, output image
 - PID and other long labels in ladder boxes are shortened in the web drawing (full text on hover).
 - Tests: 8 in `tests/test_webapp.py`; browser run (Chromium) of every machine.
 keys:      web, silo, traffic, tank, sims.js
+
+## C-035 — Web version: new releases reach open tabs and cached browsers
+2026-10-22 · commits: e9d3dea
+- GitHub Pages serves files with `max-age=600`, so a browser that had the page kept the old
+  app.js and plcyard.zip for up to 10 minutes, and a tab left open never changed. Now every file
+  the page loads carries `?v=<hash of the build>` (a new release is fetched at once), and the page
+  asks for `version.json` (no cache) every 5 minutes and when the tab is shown again: if it
+  changed, a "new version, Reload" bar appears (the program is kept in the browser).
+- plcyard.zip is built without timestamps: the same sources give the same zip and the same version.
+keys:      web, cache, version, update
