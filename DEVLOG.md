@@ -625,3 +625,14 @@ keys:      elevator, bottle line, sorter, pick and place, parking, pump station,
   any page names a vendor.
 - Older simulation docstrings (I/O panel, silo, traffic, tank) now use canonical addresses.
 keys:      wiki, mkdocs, docgen, reference, GitHub Pages
+
+## C-032 — Wiki on juliordz.com, download page, screenshots
+2026-10-22 · commits: ab412b6
+- The wiki is published at https://juliordz.com/plcyard/ (built into the site repo with
+  `mkdocs build -d ~/Proyectos/web/juliordz.com/plcyard`); the GitHub Pages workflow is gone, one
+  copy only. New Download page; a PLCYard card in the site's Projects.
+- Fresh screenshots (README and wiki): the old ones still showed data-table addresses.
+- Fix: `--headless` and `--shot` still used the removed address parser; `--press` now takes
+  `%I0.0`, `--shot` takes `--sim` and `--wait`.
+- TODO: a web version (Pyodide + HTML UI), step by step.
+keys:      website, wiki, screenshots, headless, shot
