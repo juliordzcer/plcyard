@@ -1,6 +1,5 @@
-"""Tag list for tag-based controllers (Logix, S7): declare tags, see and change their values live,
-open structures and arrays to their members, force I/O points. Columns come from the controller
-profile: S7 adds the absolute address of a tag."""
+"""Tag list: declare tags, see and change their values live, open structures and arrays to their
+members, force I/O points. A tag may have an address (%M10.0, %MW20) or live in the tag memory."""
 
 from __future__ import annotations
 
@@ -11,7 +10,7 @@ from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QHeaderView, QLabel, QMen
                                QTreeWidgetItem, QVBoxLayout, QWidget)
 
 from ..core import profiles
-from . import theme
+from . import notation, theme
 
 REF = Qt.UserRole              # full reference of a row: "Line[2].Speed"
 MAX_CHILDREN = 200             # rows shown under a big array
@@ -91,7 +90,7 @@ class TagsView(QWidget):
 
     def _types(self) -> list[str]:
         blocks = [f.title for f in self.program.files.values() if f.kind == "FB"]
-        return [*self.profile.tag_types, *self.program.types, *blocks]
+        return [notation.type_name(t) for t in self.profile.tag_types] + [*self.program.types, *blocks]
 
     def _view_memory(self):
         """Memory the rows are read from: the PLC's while live, else one built from the declarations."""
@@ -127,6 +126,7 @@ class TagsView(QWidget):
                                     str(d.get("type", ""))))
             box.lineEdit().editingFinished.connect(lambda n=name, b=box: self._retype(n, b.currentText()))
             box.activated.connect(lambda _i, n=name, b=box: self._retype(n, b.currentText()))
+            box.setMinimumWidth(140)
             self.table.setItemWidget(it, self.col("Type"), box)
             for f in self.profile.tag_fields:
                 it.setText(self.col(f.capitalize()), str(d.get(f, "")))
@@ -158,11 +158,12 @@ class TagsView(QWidget):
         if arr:
             children = [(f"[{k}]", f"{ref}[{k}]", arr.elem) for k in range(arr.lo, min(arr.hi, arr.lo + MAX_CHILDREN - 1) + 1)]
         else:
-            children = [(f".{m}", f"{ref}.{m}", mt) for m, mt in mem.ts.structs[t].items()]
+            children = [(f".{notation.show(f'X.{m}', self.program).split('.', 1)[1] if t in ('TIMER', 'COUNTER') else m}",
+                         f"{ref}.{m}", mt) for m, mt in mem.ts.structs[t].items()]
         for label, child_ref, ct in children:
             c = QTreeWidgetItem([""] * len(self.columns))
             c.setText(0, label)
-            c.setText(self.col("Type"), ct)
+            c.setText(self.col("Type"), notation.type_name(ct))
             c.setData(0, REF, child_ref)
             if mem.is_scalar(ct):
                 c.setFlags(c.flags() | Qt.ItemIsEditable)
@@ -249,7 +250,7 @@ class TagsView(QWidget):
                 self.memory.write_word(ref, v)          # live change; the declaration keeps its start value
             else:
                 self._set_start_value(ref, v)
-        elif header not in ("Force",) and top:          # an extra field such as the S7 address
+        elif header not in ("Force",) and top:          # an extra field such as the address
             field = header.lower()
             decl = dict(self.program.tags[old])
             if text:

@@ -1,4 +1,4 @@
-"""Structured text: the IEC 61131-3 subset shared by Allen-Bradley ST and Siemens SCL.
+"""Structured text: a subset of IEC 61131-3 ST.
 
     Motor := (Start OR Motor) AND NOT Stop;          // assignments, AND OR XOR NOT, = <> < <= > >=
     IF Level > 90.0 THEN Alarm := TRUE; ELSIF ... ELSE ... END_IF;
@@ -11,7 +11,7 @@
     x := LIMIT(0, ABS(y) * 2, 100);  r := INT_TO_REAL(n);  (* comments *) /* too */
 
 Variables are the controller's tags and addresses (`Motor`, `"Motor"`, `#Motor`, `Delay.DN`,
-`Flags.3`, `Local:1:I.Data.0`, `%MW10`). Inside an S7 block, `#Name` is a local variable and
+`Flags.3`, `Local:1:I.Data.0`, `%MW10`). Inside a function or function block, `#Name` is a local variable and
 `"Name"` a global one. The program runs top to bottom once per scan.
 """
 
@@ -135,7 +135,7 @@ class Assign:
 @dataclass
 class Call:
     instance: str
-    block: str                       # TON, TOF, TP, RTO, CTU, CTD, PID, PID_Compact…
+    block: str                       # TON, TOF, TP, RTO, CTU, CTD, PID
     inputs: dict                     # name → expression
     outputs: dict                    # name → Var  (Q => Lamp)
     line: int
@@ -771,7 +771,7 @@ def check(body: list, memory, blocks: dict[str, tuple[str, ...]], routine=None) 
             return
         if not memory.is_scalar(r.type):
             hint = "use a member like {0}.Q or call it".format(var.ref) if r.type.lower() in (
-                "timer", "counter", "pid", "iec_timer", "iec_counter", "pid_compact") else "use one of its members or elements"
+                "timer", "counter", "control", "pid") else "use one of its members or elements"
             problems.append((var.line, f"{var.ref} is a {r.type}; {hint}"))
 
     for n in walk(body):

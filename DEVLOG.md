@@ -121,7 +121,7 @@ keys:      SQO, SQC, SQL, operands, position, sequencer
 ## F-012 — Counters "did not count" in tests (not an engine bug)
 2026-10-21 · area: tests · commit: 2be5b58
 symptom:   a CTU with its input already pressed on the first scan stayed at 0.
-cause:     correct SLC behaviour: CU/CD are set before entering RUN, so it does not count on the
+cause:     correct data-table behaviour: CU/CD are set before entering RUN, so it does not count on the
            first scan.
 fix:       tests run one scan before pressing.
 keys:      CTU, CTD, CU, first scan, does not count, counter
@@ -130,7 +130,7 @@ keys:      CTU, CTD, CU, first scan, does not count, counter
 2026-10-21 · area: isa · commit: 2be5b58
 symptom:   in Traffic-TON-Exercise-1 all three lights go off for 20 ms when the cycle restarts.
 cause:     the program drives the lights from TT; the DN scan and the reset scan leave everything
-           off. A real SLC does the same.
+           off. A real data-table does the same.
 keys:      traffic, gap, flicker, TT, DN, cascade
 
 ## F-014 — The major fault cleared itself
@@ -174,7 +174,7 @@ keys:      editor, operands, popup, off screen, scroll, position
 2026-10-21 · area: isa · commit: b13cafe
 symptom:   preset -5 downloaded and then raised major fault 0034h when running.
 fix:       `validate` rejects literal presets outside 0..32767 in TON/TOF/RTO.
-           A negative preset written at run time (MOV to .PRE) still gives 0034h, like the SLC.
+           A negative preset written at run time (MOV to .PRE) still gives 0034h, like the data-table.
 keys:      preset, negative, TON, 0034, validation, download
 
 ## F-020 — With both lights green the cars never crashed
@@ -337,7 +337,7 @@ keys:      download, clear, outputs, RUN, counter
 ## C-014 — Name PLCYard, GPL-3.0, icon
 2026-10-21 · commit: 3911c55
 - Package `plcsim` → `plcyard`; window title and app name "PLCYard". Paths in this log updated.
-  "plc-sim" dropped: too close to Siemens S7-PLCSIM.
+  "plc-sim" dropped: too close to vendor IEC-style-PLCSIM.
 - `LICENSE` GPL-3.0; `pyproject.toml` with project metadata and the `plcyard` GUI script.
 - Draft icon `plcyard/ui/assets/icon.svg` (NO contact with an energized dot), set as window icon.
 - `replica/brand.md` / `brand.json`; diff images derived from the original's screenshots untracked.
@@ -367,18 +367,18 @@ keys:      download, clear, outputs, RUN, counter
 ## C-018 — Phase 1: controller profiles and .plcy projects
 2026-10-21 · commit: 251b25b
 - `core/profiles/`: `Profile` (memory, instruction set, download check, prescan, status bits,
-  faults, I/O image) and `slc500` with the code that was in the processor, moved without
+  faults, I/O image) and `data-table` with the code that was in the processor, moved without
   behaviour changes. `Processor(profile)` is the shared scan engine; downloading a program of
   another profile switches the controller (a rejected download does not).
-- `Program.profile` (default `slc500`). `Processor.reset_timers_counters`, `outputs_off` public.
+- `Program.profile` (default `data-table`). `Processor.reset_timers_counters`, `outputs_off` public.
 - `formats/plcy.py`: JSON project, version 1; ladder rungs as .rsl token text; unknown profile,
   newer version, unsupported language and broken rungs are reported. `formats.load/save` pick the
-  format by extension; Save as offers .plcy (default) or .rsl; .rsl refuses non-SLC programs.
+  format by extension; Save as offers .plcy (default) or .rsl; .rsl refuses non-data-table programs.
 - Instruction bar shows the instruction set of the program's controller.
 - Tests: `tests/test_profiles.py` (toy tag controller on the same engine: runs, check blocks
-  download, memory error → fault with the profile's code, switch back to SLC), `tests/test_plcy.py`
+  download, memory error → fault with the profile's code, switch back to data-table), `tests/test_plcy.py`
   (every bundled program rsl → plcy → rsl identical and downloadable), e2e F05-H2/N2.
-keys:      profile, controller, plcy, project, json, Logix, S7
+keys:      profile, controller, plcy, project, json, tag-style, IEC-style
 
 ## F-029 — Test suite grew from 2 to 7 minutes
 2026-10-21 · area: tests · commit: 9b996d1
@@ -389,12 +389,12 @@ fix:       `QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)` afte
 prevent:   `pytest --durations=5`; full suite should stay under a minute.
 keys:      slow, setup, deleteLater, DeferredDelete, leak, theme, pytest-qt
 
-## C-019 — Phase 2a/2b: editor per controller, Logix profile, tag list
+## C-019 — Phase 2a/2b: editor per controller, tag-style profile, tag list
 2026-10-21 · commit: 9b996d1
 - `isa.Spec.shape/letter` (contact, contact_nc, coil, small, block): the ladder draws by shape, so
   any profile can reuse the glyphs. `Profile.validate/normalize/kinds/is_output/live/io_name/io_image`;
   `core/edit.py`, `ui/ladder_layout.py`, `ui/ladder_view.py` take the program's profile.
-- `core/profiles/logix/`: `TagTable` (BOOL, INT, DINT, REAL, TIMER, COUNTER; `Tag.Member`,
+- `core/profiles/tag-style/`: `TagTable` (BOOL, INT, DINT, REAL, TIMER, COUNTER; `Tag.Member`,
   `Tag.5` bits, `Local:<slot>:I/O.Data` module tags, `S:FS`, `S:V`; names case-insensitive),
   instructions XIC XIO OTE OTL OTU ONS OSR OSF TON TOF RTO CTU CTD RES EQU NEQ LES LEQ GRT GEQ LIM
   ADD SUB MUL DIV MOV CLR SCP NOP. Timers in ms; integer math wraps and sets S:V; DIV by 0 stores
@@ -403,15 +403,15 @@ keys:      slow, setup, deleteLater, DeferredDelete, leak, theme, pytest-qt
 - `Program.tags` (saved in .plcy). File → New for controller. Tags dock (add, rename, retype,
   description, live values, live edit). Simulations and the I/O panel name points per controller
   (`Local:1:I.Data.0`); NC/pushbutton wiring reads descriptions of those names.
-- Long operands widen contacts instead of being cut; Logix TON/CTU show the live Accum in the
+- Long operands widen contacts instead of being cut; tag-style TON/CTU show the live Accum in the
   Accum operand row.
-- Tests: `tests/test_logix.py` (23), e2e F10 (new Logix program from scratch to a lit lamp,
-  unknown tag, back to SLC).
-keys:      Logix, Studio 5000, tags, TIMER, ms, Local:1:I.Data
+- Tests: the tag-style tests (23), e2e F10 (new tag-style program from scratch to a lit lamp,
+  unknown tag, back to data-table).
+keys:      tag-style, commercial software, tags, TIMER, ms, Local:1:I.Data
 
-## C-020 — Phase 2c: S7-1200/1500 profile
+## C-020 — Phase 2c: IEC-style profile
 2026-10-21 · commit: ab4e60a
-- `core/profiles/s7/`: `S7Memory` (areas I, Q, M of 128 bytes, big-endian words like the real CPU,
+- `core/profiles/IEC-style/`: `S7Memory` (areas I, Q, M of 128 bytes, big-endian words like the real CPU,
   `%I0.0` / `%MW10` / `%MD20`, symbolic tags with or without an address, `"Quoted"` names,
   IEC_TIMER/IEC_COUNTER instances, `FirstScan`), time literals `T#1m30s`, `T#500ms`.
 - Instructions: contacts and coils (S/R), P/N edge contacts, TON/TOF/TP, CTU (R)/CTD (LD),
@@ -419,34 +419,34 @@ keys:      Logix, Studio 5000, tags, TIMER, ms, Local:1:I.Data
   ENO or Q so a coil can follow them; overflow or divide by zero gives ENO = 0 (no stop).
 - Rack: input slots 1/3 = %IB0-1/%IB2-3 (channel 8 = %I1.0), thumbwheels %IW4; outputs %QB0-3, BCD
   display %QW4.
-- Tag list is per profile (`Profile.tag_types/tag_fields/check_tags/tag_value`): S7 adds an Address
+- Tag list is per profile (`Profile.tag_types/tag_fields/check_tags/tag_value`): IEC-style adds an Address
   column; bad addresses are refused with the reason. Instruction bar glyphs come from the shape
-  (S7 coils show S and R). Block values use the full width except next to status pins.
+  (IEC-style coils show S and R). Block values use the full width except next to status pins.
 - Tests: `tests/test_s7.py` (26), e2e F11.
-keys:      S7, TIA Portal, Siemens, %I0.0, IEC_TIMER, ENO, big endian
+keys:      IEC-style, commercial software, vendor, %I0.0, IEC_TIMER, ENO, big endian
 
 ## C-021 — Phase 3: PID, analog I/O, tank simulation, exercises 11-12
 2026-10-21 · commit: 5714c17
 - `core/pid.py`: CV = Kc·(e + 1/Ti·∫e − Td·dPV/dt), seconds, derivative on PV (no setpoint kick),
   conditional-integration anti-windup, bumpless manual, reverse action.
-- Logix: `PID` tag type (SP, PV, CV, KP, TI, TD, MAXO, MINO, SO, MO, CA) and `PID` instruction;
+- tag-style: `PID` tag type (SP, PV, CV, KP, TI, TD, MAXO, MINO, SO, MO, CA) and `PID` instruction;
   analog modules `Local:7:I.Ch0Data/Ch1Data`, `Local:8:O.Ch0Data` in volts. Struct tags accept start
   values for members (`{"type": "PID", "value": {"KP": 4}}`).
-- S7: `PID_Compact` instance (Gain, Ti, Td, limits, ManualEnable/ManualValue, InvertControl) and
+- IEC-style: `compact PID` instance (Gain, Ti, Td, limits, ManualEnable/ManualValue, InvertControl) and
   box; analog `%IW64/%IW66`, `%QW64` raw 0-27648.
-- SLC: analog `I:7` (level) and `I:6` (knob) 0-16383, `O:7` (valve) 0-32767; no PID yet.
+- data-table: analog `I:7` (level) and `I:6` (knob) 0-16383, `O:7` (valve) 0-32767; no PID yet.
 - `sims/tank.py`: level 0-100 %, pump (on/off) and proportional inlet valve, 1 s pipe dead time,
   outlet as disturbance (√level), high/low switches, setpoint knob, overflow event, 2-minute trend.
   `ui/tank_view.py`: drawing, sliders, trend chart (setpoint dashed, level, valve).
 - Profiles name analog channels (`Profile.analog_name`); devices with `analog_inputs` /
   `set_analog_outputs` are wired by the profile in the I/O scan.
-- Exercises: 11 on/off with hysteresis (SLC), 12 PID tuning (Logix, `controller:` header in the
+- Exercises: 11 on/off with hysteresis (data-table), 12 PID tuning (tag-style, `controller:` header in the
   exercise file, solution as .plcy). Checks: band 35-65 %, no chattering, ±2 % in 60 s, overshoot
   ≤ 5 %, disturbance rejection, new setpoint, no overflow.
 - Blocks widen for long operands; live rows for PID blocks.
-keys:      PID, PID_Compact, analog, tank, level, trend, hysteresis, Ch0Data, %IW64
+keys:      PID, compact PID, analog, tank, level, trend, hysteresis, Ch0Data, %IW64
 
-## C-022 — Phase 4: structured text (ST / SCL)
+## C-022 — Phase 4: structured text (ST / structured text)
 2026-10-21 · commit: 1b9ba90
 - `core/st/`: lexer (comments `//`, `(* *)`, `/* */`; `T#1m30s`; `16#FF`; `"Quoted"`, `#local`,
   `%I0.0`, `Local:1:I.Data.0`, `S:FS`), parser to an AST (assignments, IF/ELSIF/ELSE, CASE with
@@ -455,45 +455,45 @@ keys:      PID, PID_Compact, analog, tank, level, trend, hysteresis, Ch0Data, %I
   checks against the controller's memory (unknown tags, block/instance type mismatch, structures
   used as values) with line numbers, interpreter (integer division truncates, division by zero and
   runaway loops → major fault 0601h, watchdog 100 000 iterations per scan).
-- `ProgramFile.language/source`; `.plcy` stores ST source; `.rsl` refuses it; SLC 500 rejects ST.
+- `ProgramFile.language/source`; `.plcy` stores ST source; `.rsl` refuses it; data-table style rejects ST.
   `Diagnostic.line`. The engine parses ST at download, runs it in place of rungs, and prescans the
   block instances it calls.
-- Profiles: `st_blocks` and `st_call` — S7 TON/TOF/TP/CTU/CTD/PID_Compact (TIA syntax), Logix
-  TON/TOF/RTO/CTU/CTD/PID with IEC-style calls (Studio 5000's TONR/FBD_TIMER not modelled).
+- Profiles: `st_blocks` and `st_call` — IEC-style TON/TOF/TP/CTU/CTD/compact PID (TIA syntax), tag-style
+  TON/TOF/RTO/CTU/CTD/PID with IEC-style calls (commercial software's TONR/FBD_TIMER not modelled).
   `run_pid` / `run_pid_compact` shared by ladder and ST.
 - UI: `ui/st_editor.py` (highlighting incl. multi-line comments, line numbers with error marks,
   problems re-checked 300 ms after typing and when tags change, watch list with live values).
   File → New for controller offers ladder or structured text; tabs show "(ST)"; the instruction
-  bar hides for ST. Examples `start-stop-st.plcy` (Logix ST) and `tank-pid-scl.plcy` (S7 SCL).
+  bar hides for ST. Examples `start-stop-st.plcy` (tag-style ST) and `tank-pid-scl.plcy` (IEC-style structured text).
 - Tests: `tests/test_st.py` (20), e2e F13.
-keys:      structured text, ST, SCL, parser, IF, CASE, FOR, watchdog, TON call
+keys:      structured text, ST, structured text, parser, IF, CASE, FOR, watchdog, TON call
 
 ## C-023 — Phase 4b: routines, blocks, data types, forcing, commercial-style UI
 2026-10-21 · commits: bd0351b, abe8ef4, 53fb0b6
 - `core/profiles/datatypes.py`: shared type system for tag memories (structures as dicts, 1-D
-  arrays as lists, member/index/bit paths, start values, cycle check). Logix `TagTable` and
+  arrays as lists, member/index/bit paths, start values, cycle check). tag-style `TagTable` and
   `S7Memory` rebuilt on it: UDTs / PLC data types, `DINT[10]` / `Array[1..5] of Int`, indexes by tag
-  (`Recipe[Step]`), SINT/Byte, S7 `Count.%X3`; `ref(text, static=True)` checks without reading.
+  (`Recipe[Step]`), SINT/Byte, IEC-style `Count.%X3`; `ref(text, static=True)` checks without reading.
 - `Program.types`, `ProgramFile.interface`; `.plcy` stores both. `Program.routine(name)`.
-- Engine: `_call(target, inputs)` runs SLC files, Logix routines by name, S7 FCs (hidden instance
+- Engine: `_call(target, inputs)` runs data-table files, tag-style routines by name, IEC-style FCs (hidden instance
   `__Name`) and FB instances; inputs copied in, Temp zeroed, outputs returned; a scope stack makes
   `#local` / bare local names members of the instance (`profiles.base.scoped`, `ScopedMemory`);
   prescan and download hooks run once per FB instance. Forces applied after the input scan and
   before the output scan (`Processor.force`, `Profile.forceable`: only I/O bits).
 - ST: indexes `a[i + 1]`, `JSR(Name)`, routine/FC/FB calls `"Fc"(A := x, B => y)`, `#local` and
   `"global"` kept by the lexer.
-- Logix: `JSR`/`RET`; `PID` with Studio 5000's seven operands (tieback in manual, master loop sets
-  SP, inhold). S7: `CALL` box (`Name:=operand`, `Name=>operand`, up to 8), `RET`, FC/FB
-  interface checks. SLC: `PID` with the 1747-RM001 control block (23 words in N7, Kc ×0.1, Ti
+- tag-style: `JSR`/`RET`; `PID` with commercial software's seven operands (tieback in manual, master loop sets
+  SP, inhold). IEC-style: `CALL` box (`Name:=operand`, `Name=>operand`, up to 8), `RET`, FC/FB
+  interface checks. data-table: `PID` with the the instruction set manual control block (23 words in N7, Kc ×0.1, Ti
   min/repeat, update time, error 11h when unset, manual via word 16).
-- UI: `ui/project_tree.py` (Controller Organizer / Project tree / RSLogix 500 project), documents in
+- UI: `ui/project_tree.py` (Controller Organizer / Project tree / commercial software project), documents in
   closable tabs (`ui/block_editor.py`: `RoutineDoc`, interface above the code, `DataTypeDoc`),
   per-routine undo via `QUndoGroup`, Project menu, add/rename/delete routines and data types (renames
   follow calls and types), tag list as a tree with members and forcing, "I/O FORCED" on the panel,
   CALL boxes drawn with the block on top and parameter pins.
-- Exercise 13 (tank PID on S7). Examples: traffic lights (SLC, Logix LD+ST), silo (SLC, S7 FB),
-  motor starters (S7 FB ×2), recipes (Logix UDT array), SLC PID tank.
-- Tests: `test_routines.py` (28), `test_samples.py` (18), SLC PID (3), e2e F14 (5). 414 in total.
+- Exercise 13 (tank PID on IEC-style). Examples: traffic lights (data-table, tag-style LD+ST), silo (data-table, IEC-style FB),
+  motor starters (IEC-style FB ×2), recipes (tag-style UDT array), data-table PID tank.
+- Tests: `test_routines.py` (28), `test_samples.py` (18), data-table PID (3), e2e F14 (5). 414 in total.
 keys:      JSR, FC, FB, instance DB, UDT, array, forcing, Controller Organizer, project tree, PID
 
 ## C-024 — Commercial-style polish: drag I/O, online bar, silo sensor
@@ -501,13 +501,33 @@ keys:      JSR, FC, FB, instance DB, UDT, array, forcing, Controller Organizer, 
 - Silo: the prox sensor sees a box once its centre reaches the filling pipe, so the box stops centred.
 - `ui/io_drag.py`: switches, lamps and address labels of every simulation (also labels painted on
   the silo, traffic and tank canvases, and each traffic light) drag their address onto the ladder,
-  as in LogixPro. On an instruction it fills the first free operand of the right kind (bit, value,
+  as in a classic trainer. On an instruction it fills the first free operand of the right kind (bit, value,
   destination); on a rung it adds XIC (input) or OTE (output); on empty space a new rung.
-- `ui/online_bar.py`: online toolbar like RSLogix 500 / Studio 5000: mode box (Offline, Rem Prog,
-  Rem Run, Rem Test, Faulted; S7: Online · STOP/RUN) with Go Online / Go Offline / Upload /
+- `ui/online_bar.py`: online toolbar like commercial software / commercial software: mode box (Offline, Rem Prog,
+  Rem Run, Rem Test, Faulted; IEC-style: Online · STOP/RUN) with Go Online / Go Offline / Upload /
   Download / modes / Clear Faults, No Forces / Forces Enabled (Remove All Forces), No Edits /
-  Edits pending, LEDs RUN FORCE OK I/O (S7: RUN/STOP MAINT ERROR), fold button. Communications
+  Edits pending, LEDs RUN FORCE OK I/O (IEC-style: RUN/STOP MAINT ERROR), fold button. Communications
   menu. Offline the PLC keeps running, live display stops and modes cannot change; Go Online with a
   different program offers Upload or Download.
 - Tests: e2e F15 (3), F16 (2). 419 in total.
-keys:      drag and drop, LogixPro, online, offline, upload, Rem Run, LEDs
+keys:      drag and drop, a classic trainer, online, offline, upload, Rem Run, LEDs
+
+## C-025 — One PLC, two notations, no brands
+2026-10-21 · commit: 80521b6
+- The three controller styles are replaced by one PLC (`core/plc/`): tags, data types, arrays,
+  %I/%Q/%M addresses, routines, functions and function blocks, 56 instructions (union of the three
+  sets on tags and arrays), timer and counter boxes pass Q, integer math wraps and sets Overflow.
+- `ui/notation.py`: Tools → Options picks the notation, a per-user preference: mnemonics (XIC,
+  MOV, timer .PRE .ACC .DN, I/O Local:1:I.Data.0) or IEC symbols (NO/NC, MOVE, .PT .ET .Q, %I0.0).
+  Files keep one canonical form; ladder, instruction bar, tag list, simulations and exercise texts
+  show the chosen notation; typed operands in either notation are stored canonical.
+- `formats/convert.py`: older programs convert on load: data-table addresses become arrays (N7:5 →
+  Values[5], B3:0/1 → Bits[0].1, T4:0 → Timers[0], presets to ms), module I/O names to %I/%Q,
+  IEC-style names (MOVE, CMP==, IEC_TIMER, compact PID) to the PLC's. .rsl files open (converted)
+  and are no longer written; bundled exercises and examples are .plcy.
+- Exercises rewritten without vendor names; exercise 13 is the PID loop in structured text;
+  analog values are raw 0-27648 everywhere.
+- Memory references are cached (a 2-minute exercise check went from 20 s to under 2 s).
+- No vendor or product names left in the app, README, site, roadmap, TODO or this log.
+- Tests: `test_plc.py` (19) replaces the per-controller suites; the others ported. 288 in total.
+keys:      one PLC, notation, mnemonics, IEC, convert, Values[5], Timers[0], canonical

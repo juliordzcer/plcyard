@@ -1,5 +1,4 @@
-"""Structured tag values shared by the tag-based controllers: user structures (Logix UDTs, S7 PLC
-data types, S7 FB instances) and one-dimensional arrays.
+"""Structured tag values: user data types, function block instances and one-dimensional arrays.
 
 A structure value is a dict keyed by canonical member name, an array a list. A reference like
 `Line[2].Motor.Speed.3` splits into a base tag and steps: ("m", "Motor"), ("i", "2"), ("b", 3).
@@ -38,13 +37,16 @@ class TypeSystem:
     def __init__(self, atomic: dict[str, object], structs: dict[str, dict[str, str]],
                  parse_array: Callable[[str], tuple[str, int, int] | None],
                  format_array: Callable[[str, int, int], str],
-                 start: dict[str, dict] | None = None):
+                 start: dict[str, dict] | None = None, aliases: dict[str, dict[str, str]] | None = None):
         self.atomic = atomic
         self.structs = structs
         self.start = start or {}
         self._parse_array, self._format_array = parse_array, format_array
         self._canon = {t.lower(): t for t in [*atomic, *structs]}
         self._members = {t: {m.lower(): m for m in ms} for t, ms in structs.items()}
+        for t, al in (aliases or {}).items():           # other names for members: TIMER.Q is TIMER.DN
+            if t in self._members:
+                self._members[t].update({a.lower(): m for a, m in al.items()})
 
     def canon(self, text: str) -> str | None:
         """The declared spelling of a type, or None when it is unknown."""

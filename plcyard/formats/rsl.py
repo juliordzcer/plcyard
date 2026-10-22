@@ -1,4 +1,5 @@
-"""Read and write .rsl ladder files (the plain-text SLC 500 trainer format).
+"""Read .rsl ladder files (an older plain-text, data-table ladder format; converted on load by
+formats/convert.py). Its rung token text ("XIC,%I0.0 OTE,%Q0.0") is also how .plcy stores rungs.
 
 Layout::
 
@@ -32,15 +33,16 @@ def load(path: str | Path) -> Program:
     return loads(Path(path).read_bytes().decode("latin-1"))
 
 
-def save(program: Program, path: str | Path) -> list[str]:
-    """Write the file. Returns the characters that .rsl (Latin-1) cannot hold; they are saved as '?'."""
-    text = dumps(program)
-    bad = sorted({ch for ch in text if ord(ch) > 0xFF})
-    Path(path).write_bytes(text.encode("latin-1", errors="replace"))
-    return bad
-
-
 def loads(text: str) -> Program:
+    """The program in the file, converted to the PLC."""
+    from .convert import convert
+    prog = read(text)
+    prog.profile = "slc500"
+    return convert(prog)
+
+
+def read(text: str) -> Program:
+    """The program as the file has it (data-table addresses), before conversion."""
     lines = text.replace("\r\n", "\n").split("\n")
     if lines and lines[-1] == "":
         lines.pop()
@@ -146,28 +148,3 @@ def _dump_series(s: Series, depth: int) -> list[str]:
         else:
             out.append(",".join([item.mnemonic, *item.operands]))
     return out
-
-
-def dumps(prog: Program) -> str:
-    if prog.profile != "slc500" or any(f.language != "LD" for f in prog.files.values()):
-        raise RslError(".rsl files hold SLC 500 ladder only; save as a PLCYard project (.plcy)")
-    out: list[str] = []
-    for num in sorted(prog.files):
-        f = prog.files[num]
-        out.append(f"FILE,{f.kind} {f.number}" + ("" if f.title is None else f":{f.title}"))
-        for n, rung in enumerate(f.rungs):
-            out.append(" ".join([f"SOR,{n}", *_dump_series(rung.body, 0), f"EOR,{n}"]))
-            out.append(f"RCM,{rung.comment}")
-        n = len(f.rungs)
-        out.append(f"SOR,{n} END,{n}")
-        out.append(f"RCM,{f.end_comment}")
-    for t in TABLES:
-        if t not in prog.tables:
-            continue
-        out.append(t)
-        vals = list(prog.tables.get(t, []))
-        out += vals + ["0"] * (100 - len(vals))
-    if prog.symbols_section or prog.symbols:
-        out.append("SYMBOLS")
-        out += [f"{a} {d}" for a, d in prog.symbols.items()]
-    return "\r\n".join(out) + "\r\n"

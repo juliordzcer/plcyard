@@ -1,7 +1,7 @@
 # Roadmap plan
 
-How the items in [TODO.md](../TODO.md) get built, in order. Each phase ships on its own, keeps the
-current SLC 500 ladder trainer working, and ends with the full test suite green.
+How the items in [TODO.md](../TODO.md) get built, in order. Each phase ships on its own and ends
+with the full test suite green.
 
 ## Phase 0 — Release 0.1 (small) — done except PyPI, icon, site, trademark
 
@@ -10,90 +10,26 @@ current SLC 500 ladder trainer working, and ends with the full test suite green.
 - Exercise solutions open read-only: Save on a file under `labs/solutions` asks for a new name.
 - GitHub release v0.1.0, issue templates, final icon, `site/` on juliordz.com, trademark screening.
 
-## Phase 1 — Controller profiles (foundation, M) — done
+## Phases 1-4 — One PLC, ladder and structured text — done
 
-Today the processor, the data table (`N7:0`, `T4:0`) and the instruction set are all SLC 500.
-Split what is shared from what belongs to a controller family:
-
-| shared (scan engine) | per profile |
-| --- | --- |
-| input scan → execute → output scan, modes, faults, prescan, trace for animation | memory model, address/tag syntax, instruction set, file format |
-
-- `plcyard/core/profiles/`: `slc500` (today's code, moved, no behaviour change),
-  later `logix` and `s7`.
-- Memory interface: `read(ref)`, `write(ref, value)`, `bit(ref)`, element types. SLC keeps the
-  file data table; Logix and S7 get a **tag table** (named variables with a type).
-- The instruction registry (`@instruction`) gets a `profiles=` field, so the instruction bar and
-  validation show only what the selected controller has.
-- Project format `.plcy` (JSON): profile, tags, programs in any language, symbols, exercise id.
-  `.rsl` stays as import/export for SLC ladder.
-- Gate: all 216 tests pass unchanged with `slc500`.
-- Done as: one instruction dict per profile (`Profile.specs`) instead of a `profiles=` field, since
-  the same mnemonic (TON) means different things in SLC, Logix and S7. A toy tag-based profile in
-  `tests/test_profiles.py` proves the engine has no SLC assumptions left.
-- Carried to Phase 2: the ladder editor (`ui/ladder_view.py`, `core/edit.py`) still looks up
-  `isa.SPECS`; it takes the program's profile when the second real profile lands.
-
-## Phase 2 — Modern controllers in ladder (L) — done
-
-- **Logix-style profile** (Studio 5000): tags `Start`, `Motor`, `Tank.Level`; types BOOL, DINT,
-  REAL, TIMER, COUNTER, user structures later. Instructions: XIC/XIO/OTE/OTL/OTU, ONS/OSR/OSF,
-  TON/TOF/RTO (preset in ms), CTU/CTD/RES, MOV/CPT, compare, math, SCP (scale), JSR.
-- **S7-style profile** (TIA Portal): `%I0.0`, `%Q0.0`, `%MW10` plus symbolic tags; IEC timers and
-  counters as instances (TON, TOF, TP, CTU, CTD, CTUD), R_TRIG/F_TRIG, NORM_X/SCALE_X, MOVE.
-- Tag editor dock (replaces the data table for these profiles), with live values and forcing.
-- The existing simulations get I/O maps per profile, so every machine works with every controller.
-- Done: Logix (tags, ms timers, DINT math, Local:<slot>:I/O.Data) and S7 (%I/%Q/%M, PLC tags,
-  IEC_TIMER/IEC_COUNTER instances, boxes passing ENO/Q). Left for later: forcing from the tag list,
-  arrays and user structures, routines (JSR) on Logix, function blocks/DBs on S7.
-
-## Phase 3 — PID and analog process (M) — done
-
-- Analog I/O in the scan (raw counts → engineering units with SCP / NORM_X+SCALE_X).
-- PID block per profile: Logix `PIDE`-like (simplified), S7 `PID_Compact`-like; Kp, Ti, Td,
-  setpoint, output limits, manual/auto, anti-windup.
-- Process simulation: tank level with inlet pump and outlet valve (first-order + delay),
-  disturbance button.
-- Trend chart: setpoint, process value, output over time.
-- Exercises: on/off control with hysteresis, then PID tuning with checks on overshoot and
-  settling time.
-- Done as: shared `core/pid.py` (dependent form, derivative on PV, anti-windup, bumpless manual),
-  Logix `PID` (PID tag) and S7 `PID_Compact` (instance), SLC without PID for now (on/off with
-  analog compares). Exercises 11 (on/off, SLC) and 12 (PID, Logix).
-
-## Phase 4 — Structured text (L) — done
-
-- One language core: the IEC 61131-3 ST subset shared by Allen-Bradley **ST** and Siemens **SCL**:
-  assignments, IF/ELSIF/CASE, FOR/WHILE/REPEAT, expressions, function and function-block calls
-  (TON, CTU, PID…), comments.
-- Hand-written parser (no new dependencies) → AST → interpreter run once per scan; errors with
-  line and column; runaway-loop watchdog raises a major fault.
-- Dialect switches per profile for the small differences (SCL `#local` and `"Tag"` quoting,
-  `:=` everywhere, AB tag names).
-- Editor: syntax highlighting, error markers, live values next to variables while running.
-- Done as: `core/st/` (lexer, parser, checks, interpreter, watchdog 100 000 loop iterations per
-  scan), `Instance.BLOCK(IN := …, Q => …)` calls (TIA syntax) mapped to each profile's executors,
-  `ui/st_editor.py` (colours, line numbers, problems as you type, watch list). SLC 500 has no ST, as
-  on the real controller. Not yet: Studio 5000's own TONR/FBD_TIMER, user functions, arrays.
-
-## Phase 4b — Several routines, data types, forcing (L) — done
-
-- Logix: routines in the MainProgram called with `JSR` (ladder and `JSR(Name);` in ST), `RET`;
-  user-defined types and one-dimensional arrays (`Pump.Speed`, `Recipe[Step]`, indexes by tag in
-  ladder, by expression in ST); `PID` with Studio 5000's seven operands (tieback, cascade master,
-  inhold).
-- S7: functions (FC) and function blocks (FB) with an interface (Input, Output, InOut, Static,
-  Temp), called with a `CALL` box (`Start:=Button`, `Run=>Lamp`) or `"Block"(…)` in SCL; FB
-  instances are data blocks (tags of the FB's type), multi-instances inside FBs, `#local` and
-  `"global"` names; PLC data types and arrays (`Array[1..5] of Int`); `Count.%X3`.
-- SLC 500: `PID` with a 23-word control block in an N file (RSLogix 500 layout), exercise 13 PID on
-  S7 with `PID_Compact`.
-- Forcing I/O (all three controllers) from the tag list or the ladder, "I/O FORCED" on the panel.
-- UI laid out like the controller's software: Controller Organizer / Project tree / Project on the
-  left, every routine or data type in its own tab (several open at once, any language), the
-  block interface above its code as in TIA Portal, the tag list as a tree with members.
-- Examples: traffic lights (SLC; Logix with an ST sequence and a ladder routine), silo (SLC; S7 FB
-  and instance DB), two motor starters (S7 FB instances), recipes (Logix UDT array), SLC PID tank.
+- Scan engine separate from the PLC it runs (`core/processor.py` + `core/plc/`): input scan →
+  execute → output scan, modes, faults, prescan, trace for the live display.
+- One PLC with named tags and typed memory: BOOL, SINT, INT, DINT, REAL, TIME, TIMER, COUNTER,
+  CONTROL, PID, user data types, one-dimensional arrays, I/O and marker addresses (%I, %Q, %M).
+- Two notations over the same program (Tools → Options): mnemonics (XIC, OTE, MOV; timer .PRE
+  .ACC .DN; I/O Local:1:I.Data.0) and IEC symbols (NO/NC contacts, MOVE; timer .PT .ET .Q; %I0.0).
+  Files keep one canonical form; the notation only changes display and input.
+- Instruction set: bits, one shots, edge contacts, timers (boxes pass Q), counters, compare, math
+  with overflow, move, logic, BCD, scaling, bit shift, sequencers, array copy/fill, PID, routines
+  (JSR/RET), functions and function blocks (CALL) with interfaces and instances.
+- PID and analog I/O (raw 0-27648), tank simulation with trend.
+- Structured text: parser, checks with line numbers, interpreter with watchdog, block calls on
+  their tag, routine and block calls, array indexes by expression.
+- UI: project tree, routines and data types in tabs, block interface above its code, tag list as
+  a tree with forcing, online bar (Go Online, Upload, Download, forces, edits, LEDs), drag I/O from
+  the simulations onto the ladder, examples and 13 exercises.
+- Older programs (data-table .rsl files and the earlier tag and IEC project styles) convert on
+  load (`formats/convert.py`): N7:5 → Values[5], T4:0 → Timers[0], timer presets to ms.
 
 ## Phase 5 — Function block diagram (L)
 
@@ -133,14 +69,10 @@ Split what is shared from what belongs to a controller family:
 | phase | size | depends on |
 | --- | --- | --- |
 | 0 release | S | — |
-| 1 profiles | M | 0 |
+| 1-4 one PLC, LD, ST | L | 0 |
 | 7 wiki | M | 1 (for the generated reference) |
-| 2 modern ladder | L | 1 |
-| 3 PID | M | 2 |
-| 4 ST | L | 2 |
 | 5 FBD | L | 4 (shared block library) |
 | 6 exercises ×3 | M | 4, 5 |
 
-Rule for every phase: failing test first for each behaviour, behaviour checked against the vendor
-manuals (Rockwell 1756-RM003 for Logix, Siemens S7-1200/1500 system manual), an entry in
-`DEVLOG.md`, and no change to how existing `.rsl` programs run.
+Rule for every phase: failing test first for each behaviour, behaviour checked against PLC
+instruction set manuals and IEC 61131-3, and an entry in `DEVLOG.md`.

@@ -1,4 +1,4 @@
-"""End-to-end flows F01-F08 (docs/testing/test-plan.md), driven through the main window like a user.
+"""End-to-end flows F01-F16 (docs/testing/test-plan.md), driven through the main window like a user.
 Case ids match that plan."""
 
 
@@ -13,6 +13,8 @@ from plcyard.ui import theme
 from plcyard.ui.main_window import MainWindow
 
 SAMPLES = labs.SAMPLES
+OLD_RSL = ("FILE,LAD 2\r\nSOR,0 XIC,I:1/1 BST,1 XIC,I:1/0 NXB,1 XIC,O:2/0 BND,1 OTE,O:2/0 EOR,0\r\nRCM,\r\n"
+           "SOR,1 XIC,O:2/0 OTE,O:2/1 EOR,1\r\nRCM,\r\nSOR,2 END,2\r\nRCM,\r\nSYMBOLS\r\nI:1/1 Stop (NC)\r\n")
 LABS = {lab.id: lab for lab in labs.load_all()}
 
 
@@ -62,9 +64,9 @@ def set_ops(win, *values):
 def test_F01_H1_first_program_switch_drives_lamp(win, qtbot):
     win.bar.picked.emit("RUNG")
     win.bar.picked.emit("XIC")
-    set_ops(win, "I:1/0")
+    set_ops(win, "%I0.0")
     win.bar.picked.emit("OTE")
-    set_ops(win, "O:2/0")
+    set_ops(win, "%Q0.0")
     win.download()
     assert win.warnings == []
     go(win, "RUN")
@@ -87,13 +89,13 @@ def test_F01_N1_unset_address_blocks_download(win):
 def test_F01_N2_word_on_bit_instruction_rejected(win):
     win.bar.picked.emit("RUNG")
     win.bar.picked.emit("XIC")
-    set_ops(win, "N7:0")
+    set_ops(win, "%MW0")
     win.download()
-    assert win.warnings and "N7:0/0" in win.warnings[0][1]
+    assert win.warnings and "%MW0 is a INT; needs a BOOL" in win.warnings[0][1]
 
 
 def test_F01_E1_edit_in_run_needs_download(win, qtbot):
-    win.open(str(SAMPLES / "start-stop.rsl"))
+    win.open(str(SAMPLES / "start-stop.plcy"))
     win.download()
     go(win, "RUN")
     win.ladder.canvas.sel = ("rung", 0)
@@ -103,8 +105,8 @@ def test_F01_E1_edit_in_run_needs_download(win, qtbot):
 
 # -- F02 open an example and run it ---------------------------------------------------------
 def test_F02_H1_start_stop_sample(win, qtbot):
-    win.open(str(SAMPLES / "start-stop.rsl"))
-    assert win.windowTitle().startswith("start-stop.rsl")
+    win.open(str(SAMPLES / "start-stop.plcy"))
+    assert win.windowTitle().startswith("start-stop.plcy")
     assert win.sim.switch(1, 1).normally_closed, "Stop (NC) symbol wires an NC switch"
     win.download()
     go(win, "RUN")
@@ -122,7 +124,7 @@ def test_F02_H1_start_stop_sample(win, qtbot):
 
 @pytest.mark.parametrize("eol", ["\r\n", "\n"])
 def test_F02_E1_line_endings(win, tmp_path, eol):
-    text = (SAMPLES / "start-stop.rsl").read_bytes().decode("latin-1").replace("\r\n", "\n").replace("\n", eol)
+    text = OLD_RSL.replace("\r\n", "\n").replace("\n", eol)
     p = tmp_path / "x.rsl"
     p.write_bytes(text.encode("latin-1"))
     win.open(str(p))
@@ -146,31 +148,22 @@ def test_F02_N2_not_an_rsl_file(win, tmp_path):
     assert win.warnings and win.path is None
 
 
-# -- F03 debug with slow scan and data table -----------------------------------------------
-def test_F03_H1_timer_visible_in_data_table(win):
-    win.open(str(SAMPLES / "timer-counter.rsl"))
+# -- F03 debug: live values in the tag list ---------------------------------------------------
+def test_F03_H1_timer_visible_in_the_tag_list(win):
+    win.open(str(SAMPLES / "timer-counter.plcy"))
     win.download()
     go(win, "RUN")
     win.sim.set_pressed(1, 0, True)
     run(win, 1510)                                # first scan starts the timer at 0
-    win.show_address("T4:0")
-    m = win.table_view.model
-    acc = m.columns().index("ACC")
-    assert int(m.data(m.index(0, acc))) == 15
-
-
-def test_F03_E1_radix_change_and_edit_while_running(win):
-    win.open(str(SAMPLES / "timer-counter.rsl"))
-    win.download()
-    go(win, "RUN")
-    win.show_address("N7:0")
-    tv = win.table_view
-    tv.radix_box.setCurrentText("Hex/BCD")
-    m = tv.model
-    assert m.setData(m.index(0, 0), "FF")
-    run(win, 20)
-    assert win.plc.dt.read_word("N7:0") == 255
-    assert m.data(m.index(0, 0)).replace(" ", "").upper().endswith("FF")
+    win.table_dock.show()
+    tv = win.tags_view
+    row = next(r for r in range(tv.table.topLevelItemCount()) if tv.row(r).text(0) == "Timers")
+    tv.row(row).setExpanded(True)
+    first = tv.row(row).child(0)
+    first.setExpanded(True)
+    acc = next(first.child(k) for k in range(first.childCount()) if first.child(k).text(0) in (".ACC", ".ET"))
+    win._refresh()
+    assert acc.text(tv.col("Value")) == "1500"
 
 
 # -- F04 change switch type ----------------------------------------------------------------
@@ -187,44 +180,23 @@ def test_F04_H1_switch_types(win, qtbot, nc, mom):
 
 
 # -- F05 save --------------------------------------------------------------------------------
-def test_F05_H1_round_trip_unchanged_program(win, tmp_path):
-    src = SAMPLES / "timer-counter.rsl"
-    dst = tmp_path / "copy.rsl"
-    win.open(str(src))
-    win.path = dst
-    win.save()
-    assert dst.read_bytes() == src.read_bytes()
-    assert not win.windowTitle().startswith("•")
-
-
-def test_F05_E1_accents_kept_emoji_reported(win, tmp_path):
-    win.open(str(SAMPLES / "start-stop.rsl"))
-    win.program.main.rungs[0].comment = "Válvula ñ 🚀"
-    win.path = tmp_path / "x.rsl"
-    win.save()
-    assert win.warnings and "🚀" in win.warnings[0][1]
-    assert rsl.load(win.path).main.rungs[0].comment == "Válvula ñ ?"
-
-
 def test_F05_N1_unwritable_path(win, tmp_path):
-    win.open(str(SAMPLES / "start-stop.rsl"))
-    win.path = tmp_path / "missing-dir" / "x.rsl"
+    win.open(str(SAMPLES / "start-stop.plcy"))
+    win.path = tmp_path / "missing-dir" / "x.plcy"
     win.dirty = True
     win.save()
     assert win.warnings and win.warnings[0][0] == "Could not save"
     assert win.dirty, "still unsaved"
 
 
-# -- F06 clear data table ------------------------------------------------------------------
-def test_F06_H1_clear_data_table(win):
-    win.open(str(SAMPLES / "timer-counter.rsl"))
+# -- F06 clear data ------------------------------------------------------------------------
+def test_F06_H1_clear_data(win):
+    win.open(str(SAMPLES / "timer-counter.plcy"))
     win.download()
-    win.plc.dt.write_word("N7:3", 42)
-    win.plc.dt.write_word("C5:0.ACC", 4)
-    win.plc.dt.write_bit("B3:0/2", True)
+    win.plc.dt.write_word("Counters[0].ACC", 4)
+    win.plc.dt.write_word("%MW10", 42)
     win.clear_data()
-    dt = win.plc.dt
-    assert dt.read_word("N7:3") == 0 and dt.read_word("C5:0.ACC") == 0 and not dt.read_bit("B3:0/2")
+    assert win.plc.dt.read_word("Counters[0].ACC") == 0 and win.plc.dt.read_word("%MW10") == 0
 
 
 # -- F07 exercises on silo and traffic -----------------------------------------------------
@@ -267,12 +239,12 @@ def test_F08_H1_subroutine_drives_output(win, qtbot, tmp_path):
     assert win.sim_view.lamps[(2, 3)].on
 
 
-def test_F08_N1_jsr_to_missing_file(win, tmp_path):
+def test_F08_N1_jsr_to_missing_routine(win, tmp_path):
     p = tmp_path / "sbr.rsl"
     p.write_bytes(SBR.replace("U:3", "U:5").encode("latin-1"))
     win.open(str(p))
     win.download()
-    assert win.warnings and "subroutine file 5" in win.warnings[0][1]
+    assert win.warnings and "routine SBR5 does not exist" in win.warnings[0][1]
 
 
 # -- F09 check my program (new: not in the original) ---------------------------------------
@@ -317,14 +289,14 @@ def test_F02_H2_open_example_menu(win):
     names = [a.text() for a in examples.actions()]
     assert "Start stop" in names
     examples.actions()[names.index("Start stop")].trigger()
-    assert win.path == SAMPLES / "start-stop.rsl"
+    assert win.path == SAMPLES / "start-stop.plcy"
 
 
 def test_F05_H2_save_and_reopen_project(win, tmp_path, monkeypatch):
     from PySide6.QtWidgets import QFileDialog
     target = tmp_path / "mine"
     monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(target), "PLCYard projects (*.plcy)"))
-    win.open(str(SAMPLES / "start-stop.rsl"))
+    win.open(str(SAMPLES / "start-stop.plcy"))
     win.save()                                              # bundled file: goes to Save as
     assert win.path == tmp_path / "mine.plcy" and win.path.exists()
     win.open(str(win.path))
@@ -333,24 +305,9 @@ def test_F05_H2_save_and_reopen_project(win, tmp_path, monkeypatch):
     assert win.warnings == [] and win.downloaded
 
 
-def test_F05_N2_other_controller_cannot_be_saved_as_rsl(win, tmp_path, monkeypatch):
-    from plcyard.core import profiles
-    from plcyard.core.profiles.slc500 import Slc500
-    other = type("Other", (Slc500,), {"name": "other"})()
-    monkeypatch.setitem(profiles.PROFILES, "other", other)
-    win.open(str(SAMPLES / "start-stop.rsl"))
-    win.program.profile = "other"
-    win.path = tmp_path / "x.rsl"
-    win.save()
-    assert win.warnings and "SLC 500 ladder only" in win.warnings[0][1]
-
-
-# -- F10 Logix controller (Studio 5000 style) -----------------------------------------------------
-def test_F10_H1_logix_program_from_scratch(win, qtbot):
-    nf = next(a.menu() for a in win.menuBar().actions() if a.text() == "&File")
-    sub = next(a.menu() for a in nf.actions() if a.menu() and "controller" in a.text())
-    next(a for a in sub.actions() if a.text().startswith("Logix")).trigger()
-    assert win.program.profile == "logix" and win.docs.tabText(0) == "MainRoutine"
+# -- F10 tags and notations ------------------------------------------------------------------------
+def test_F10_H1_program_with_tags_in_notation_a(win, qtbot):
+    win.set_notation("A")
     assert win.sim_view.switches[(1, 0)].toolTip().startswith("Local:1:I.Data.0")
     win.table_dock.show()
     tv = win.tags_view
@@ -368,8 +325,9 @@ def test_F10_H1_logix_program_from_scratch(win, qtbot):
     set_ops(win, "Motor")
     win.bar.picked.emit("OTE")
     set_ops(win, "Local:2:O.Data.0")
+    assert win.program.main.rungs[1].body.items[1].operands == ["%Q0.0"], "stored in the canonical form"
     win.download()
-    assert win.warnings == [] and win.plc.profile.name == "logix"
+    assert win.warnings == []
     go(win, "RUN")
     click(qtbot, win, 1, 0)
     run(win, 50)
@@ -378,8 +336,7 @@ def test_F10_H1_logix_program_from_scratch(win, qtbot):
     assert "Local:1:I" in win.panel.io_words.text()
 
 
-def test_F10_N1_logix_unknown_tag_blocks_download(win):
-    win.new("logix")
+def test_F10_N1_unknown_tag_blocks_download(win):
     win.bar.picked.emit("RUNG")
     win.bar.picked.emit("XIC")
     set_ops(win, "Pump")
@@ -387,41 +344,38 @@ def test_F10_N1_logix_unknown_tag_blocks_download(win):
     assert win.warnings and "Pump does not exist" in win.warnings[0][1]
 
 
-def test_F10_E1_back_to_slc_after_logix(win, qtbot):
-    win.new("logix")
-    win.open(str(SAMPLES / "start-stop.rsl"))
-    assert win.table_dock.windowTitle() == "Data table" and win.docs.tabText(0) == "LAD 2"
-    win.download()
-    go(win, "RUN")
-    click(qtbot, win, 1, 0)
-    run(win, 50)
-    assert win.sim_view.lamps[(2, 0)].on and win.plc.profile.name == "slc500"
+def test_F10_E1_switching_notation_keeps_the_program(win):
+    from plcyard.formats import plcy
+    win.open(str(SAMPLES / "timer-counter.plcy"))
+    before = plcy.dumps(win.program)
+    win.set_notation("B")
+    assert win.sim_view.switches[(1, 0)].toolTip().startswith("%I0.0")
+    win.set_notation("A")
+    assert plcy.dumps(win.program) == before
 
 
-# -- F11 S7-1200/1500 controller (TIA Portal style) ------------------------------------------------
-def test_F11_H1_s7_program_with_timer(win, qtbot):
-    win.new("s7")
-    assert win.program.profile == "s7" and win.sim_view.switches[(1, 0)].toolTip().startswith("%I0.0")
+# -- F11 timer box passes Q, tag addresses -------------------------------------------------------------
+def test_F11_H1_timer_with_iec_names(win, qtbot):
+    win.set_notation("B")
     win.table_dock.show()
     tv = win.tags_view
     assert "Address" in tv.columns
     tv.add_tag()
     tv.item(0, 0).setText("Delay")
-    tv.set_type(0, "IEC_TIMER")
-    assert win.program.tags == {"Delay": {"type": "IEC_TIMER"}}
+    tv.set_type(0, "TIMER")
+    assert win.program.tags == {"Delay": {"type": "TIMER"}}
     win.bar.picked.emit("RUNG")
     win.bar.picked.emit("XIC")
     set_ops(win, "i0.0")
     assert win.program.main.rungs[0].body.items[0].operands == ["%I0.0"], "address normalised"
     win.bar.picked.emit("TON")
     set_ops(win, "Delay", "T#200ms")
-    win.download()
-    assert win.warnings == [], win.warnings
     win.ladder.canvas.sel = ("rung", 0)
     win.bar.picked.emit("OTE")
     set_ops(win, "%Q0.0")
     assert [i.mnemonic for i in win.program.main.rungs[0].body.items] == ["XIC", "TON", "OTE"]
     win.download()
+    assert win.warnings == [], win.warnings
     go(win, "RUN")
     click(qtbot, win, 1, 0)
     run(win, 100)
@@ -429,14 +383,14 @@ def test_F11_H1_s7_program_with_timer(win, qtbot):
     run(win, 150)
     assert win.sim_view.lamps[(2, 0)].on, "TON passes Q to the coil after PT"
     assert "%IW0" in win.panel.io_words.text()
+    win.set_notation("A")
 
 
-def test_F11_N1_s7_bad_address_in_tag_list_is_rejected(win):
-    win.new("s7")
+def test_F11_N1_bad_address_in_tag_list_is_rejected(win):
     win.table_dock.show()
     tv = win.tags_view
     tv.add_tag()
-    tv.item(0, tv.col("Address")).setText("%MW0")      # Bool needs a bit
+    tv.item(0, tv.col("Address")).setText("%MW0")      # BOOL needs a bit
     assert "needs a bit address" in tv.message.text() and "address" not in win.program.tags["Tag1"]
 
 
@@ -447,8 +401,7 @@ def test_F12_H1_tank_pid_exercise(win, qtbot):
     i = next(k for k, lab in enumerate(lv.items) if lab.id == "12")
     lv.list.setCurrentRow(i)
     qtbot.mouseClick(lv.start_btn, Qt.LeftButton)
-    assert win.program.profile == "logix" and win.sim_kind == "tank"
-    assert "Local:7:I.Ch0Data" in win.sim_view.canvas.a("I", 0)
+    assert win.sim_kind == "tank" and win.sim_view.canvas.a("I", 0) in ("%IW64", "Local:7:I.Ch0Data")
     win.open(str(LABS["12"].solution))
     qtbot.mouseClick(lv.check_btn, Qt.LeftButton)
     assert "All requirements met" in lv.result.toPlainText()
@@ -470,12 +423,11 @@ def test_F12_N1_empty_program_fails_tank_checks(win, qtbot):
 
 
 # -- F13 structured text ---------------------------------------------------------------------------
-def test_F13_H1_s7_scl_program(win, qtbot):
+def test_F13_H1_structured_text_program(win, qtbot):
     nf = next(a.menu() for a in win.menuBar().actions() if a.text() == "&File")
-    sub = next(a.menu() for a in nf.actions() if a.menu() and "controller" in a.text())
-    next(a for a in sub.actions() if a.text().startswith("S7") and "structured" in a.text()).trigger()
+    next(a for a in nf.actions() if "structured text" in a.text()).trigger()
     assert win.program.main.language == "ST" and win.st_editor is not None
-    assert win.docs.tabText(0).endswith("(SCL)") and not win.bar.isVisible()
+    assert win.docs.tabText(0).endswith("(ST)") and not win.bar.isVisible()
     ed = win.st_editor
     ed.edit.setPlainText('"Delay".TON(IN := %I0.0, PT := T#200ms);\n%Q0.0 := "Delay".Q;\n')
     assert "Delay does not exist" in "\n".join(ed.check())
@@ -483,7 +435,7 @@ def test_F13_H1_s7_scl_program(win, qtbot):
     win.table_dock.show()
     win.tags_view.add_tag()
     win.tags_view.item(0, 0).setText("Delay")
-    win.tags_view.set_type(0, "IEC_TIMER")
+    win.tags_view.set_type(0, "TIMER")
     assert ed.check() == [] and not ed.problems.isVisible()
     assert [ed.watch.item(r, 0).text() for r in range(ed.watch.rowCount())] == ["%I0.0", "%Q0.0", "Delay.Q", "Delay"]
     win.download()
@@ -496,7 +448,7 @@ def test_F13_H1_s7_scl_program(win, qtbot):
 
 
 def test_F13_N1_syntax_error_blocks_download(win):
-    win.new("logix", "ST")
+    win.new(language="ST")
     win.st_editor.edit.setPlainText("Motor := Start\n")
     assert "line 1" in win.st_editor.check()[0] and "missing ;" in win.st_editor.check()[0]
     win.download()
@@ -505,13 +457,13 @@ def test_F13_N1_syntax_error_blocks_download(win):
 
 def test_F13_E1_save_and_reopen_st(win, tmp_path, monkeypatch):
     from PySide6.QtWidgets import QFileDialog
-    win.new("logix", "ST")
-    win.st_editor.edit.setPlainText("Local:2:O.Data.0 := Local:1:I.Data.0;\n")
+    win.new(language="ST")
+    win.st_editor.edit.setPlainText("%Q0.0 := %I0.0;\n")
     target = tmp_path / "st"
     monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(target), "PLCYard projects (*.plcy)"))
     win.save()
     win.open(str(tmp_path / "st.plcy"))
-    assert win.st_editor.edit.toPlainText() == "Local:2:O.Data.0 := Local:1:I.Data.0;\n"
+    assert win.st_editor.edit.toPlainText() == "%Q0.0 := %I0.0;\n"
 
 
 # -- F14 several routines, blocks, data types, forcing -----------------------------------------------
@@ -522,12 +474,12 @@ def add_routine(win, monkeypatch, name, kind, language="LD"):
     win._tree_action("add_routine", None)
 
 
-def test_F14_H1_logix_main_ladder_calls_an_st_routine(win, qtbot, monkeypatch):
-    win.new("logix")
-    assert win.tree_dock.windowTitle() == "Controller Organizer"
+def test_F14_H1_main_ladder_calls_an_st_routine(win, qtbot, monkeypatch):
+    win.new()
+    assert win.tree_dock.windowTitle() == "Project"
     add_routine(win, monkeypatch, "Calc", "SBR", "ST")
     assert win.docs.count() == 2 and win.docs.tabText(1) == "Calc (ST)" and win.st_editor is not None
-    win.st_editor.edit.setPlainText("Local:2:O.Data.0 := Local:1:I.Data.0;\n")
+    win.st_editor.edit.setPlainText("%Q0.0 := %I0.0;\n")
     win.docs.setCurrentIndex(0)
     assert win.ladder is not None and win.bar.isVisible()
     win.bar.picked.emit("RUNG")
@@ -544,23 +496,24 @@ def test_F14_H1_logix_main_ladder_calls_an_st_routine(win, qtbot, monkeypatch):
     assert win.program.main.rungs[0].body.items[0].operands == ["Compute"]
 
 
-def test_F14_H2_s7_function_block_with_interface(win, monkeypatch):
-    win.new("s7")
-    assert win.tree_dock.windowTitle() == "Project tree"
+def test_F14_H2_function_block_with_interface(win, monkeypatch):
+    win.new()
     add_routine(win, monkeypatch, "Motor", "FB")
     doc = win.doc
-    assert doc.interface is not None and win.docs.tabText(win.docs.currentIndex()) == "Motor [FB3]"
+    assert doc.interface is not None and win.docs.tabText(win.docs.currentIndex()) == "Motor [FB]"
     doc.interface.add_member("Input")
-    assert win.program.files[3].interface == {"Input": {"Member1": "Bool"}}
+    assert win.program.files[3].interface == {"Input": {"Member1": "BOOL"}}
     win.tags_view.add_tag()
     win.tags_view.set_type(0, "Motor")
     assert win.program.tags["Tag1"]["type"] == "Motor"
-    labels = [win.tree.topLevelItem(0).child(0).child(k).text(0) for k in range(win.tree.topLevelItem(0).child(0).childCount())]
-    assert "Motor [FB3]" in labels and "Tag1 [DB]" in labels
+    prog = win.tree.topLevelItem(1)
+    labels = [prog.child(k).text(0) for k in range(prog.childCount())]
+    instances = prog.child(labels.index("Block instances"))
+    assert "Motor [FB]" in labels and instances.child(0).text(0) == "Tag1 [Motor]"
 
 
 def test_F14_H3_data_type_and_array_tags(win, monkeypatch):
-    win.new("logix")
+    win.new()
     monkeypatch.setattr("plcyard.ui.main_window.QInputDialog.getText", lambda *a, **k: ("Pump", True))
     win._tree_action("add_type", None)
     doc = win.doc
@@ -575,47 +528,47 @@ def test_F14_H3_data_type_and_array_tags(win, monkeypatch):
 
 
 def test_F14_H4_force_an_input_from_the_tag_list(win, qtbot):
-    win.open(str(SAMPLES / "start-stop.rsl"))
+    win.open(str(SAMPLES / "start-stop.plcy"))
     win.download()
     go(win, "RUN")
-    win.force("I:1/0", True)
+    win.force("%I0.0", True)
     run(win, 50)
     win._refresh()
     assert win.sim_view.lamps[(2, 0)].on and not win.panel.forces.isHidden()
-    win.force("N7:0/0", True)
-    assert "only I/O bits" in win.statusBar().currentMessage()
+    win.force("%M0.0", True)
+    assert "only I/O points" in win.statusBar().currentMessage()
     win.remove_forces()
     assert win.plc.forces == {}
 
 
 def test_F14_N1_bad_names_are_refused(win, monkeypatch):
-    win.new("logix")
+    win.new()
     add_routine(win, monkeypatch, "1bad", "SBR")
-    add_routine(win, monkeypatch, "MainRoutine", "SBR")
+    add_routine(win, monkeypatch, "Main", "SBR")
     assert len(win.program.files) == 1 and len(win.warnings) == 2
 
 
 # -- F15 drag inputs and outputs from the simulation onto the ladder ---------------------------------
 def test_F15_H1_drop_io_on_rungs_and_instructions(win):
-    win.new("logix")
+    win.new()
     c = win.canvas
     c.drop_address("Local:1:I.Data.0", ("newrung", 0))
     c.drop_address("Local:2:O.Data.3", (0, None, None, None))
     items = win.program.main.rungs[0].body.items
-    assert [(i.mnemonic, i.operands) for i in items] == [("XIC", ["Local:1:I.Data.0"]), ("OTE", ["Local:2:O.Data.3"])]
+    assert [(i.mnemonic, i.operands) for i in items] == [("XIC", ["%I0.0"]), ("OTE", ["%Q0.3"])]
     rect = c._instr_rect(0, (0,))
     target = c._address_target(rect.center(), "Local:1:I.Data.5")
     assert target[0] == "operand"
     c.drop_address("Local:1:I.Data.5", target)
-    assert win.program.main.rungs[0].body.items[0].operands == ["Local:1:I.Data.5"]
+    assert win.program.main.rungs[0].body.items[0].operands == ["%I0.5"]
     win.download()
     assert win.warnings == []
 
 
 def test_F15_H2_analog_channel_fills_a_value_operand(win):
-    win.new("s7")
+    win.new()
     win.bar.picked.emit("RUNG")
-    win.bar.picked.emit("MOVE")
+    win.bar.picked.emit("MOV")
     c = win.canvas
     rect = c._instr_rect(0, (0,))
     c.drop_address("%IW64", c._address_target(rect.center(), "%IW64"))
@@ -625,26 +578,27 @@ def test_F15_H2_analog_channel_fills_a_value_operand(win):
 
 def test_F15_H3_sim_widgets_carry_their_address(win):
     from plcyard.ui.io_drag import Draggable
-    win.new("s7")
+    win.set_notation("B")
     assert win.sim_view.switches[(1, 0)].address == "%I0.0"
     assert win.sim_view.lamps[(2, 1)].findChild(Draggable).address == "%Q0.1"
+    win.set_notation("A")
     win.select_sim("silo")
     win.sim_view.canvas.grab()
     assert win.sim_view.canvas.hotspot_at(win.sim_view.canvas._spots[0][0].center()) is not None
 
 
-# -- F16 online bar (RSLogix 500 / Studio 5000 style) -------------------------------------------------
+# -- F16 online bar -------------------------------------------------------------------------------------
 def test_F16_H1_offline_online_upload(win, monkeypatch):
-    win.open(str(SAMPLES / "start-stop.rsl"))
+    win.open(str(SAMPLES / "start-stop.plcy"))
     assert win.panel.online_btn.text() == "Offline"
     win.download()
     go(win, "RUN")
-    assert win.panel.online_btn.text() == "Rem Run" and win.panel.edits.text() == "No Edits"
+    assert win.panel.online_btn.text() == "Online · Run" and win.panel.edits.text() == "No Edits"
     win.go_offline()
     win.panel.mode.set_mode("PGM")
     assert win.plc.mode == Processor.RUN, "offline, the mode cannot be changed"
     win.go_online()
-    assert win.online and win.panel.online_btn.text() == "Rem Run"
+    assert win.online and win.panel.online_btn.text() == "Online · Run"
     win.bar.picked.emit("RUNG")
     assert win.panel.edits.text() == "Edits pending"
     monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.Discard)
@@ -654,13 +608,13 @@ def test_F16_H1_offline_online_upload(win, monkeypatch):
     assert win.panel.details.isHidden()
 
 
-def test_F16_H2_s7_shows_stop_run(win):
-    win.new("s7")
+def test_F16_H2_download_goes_online_in_program_mode(win):
+    win.new()
     win.bar.picked.emit("RUNG")
     win.bar.picked.emit("XIC")
     set_ops(win, "%I0.0")
     win.bar.picked.emit("OTE")
     set_ops(win, "%Q0.0")
     win.download()
-    assert win.panel.online_btn.text() == "Online · STOP"
-    assert [l.label.text() for l in win.panel.leds.values()][:3] == ["RUN/STOP", "MAINT", "ERROR"]
+    assert win.panel.online_btn.text() == "Online · Program"
+    assert [l.label.text() for l in win.panel.leds.values()] == ["RUN", "FORCE", "FAULT", "I/O"]

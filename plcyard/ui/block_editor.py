@@ -1,5 +1,5 @@
-"""Documents of the editor area: one routine or block in its language, the interface of an S7 block
-(shown above its code, as in TIA Portal) and a user data type's members."""
+"""Documents of the editor area: one routine or block in its language, the interface of a function
+or function block (shown above its code) and a user data type's members."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ class MembersTree(QWidget):
         raise NotImplementedError
 
     def default_type(self) -> str:
-        return "Bool" if self.program.profile == "s7" else "BOOL"
+        return "BOOL"
 
     # -- view --------------------------------------------------------------------------------
     def fill(self) -> None:
@@ -157,7 +157,7 @@ class MembersTree(QWidget):
 
 
 class InterfaceTree(MembersTree):
-    """Block interface (S7 FC/FB): Input, Output, InOut, Static (FB only), Temp."""
+    """Block interface (FC/FB): Input, Output, InOut, Static (FB only), Temp."""
 
     def __init__(self, program, number: int):
         f = program.files[number]
@@ -174,7 +174,7 @@ class InterfaceTree(MembersTree):
 
 
 class DataTypeDoc(MembersTree):
-    """Members of a user-defined data type (Logix UDT, S7 PLC data type)."""
+    """Members of a user-defined data type."""
 
     def __init__(self, program, name: str):
         super().__init__(None)
@@ -190,7 +190,7 @@ class DataTypeDoc(MembersTree):
 
 class RoutineDoc(QWidget):
     """One routine in its editor (ladder or structured text), with the interface above it for an
-    S7 function or function block."""
+    function or function block."""
 
     changed = Signal()
 

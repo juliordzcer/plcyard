@@ -6,8 +6,7 @@ from plcyard.formats import rsl
 
 
 def rung(tokens: str) -> Series:
-    text = f"FILE,LAD 2\r\nSOR,0 {tokens} EOR,0\r\nRCM,\r\nSOR,1 END,1\r\nRCM,\r\n"
-    return rsl.loads(text).main.rungs[0].body
+    return rsl.parse_rung_text(tokens)
 
 
 def dump(body: Series) -> str:
@@ -20,60 +19,62 @@ def test_new_instruction_has_unset_operands():
 
 
 def test_default_slot_puts_inputs_before_outputs():
-    b = rung("XIC,I:1/0 OTE,O:2/0")
-    edit.insert(b, edit.default_slot(b, "XIO"), Instr("XIO", ["I:1/1"]))
-    edit.insert(b, edit.default_slot(b, "OTL"), Instr("OTL", ["B3:0/0"]))
-    assert dump(b) == "XIC,I:1/0 XIO,I:1/1 OTE,O:2/0 OTL,B3:0/0"
+    b = rung("XIC,%I0.0 OTE,%Q0.0")
+    edit.insert(b, edit.default_slot(b, "XIO"), Instr("XIO", ["%I0.1"]))
+    edit.insert(b, edit.default_slot(b, "OTL"), Instr("OTL", ["Flag"]))
+    assert dump(b) == "XIC,%I0.0 XIO,%I0.1 OTE,%Q0.0 OTL,Flag"
 
 
 def test_wrap_and_add_leg_build_a_seal_in():
-    b = rung("XIC,I:1/1 XIC,I:1/0 OTE,O:2/0")
+    b = rung("XIC,%I0.1 XIC,%I0.0 OTE,%Q0.0")
     par = edit.wrap_in_branch(b, (1,))
     leg = edit.add_leg(b, par)
-    edit.insert(b, edit.Slot(par + (1,), 0), Instr("XIC", ["O:2/0"]))
-    assert dump(b) == "XIC,I:1/1 BST,1 XIC,I:1/0 NXB,1 XIC,O:2/0 NXB,1 BND,1 OTE,O:2/0"
+    edit.insert(b, edit.Slot(par + (1,), 0), Instr("XIC", ["%Q0.0"]))
+    assert dump(b) == "XIC,%I0.1 BST,1 XIC,%I0.0 NXB,1 XIC,%Q0.0 NXB,1 BND,1 OTE,%Q0.0"
     edit.remove(b, leg)
-    assert dump(b) == "XIC,I:1/1 BST,1 XIC,I:1/0 NXB,1 XIC,O:2/0 BND,1 OTE,O:2/0"
+    assert dump(b) == "XIC,%I0.1 BST,1 XIC,%I0.0 NXB,1 XIC,%Q0.0 BND,1 OTE,%Q0.0"
 
 
 def test_removing_a_leg_unwraps_single_leg_branch():
-    b = rung("BST,1 XIC,I:1/0 NXB,1 XIC,I:1/1 BND,1 OTE,O:2/0")
+    b = rung("BST,1 XIC,%I0.0 NXB,1 XIC,%I0.1 BND,1 OTE,%Q0.0")
     edit.remove(b, (0, 1, 0))      # empties leg 1 -> branch with an empty leg stays
     assert isinstance(b.items[0], Parallel)
     edit.remove(b, (0, 1))         # remove the empty leg -> unwrap
-    assert dump(b) == "XIC,I:1/0 OTE,O:2/0"
+    assert dump(b) == "XIC,%I0.0 OTE,%Q0.0"
 
 
 def test_move_instruction_within_rung():
-    b = rung("XIC,I:1/0 XIC,I:1/1 XIC,I:1/2 OTE,O:2/0")
+    b = rung("XIC,%I0.0 XIC,%I0.1 XIC,%I0.2 OTE,%Q0.0")
     new = edit.move(b, (0,), edit.Slot((), 3))
-    assert dump(b) == "XIC,I:1/1 XIC,I:1/2 XIC,I:1/0 OTE,O:2/0"
+    assert dump(b) == "XIC,%I0.1 XIC,%I0.2 XIC,%I0.0 OTE,%Q0.0"
     assert new == (2,)
 
 
 def test_move_into_branch_leg():
-    b = rung("XIC,I:1/5 BST,1 XIC,I:1/0 NXB,1 XIC,I:1/1 BND,1 OTE,O:2/0")
+    b = rung("XIC,%I0.5 BST,1 XIC,%I0.0 NXB,1 XIC,%I0.1 BND,1 OTE,%Q0.0")
     edit.move(b, (0,), edit.Slot((1, 1), 1))
-    assert dump(b) == "BST,1 XIC,I:1/0 NXB,1 XIC,I:1/1 XIC,I:1/5 BND,1 OTE,O:2/0"
+    assert dump(b) == "BST,1 XIC,%I0.0 NXB,1 XIC,%I0.1 XIC,%I0.5 BND,1 OTE,%Q0.0"
 
 
 def test_cannot_move_branch_into_itself():
-    b = rung("BST,1 XIC,I:1/0 NXB,1 XIC,I:1/1 BND,1 OTE,O:2/0")
+    b = rung("BST,1 XIC,%I0.0 NXB,1 XIC,%I0.1 BND,1 OTE,%Q0.0")
     with pytest.raises(edit.EditError):
         edit.move(b, (0,), edit.Slot((0, 1), 0))
 
 
 def test_toggle_and_operands():
-    b = rung("XIC,I:1/0 TON,?,?")
+    b = rung("XIC,%I0.0 TON,?,?")
     edit.toggle_contact(b, (0,))
     assert b.items[0].mnemonic == "XIO"
-    assert edit.set_operands(b, (1,), ["t4:0", "30"]) == []
-    assert b.items[1].operands == ["T4:0", "30"]
-    assert edit.set_operands(b, (1,), ["N7:0", ""])   # problems reported
+    prog = Program.new()
+    prog.tags = {"Delay": {"type": "TIMER"}, "Count": {"type": "DINT"}}
+    assert edit.set_operands(b, (1,), ["Delay", "T#3s"], program=prog) == []
+    assert b.items[1].operands == ["Delay", "T#3s"]
+    assert edit.set_operands(b, (1,), ["Count", ""], program=prog)   # problems reported
 
 
 def test_navigation_order():
-    b = rung("XIC,I:1/0 BST,1 XIC,I:1/1 NXB,1 XIC,I:1/2 BND,1 OTE,O:2/0")
+    b = rung("XIC,%I0.0 BST,1 XIC,%I0.1 NXB,1 XIC,%I0.2 BND,1 OTE,%Q0.0")
     assert edit.instructions_in_order(b) == [(0,), (1, 0, 0), (1, 1, 0), (2,)]
 
 
@@ -82,7 +83,7 @@ def test_new_rung_and_download_of_edited_program():
     p = Program.new()
     k = edit.new_rung(p.main, 0)
     b = p.main.rungs[k].body
-    edit.insert(b, edit.default_slot(b, "XIC"), Instr("XIC", ["I:1/0"]))
-    edit.insert(b, edit.default_slot(b, "OTE"), Instr("OTE", ["O:2/0"]))
+    edit.insert(b, edit.default_slot(b, "XIC"), Instr("XIC", ["%I0.0"]))
+    edit.insert(b, edit.default_slot(b, "OTE"), Instr("OTE", ["%Q0.0"]))
     assert Processor().download(p) == []
-    assert "SOR,0 XIC,I:1/0 OTE,O:2/0 EOR,0" in rsl.dumps(p)
+    assert rsl.rung_text(p.main.rungs[0].body) == "XIC,%I0.0 OTE,%Q0.0"

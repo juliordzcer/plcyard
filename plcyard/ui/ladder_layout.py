@@ -1,7 +1,7 @@
 """Geometry for drawing a rung tree. No Qt: plain numbers, so it is unit-testable.
 
 Every item has its wire at WIRE_Y from its own top, so items in series line up.
-Trailing output instructions are pushed against the right rail, like RSLogix.
+Trailing output instructions are pushed against the right rail.
 
 Nodes are identified by a path of indices from the rung body: (k,) is the k-th
 item of the rung, (k, b) branch b of a parallel at k, (k, b, j) item j in it.
@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from ..core import isa
+from . import notation
 from ..core.program import Instr, Parallel, Series
 
 CONTACT_W, CONTACT_H = 96, 64
@@ -22,8 +23,8 @@ BLOCK_W = 160
 BRANCH_GAP = 14
 WIRE_Y = 26
 ROW_H = 17
-LIVE_ROWS = {"TON": ["Accum"], "TOF": ["Accum"], "RTO": ["Accum"], "CTU": ["Accum"], "CTD": ["Accum"],
-             "SQO": [], "SQC": [], "SQL": [], "PID": ["Setpoint", "Process Variable", "Output %"], "PID_Compact": ["Output"]}
+LIVE_ROWS = {"TON": ["Accum"], "TOF": ["Accum"], "RTO": ["Accum"], "TP": ["Accum"], "CTU": ["Accum"], "CTD": ["Accum"],
+             "SQO": [], "SQC": [], "SQL": [], "PID": ["Setpoint", "Process Variable", "Output %"]}
 
 Tag = tuple[tuple, str]   # (path, "in" | "out")
 
@@ -61,17 +62,17 @@ def is_block(ins: Instr, specs=None) -> bool:
 
 
 def block_rows(ins: Instr, specs=None) -> int:
-    """Operand rows plus live rows that are not already an operand (Logix shows Accum as one)."""
+    """Operand rows plus live rows that are not already an operand (a timer shows Accum as one)."""
     spec = (isa.SPECS if specs is None else specs).get(ins.mnemonic)
-    labels = spec.labels if spec else ()
+    labels = spec.labels[:len(ins.operands)] if spec else ()
     return max(len(ins.operands), 1) + len([r for r in LIVE_ROWS.get(ins.mnemonic, []) if r not in labels])
 
 
 def instr_size(ins: Instr, specs=None) -> tuple[float, float]:
     if is_block(ins, specs):
-        longest = max((len(o) for o in ins.operands), default=0)
-        return max(BLOCK_W, 86 + CHAR_W * longest + 8), 42 + ROW_H * block_rows(ins, specs)
-    text = ins.operands[0] if ins.operands else ""
+        longest = max((len(notation.show(o)) for o in ins.operands), default=0)
+        return max(BLOCK_W, 86 + CHAR_W * longest + 8 + 34), 42 + ROW_H * block_rows(ins, specs)
+    text = notation.show(ins.operands[0]) if ins.operands else ""
     return max(CONTACT_W, CHAR_W * len(text) + 16), CONTACT_H
 
 

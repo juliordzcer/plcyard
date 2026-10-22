@@ -31,13 +31,13 @@ class Rung:
 @dataclass
 class ProgramFile:
     number: int
-    kind: str = "LAD"          # LAD (main, file 2), SBR (subroutine / Logix routine), FC or FB (S7 blocks)
+    kind: str = "LAD"          # LAD (main, number 2), SBR (routine called with JSR), FC or FB (blocks)
     title: str | None = None   # None: header written without ':'
     rungs: list[Rung] = field(default_factory=list)   # END rung is implicit
     end_comment: str = ""
     language: str = "LD"       # LD (rungs) or ST (structured text in `source`)
     source: str = ""
-    interface: dict[str, dict[str, str]] = field(default_factory=dict)   # S7 FC/FB: section → {name: type}
+    interface: dict[str, dict[str, str]] = field(default_factory=dict)   # FC/FB: section → {name: type}
 
 
 @dataclass
@@ -46,21 +46,14 @@ class Program:
     symbols: dict[str, str] = field(default_factory=dict)
     tables: dict[str, list[str]] = field(default_factory=dict)   # BTBL/NTBL/FTBL raw values
     symbols_section: bool = True                                   # write SYMBOLS even when empty
-    profile: str = "slc500"                                        # controller family, see core/profiles
+    profile: str = "plcyard"                                       # the PLC (earlier styles are converted on load)
     tags: dict[str, dict] = field(default_factory=dict)            # tag-based controllers: {name: {type, value}}
     types: dict[str, dict[str, str]] = field(default_factory=dict)  # user data types: {name: {member: type}}
 
     @classmethod
-    def new(cls, profile: str = "slc500", language: str = "LD") -> "Program":
-        if profile != "slc500":             # tag-based controllers: one main routine, tags instead of tables
-            p = cls(profile=profile, symbols_section=False)
-            p.files[2] = ProgramFile(2, "LAD", "Main" if profile == "s7" else "MainRoutine", language=language)
-            return p
-        p = cls()
-        p.files[2] = ProgramFile(2, "LAD")
-        p.tables = {"BTBL": [], "NTBL": [], "FTBL": []}
-        for n in range(3, 10):
-            p.files[n] = ProgramFile(n, "SBR", "")
+    def new(cls, profile: str = "plcyard", language: str = "LD") -> "Program":
+        p = cls(symbols_section=False)
+        p.files[2] = ProgramFile(2, "LAD", "Main", language=language)
         return p
 
     @property

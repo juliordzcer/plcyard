@@ -11,8 +11,8 @@ level: 3
 
 | Address | Use |
 | --- | --- |
-| O:2/0, O:2/1, O:2/2 | direction A: red, amber, green |
-| O:2/4, O:2/5, O:2/6 | direction B: red, amber, green |
+| %Q0.0, %Q0.1, %Q0.2 | direction A: red, amber, green |
+| %Q0.4, %Q0.5, %Q0.6 | direction B: red, amber, green |
 
 ## Requirements
 

@@ -1,6 +1,6 @@
-"""PLCYard project files (.plcy): JSON with the controller profile, every program and its
-language, symbols and initial tables. Ladder rungs are stored as the same token text as .rsl
-("XIC,I:1/0 OTE,O:2/0") so they stay readable in a diff."""
+"""PLCYard project files (.plcy): JSON with every routine and its language, tags, data types and
+descriptions. Ladder rungs are stored as token text ("XIC,%I0.0 OTE,%Q0.0") so they stay readable
+in a diff. Files made for the earlier controller styles are converted on load."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def dumps(prog: Program) -> str:
     doc = {
         "format": FORMAT,
         "version": VERSION,
-        "profile": prog.profile,
+        "profile": profiles.DEFAULT,
         "programs": [
             {
                 "number": f.number,
@@ -39,7 +39,6 @@ def dumps(prog: Program) -> str:
         "tags": prog.tags,
         **({"types": prog.types} if prog.types else {}),
         "symbols": prog.symbols,
-        "tables": prog.tables,
     }
     return json.dumps(doc, indent=2, ensure_ascii=False) + "\n"
 
@@ -53,11 +52,11 @@ def loads(text: str) -> Program:
         raise PlcyError("not a PLCYard project")
     if doc.get("version", 0) > VERSION:
         raise PlcyError(f"made by a newer PLCYard (file version {doc['version']}); please update")
-    try:
-        profiles.get(doc.get("profile", profiles.DEFAULT))
-    except ValueError as e:
-        raise PlcyError(str(e)) from None
-    prog = Program(profile=doc.get("profile", profiles.DEFAULT))
+    from .convert import LEGACY, convert
+    style = doc.get("profile", profiles.DEFAULT)
+    if style not in (*LEGACY, profiles.DEFAULT):
+        raise PlcyError(f"unknown controller {style!r}")
+    prog = Program(profile=style)
     prog.symbols = dict(doc.get("symbols", {}))
     prog.tags = {k: dict(v) for k, v in doc.get("tags", {}).items()}
     prog.tables = {k: list(v) for k, v in doc.get("tables", {}).items()}
@@ -76,7 +75,7 @@ def loads(text: str) -> Program:
         prog.files[f.number] = f
     if 2 not in prog.files:
         raise PlcyError("no main program (number 2)")
-    return prog
+    return convert(prog)
 
 
 def load(path: str | Path) -> Program:

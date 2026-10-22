@@ -1,6 +1,6 @@
-"""PID shared by the controller profiles (Logix PID, S7 PID_Compact).
+"""PID algorithm of the PID instruction.
 
-Ideal (dependent) form, as PID_Compact and the Logix dependent equation use:
+Ideal (dependent) form:
     CV = Kc * (e + 1/Ti * ∫e dt - Td * dPV/dt)
 with e = SP - PV, times in seconds, derivative on the process variable (no kick on setpoint
 changes) and anti-windup by conditional integration: the integral stops growing while the output

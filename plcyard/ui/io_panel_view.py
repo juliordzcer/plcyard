@@ -60,7 +60,9 @@ class IoPanelView(QWidget):
             else:
                 w = Lamp("lamp-generic")
                 self.lamps[(slot, bit)] = w
-            tip = f"{addr} {self.symbols.get(addr, '')}".strip()
+            from ..core.plc import PLC
+            canon = PLC.io_name("I" if is_input else "O", slot, bit)
+            tip = f"{addr} {self.symbols.get(canon, self.symbols.get(addr, ''))}".strip()
             w.setToolTip(tip)
             w.setAccessibleName(tip)
             if not is_input:

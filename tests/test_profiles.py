@@ -113,7 +113,7 @@ def test_toy_check_blocks_download():
     plc = Processor()
     problems = plc.download(toy_program([("XIC", "Nope"), ("OTE", "Motor")]))
     assert problems and "unknown tag Nope" in str(problems[0])
-    assert plc.profile.name == "slc500", "a rejected download does not switch the controller"
+    assert plc.profile.name == "plcyard", "a rejected download does not switch the controller"
 
 
 def test_toy_memory_error_is_a_major_fault_with_the_profile_code():
@@ -125,16 +125,17 @@ def test_toy_memory_error_is_a_major_fault_with_the_profile_code():
     assert plc.mode == Processor.FAULT and plc.fault_code == 0x7777
 
 
-def test_switching_back_to_slc500():
+def test_switching_back_to_the_plc():
     plc, panel = Processor(), IoPanelModel()
     plc.device = panel
     plc.download(toy_program([("XIC", "Start"), ("OTE", "Motor")]))
-    slc = rsl.loads("FILE,LAD 2\r\nSOR,0 XIC,I:1/0 OTE,O:2/1 EOR,0\r\nRCM,\r\nSOR,1 END,1\r\nRCM,\r\n")
-    assert plc.download(slc) == [] and plc.profile.name == "slc500"
+    p = Program.new()
+    p.main.rungs = [Rung(rsl.parse_rung_text("XIC,%I0.0 OTE,%Q0.1"))]
+    assert plc.download(p) == [] and plc.profile.name == "plcyard"
     plc.set_mode(Processor.RUN)
     panel.set_pressed(1, 0, True)
     plc.tick(20)
-    assert panel.lamp(2, 1) and plc.dt.read_bit("O:2/1")
+    assert panel.lamp(2, 1) and plc.dt.read_bit("%Q0.1")
 
 
 def test_instruction_bar_shows_the_profile_instruction_set(qapp):

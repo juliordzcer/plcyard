@@ -1,21 +1,24 @@
-"""Controller profiles: one per PLC family, all running on the same scan engine."""
+"""The controller profile interface (base.py) and its registry. The PLC (core/plc) is the profile
+every program uses; the registry lets tests run other profiles on the same engine."""
 
 from __future__ import annotations
 
 from .base import Diagnostic, IODevice, Profile
-from .logix import LOGIX
-from .s7 import S7_PROFILE
-from .slc500 import SLC500
 
-DEFAULT = SLC500.name
-PROFILES: dict[str, Profile] = {p.name: p for p in (SLC500, LOGIX, S7_PROFILE)}
+DEFAULT = "plcyard"
+PROFILES: dict[str, Profile] = {}
 
 
-def get(name: str) -> Profile:
+def get(name: str | None = None) -> Profile:
+    """A profile by name; the PLC by default. Programs of earlier controller styles are converted
+    on load (formats/convert.py)."""
+    if DEFAULT not in PROFILES:
+        from ..plc import PLC
+        PROFILES[DEFAULT] = PLC
     try:
-        return PROFILES[name]
+        return PROFILES[name or DEFAULT]
     except KeyError:
-        raise ValueError(f"unknown controller profile {name!r}") from None
+        raise ValueError(f"unknown controller {name!r}") from None
 
 
 def register(profile: Profile) -> None:

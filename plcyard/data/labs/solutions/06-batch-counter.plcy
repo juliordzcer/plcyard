@@ -1,0 +1,38 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "LD",
+      "rungs": [
+        {
+          "text": "XIC,%I0.0 CTU,Counters[0],5",
+          "comment": ""
+        },
+        {
+          "text": "XIC,Counters[0].DN OTE,%Q0.0",
+          "comment": ""
+        },
+        {
+          "text": "XIC,%I0.1 RES,Counters[0]",
+          "comment": ""
+        },
+        {
+          "text": "TOD,Counters[0].ACC,%QW4",
+          "comment": ""
+        }
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "Counters": {
+      "type": "COUNTER[1]"
+    }
+  },
+  "symbols": {}
+}

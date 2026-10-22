@@ -3,7 +3,7 @@ title: Tank level with on/off control
 simulation: tank
 level: 3
 symbols:
-- I:1/1 Stop (NC)
+- %I0.1 Stop (NC)
 ---
 # 11. Tank level with on/off control
 
@@ -14,13 +14,13 @@ thermostat works: on below one value, off above another.
 
 | Address | Device |
 | --- | --- |
-| I:1/0 | Start (NO pushbutton) |
-| I:1/1 | Stop (NC pushbutton) |
-| I:1/2 | High level switch (level ≥ 90 %) |
-| I:7 | Level, analog: 0-16383 = 0-100 % |
-| O:2/0 | Pump |
-| O:2/1 | Run light |
-| O:2/2 | High alarm light |
+| %I0.0 | Start (NO pushbutton) |
+| %I0.1 | Stop (NC pushbutton) |
+| %I0.2 | High level switch (level ≥ 90 %) |
+| %IW64 | Level, analog: 0-27648 = 0-100 % |
+| %Q0.0 | Pump |
+| %Q0.1 | Run light |
+| %Q0.2 | High alarm light |
 
 ## Requirements
 
@@ -32,7 +32,7 @@ thermostat works: on below one value, off above another.
 
 ## Hints
 
-- 40 % of 16383 is 6553; 60 % is 9830.
-- Compare with LES and GRT, and remember the pump state with OTL/OTU (or a seal-in): between
+- 40 % of 27648 is 11059; 60 % is 16589.
+- Compare with `LES` and `GRT`, and remember the pump state with `OTL`/`OTU` (or a seal-in): between
   40 % and 60 % neither condition is true, and the pump must keep doing what it was doing. That
   gap is the *hysteresis*; without it the pump would chatter on and off.

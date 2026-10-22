@@ -96,8 +96,8 @@ def settle(plc, tank, seconds):
     return tank.level
 
 
-def program(profile, rungs, tags=None):
-    p = Program(profile=profile, tags=tags or {})
+def program(rungs, tags=None):
+    p = Program(tags=tags or {})
     p.files[2] = ProgramFile(2, "LAD", "Main", rungs=[Rung(rsl.parse_rung_text(r)) for r in rungs])
     return p
 
@@ -111,10 +111,10 @@ def run(prog, sp=60.0):
     return plc, tank
 
 
-def test_logix_pid_holds_the_level_through_a_disturbance():
-    plc, tank = run(program("logix", [
-        "MUL,Local:7:I.Ch0Data,10.0,PV", "MUL,Local:7:I.Ch1Data,10.0,LevelPID.SP",
-        "PID,LevelPID,PV,0,Out,0,0,0", "DIV,Out,10.0,Local:8:O.Ch0Data"],
+def test_pid_holds_the_level_through_a_disturbance():
+    plc, tank = run(program([
+        "DIV,%IW64,276.48,PV", "DIV,%IW66,276.48,LevelPID.SP",
+        "PID,LevelPID,PV,Out", "MUL,Out,276.48,%QW64"],
         {"PV": {"type": "REAL"}, "Out": {"type": "REAL"},
          "LevelPID": {"type": "PID", "value": {"KP": 4, "TI": 15}}}))
     assert abs(settle(plc, tank, 60) - 60) < 2
@@ -123,79 +123,39 @@ def test_logix_pid_holds_the_level_through_a_disturbance():
     assert plc.dt.element("LevelPID")["SP"] == pytest.approx(60.0, abs=0.01)
 
 
-def test_s7_pid_compact_with_raw_analog_scaling():
-    plc, tank = run(program("s7", [
+def test_pid_with_setpoint_operand_and_normalize_scale():
+    plc, tank = run(program([
         "NORM_X,0,%IW64,27648,Norm SCALE_X,0.0,Norm,100.0,Level",
         "NORM_X,0,%IW66,27648,NormSp SCALE_X,0.0,NormSp,100.0,Setpoint",
-        "PID_Compact,LevelPID,Setpoint,Level,Out",
+        "PID,LevelPID,Level,Out,Setpoint",
         "NORM_X,0.0,Out,100.0,NormOut SCALE_X,0,NormOut,27648,%QW64"],
-        {"Norm": {"type": "Real"}, "Level": {"type": "Real"}, "NormSp": {"type": "Real"},
-         "Setpoint": {"type": "Real"}, "Out": {"type": "Real"}, "NormOut": {"type": "Real"},
-         "LevelPID": {"type": "PID_Compact", "value": {"Gain": 4, "Ti": 15}}}), sp=40.0)
+        {"Norm": {"type": "REAL"}, "Level": {"type": "REAL"}, "NormSp": {"type": "REAL"},
+         "Setpoint": {"type": "REAL"}, "Out": {"type": "REAL"}, "NormOut": {"type": "REAL"},
+         "LevelPID": {"type": "PID", "value": {"KP": 4, "TI": 15}}}), sp=40.0)
     assert abs(settle(plc, tank, 80) - 40) < 2
     assert plc.dt.read_word("%IW66") == round(0.4 * 27648)
 
 
-def test_slc_on_off_control_with_hysteresis():
-    plc, tank = run(program("slc500", [
-        "LES,I:7,6553 OTL,B3:0/0",                 # below 40 % (6553 of 16383): pump on
-        "GRT,I:7,9830 OTU,B3:0/0",                 # above 60 %: pump off
-        "XIC,B3:0/0 OTE,O:2/0"]))
+def test_on_off_control_with_hysteresis():
+    plc, tank = run(program([
+        "LES,%IW64,11059 OTL,%M0.0",                 # below 40 % (11059 of 27648): pump on
+        "GRT,%IW64,16589 OTU,%M0.0",                 # above 60 %: pump off
+        "XIC,%M0.0 OTE,%Q0.0"]))
     lo, hi = 100.0, 0.0
     settle(plc, tank, 60)
     for _ in range(6000):
         plc.tick(10)
         lo, hi = min(lo, tank.level), max(hi, tank.level)
     assert 30 < lo < 42 and 58 < hi < 70, (lo, hi)
-    assert plc.dt.read_word("I:6") == round(0.6 * 16383)
 
 
-def test_slc_analog_output_drives_the_valve():
-    plc, tank = run(program("slc500", ["MOV,16383,O:7"]))
+def test_analog_output_drives_the_valve():
+    plc, tank = run(program(["MOV,13824,%QW64"]))
     settle(plc, tank, 1)
     assert tank.valve == pytest.approx(50.0, abs=0.1)
 
 
-# -- SLC 500 PID (control block in an N file) ------------------------------------------------------
-def slc_tank_program(kc=20, ti=5, update=10):
-    from plcyard.core.program import Program, ProgramFile, Rung
-    from plcyard.formats import rsl
-    p = Program.new()
-    p.files[2] = ProgramFile(2, "LAD", rungs=[Rung(rsl.parse_rung_text(t)) for t in [
-        "XIC,S:1/15 MOV,%d,N7:103 MOV,%d,N7:104 MOV,%d,N7:113" % (kc, ti, update),
-        "MOV,I:6,N7:102",
-        "PID,N7:100,I:7,N7:0",
-        "MUL,N7:0,2,O:7",
-    ]])
-    return p
-
-
-def test_slc_pid_needs_a_23_word_control_block():
-    from plcyard.core.processor import Processor
-    p = slc_tank_program()
-    p.files[2].rungs[2] = __import__("plcyard.core.program", fromlist=["Rung"]).Rung(
-        __import__("plcyard.formats.rsl", fromlist=["x"]).parse_rung_text("PID,N7:250,I:7,N7:0"))
-    assert any("23 words" in str(d) for d in Processor().download(p))
-
-
-def test_slc_pid_holds_the_tank_level():
-    from plcyard.core.processor import Processor
-    from plcyard.sims.tank import TankModel
-    plc, tank = Processor(), TankModel()
-    plc.device = tank
-    tank.level, tank.setpoint_knob = 20.0, 60.0
-    assert plc.download(slc_tank_program()) == []
-    plc.set_mode(Processor.RUN)
-    for _ in range(12000):
-        plc.tick(10)
-    assert abs(tank.level - 60.0) <= 2.0, tank.level
-    assert plc.dt.read_bit("N7:100/15") and plc.dt.read_word("N7:101") == 0
-
-
-def test_slc_pid_without_loop_update_time_reports_error_11h():
-    from plcyard.core.processor import Processor
-    plc = Processor()
-    assert plc.download(slc_tank_program(update=0)) == []
-    plc.set_mode(Processor.RUN)
-    plc.tick(30)
-    assert plc.dt.read_word("N7:101") == 0x11 and plc.dt.read_word("N7:0") == 0
+def test_module_names_reach_the_same_channels():
+    plc, tank = run(program(["MOV,Local:7:I.Ch0Data,Raw", "MOV,27648,Local:8:O.Ch0Data"], {"Raw": {"type": "INT"}}))
+    settle(plc, tank, 1)
+    assert plc.dt.read_word("Raw") == plc.dt.read_word("%IW64") and tank.valve == pytest.approx(100.0, abs=0.1)

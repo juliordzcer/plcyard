@@ -11,13 +11,13 @@ level: 2
 
 | Address | Device |
 | --- | --- |
-| I:1/0 | Start (NO pushbutton) |
-| I:1/1 | Stop (NC pushbutton) |
-| I:1/3 | Proximity sensor: box under the hopper |
-| I:1/4 | Level sensor: box full |
-| O:2/0 | Conveyor motor |
-| O:2/1 | Fill valve |
-| O:2/2 | Run light · O:2/3 Fill light · O:2/4 Full light |
+| %I0.0 | Start (NO pushbutton) |
+| %I0.1 | Stop (NC pushbutton) |
+| %I0.3 | Proximity sensor: box under the hopper |
+| %I0.4 | Level sensor: box full |
+| %Q0.0 | Conveyor motor |
+| %Q0.1 | Fill valve |
+| %Q0.2 | Run light · %Q0.3 Fill light · %Q0.4 Full light |
 
 ## Requirements
 

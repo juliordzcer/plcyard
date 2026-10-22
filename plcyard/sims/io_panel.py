@@ -34,8 +34,10 @@ class IoPanelModel:
 
     def configure_from_symbols(self, symbols: dict[str, str], io_name=None) -> None:
         """Wire switches as the program expects: 'Stop (NC)', 'Open - NO,PB', 'Stop (NC, pushbutton)'.
-        `io_name(direction, slot, bit)` names an input point (SLC "I:1/0" by default)."""
-        io_name = io_name or (lambda d, s, b: f"{d}:{s}/{b}")
+        `io_name(direction, slot, bit)` names an input point (%I0.0 by default)."""
+        if io_name is None:
+            from ..core.plc import PLC
+            io_name = PLC.io_name
         points = {io_name("I", s, b).upper(): (s, b) for s in INPUT_SLOTS for b in range(16)}
         for addr, desc in symbols.items():
             point = points.get(addr.strip().upper())

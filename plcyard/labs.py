@@ -21,17 +21,16 @@ class Lab:
     body: str
     symbols: dict[str, str] = field(default_factory=dict)
     path: Path | None = None
-    controller: str = "slc500"
 
     def starter(self) -> Program:
-        """Empty program for the exercise's controller with its symbols, so switches come wired."""
-        p = Program.new(self.controller)
+        """Empty program with the exercise's symbols, so switches come wired."""
+        p = Program.new()
         p.symbols = dict(self.symbols)
         return p
 
     @property
     def solution(self) -> Path | None:
-        """Reference solution: labs/solutions/<same name as the exercise>.rsl or .plcy."""
+        """Reference solution: labs/solutions/<same name as the exercise>.plcy."""
         if not self.path:
             return None
         base = self.path.parent.parent / "solutions" / self.path.stem
@@ -54,7 +53,7 @@ def parse(text: str, lab_id: str = "") -> Lab:
                 key = key.strip()
                 head[key] = val.strip()
     return Lab(lab_id, head.get("title", lab_id), head.get("simulation", "io"),
-               int(head.get("level", 1)), body.strip(), symbols, controller=head.get("controller", "slc500"))
+               int(head.get("level", 1)), body.strip(), symbols)
 
 
 def load_all(lang: str = "en", root: Path = ROOT) -> list[Lab]:

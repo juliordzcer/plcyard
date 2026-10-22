@@ -1,4 +1,4 @@
-"""Drag an input or output from a simulation onto the ladder, as in LogixPro: dropped on an
+"""Drag an input or output from a simulation onto the ladder: dropped on an
 instruction it becomes the operand, dropped on a rung it adds a contact (input) or a coil (output)."""
 
 from __future__ import annotations

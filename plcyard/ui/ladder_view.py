@@ -14,8 +14,7 @@ from PySide6.QtWidgets import (QCompleter, QFormLayout, QFrame, QInputDialog, QL
 
 from ..core import edit, profiles
 from ..core.profiles.base import parse_param
-from . import io_drag
-from ..core.datatable import DataTable
+from . import io_drag, notation
 from ..core.program import Instr, Parallel, Program, ProgramFile, walk
 from . import theme
 from .ladder_layout import RungGeometry, is_block, layout_rung, natural_width
@@ -71,7 +70,7 @@ class OperandEditor(QFrame):
         self.fields: list[QLineEdit] = []
         known = sorted(canvas.known_addresses())
         for k, (kind, label) in enumerate(zip(spec.operands, spec.labels)):
-            val = ins.operands[k] if k < len(ins.operands) else ""
+            val = notation.show(ins.operands[k], canvas.program) if k < len(ins.operands) else ""
             f = QLineEdit("" if val == "?" else val)
             f.setFont(theme.font("mono", "base"))
             f.setPlaceholderText(canvas.profile.kinds.get(kind, ""))
@@ -102,7 +101,7 @@ class OperandEditor(QFrame):
 
     def _values(self) -> list[str]:
         spec = self.canvas.specs[self.ins.mnemonic]
-        vals = [self.canvas.profile.normalize(f.text()) for f in self.fields]
+        vals = [notation.store(f.text(), self.canvas.program) if f.text().strip() else "" for f in self.fields]
         need = len(spec.operands) - spec.optional
         while len(vals) > need and not vals[-1]:
             vals.pop()
@@ -146,7 +145,7 @@ class LadderCanvas(QWidget):
         super().__init__()
         self.program: Program | None = None
         self.file_no = 2
-        self.dt: DataTable | None = None
+        self.dt = None                       # the PLC memory while live
         self.trace: dict = {}
         self.live = False
         self.undo = QUndoStack(self)
@@ -184,7 +183,7 @@ class LadderCanvas(QWidget):
         self.sel = None
         self._relayout()
 
-    def set_live(self, dt: DataTable | None, live: bool, trace: dict | None = None) -> None:
+    def set_live(self, dt, live: bool, trace: dict | None = None) -> None:
         """live: highlight from the PLC; trace only when the PLC runs this exact program."""
         self.dt, self.live, self.trace = dt, live, trace or {}
         self.update()
@@ -196,7 +195,7 @@ class LadderCanvas(QWidget):
             out.update(f.title for n, f in self.program.files.items() if n != 2 and f.title)
             f = self.file
             if f is not None:
-                out.update(("#" if self.program.profile == "s7" else "") + n
+                out.update("#" + n
                            for sec in f.interface.values() for n in sec)
             for f in self.program.files.values():
                 for r in f.rungs:
@@ -527,7 +526,7 @@ class LadderCanvas(QWidget):
                 p.setFont(theme.font("sans", "sm"))
                 p.setPen(theme.color("comment-text"))
                 p.drawText(QRectF(left, row.top, rails, row.rung_y - row.top),
-                           Qt.AlignLeft | Qt.TextWordWrap, rung.comment)
+                           Qt.AlignLeft | Qt.TextWordWrap, notation.show_comment(rung.comment))
             self._paint_rung(p, left, row.rung_y, rails, row.height, n, selected_rung)
             off, on = QPen(theme.color("wire"), 2), QPen(theme.color("energized"), 3)
             for w in sorted(row.geom.wires, key=lambda w: self._wire_on(n, w.tag)):
@@ -540,18 +539,22 @@ class LadderCanvas(QWidget):
                 spec = self.specs.get(ins.mnemonic)
                 on_ = bool(hit and hit[1]) if is_block(ins, self.specs) else self._energized(spec, ins.operands)
                 sel = self.sel is not None and self.sel[0] == "instr" and self.sel[1] == n and self.sel[2] == pl.path
-                title, ops, labels = ins.mnemonic, ins.operands, list(spec.labels) if spec else None
-                if ins.mnemonic == "CALL" and ops:          # TIA: the block (or its instance) heads the box
-                    params = [parse_param(o) or ("", "", o) for o in ops[1:]]
+                title = notation.mnemonic(ins.mnemonic)
+                ops = [notation.show(o, self.program) for o in ins.operands]
+                labels = notation.labels(ins.mnemonic, list(spec.labels)) if spec else None
+                if ins.mnemonic == "CALL" and ops:          # the block (or its instance) heads the box
+                    params = [parse_param(o) or ("", "", o) for o in ins.operands[1:]]
                     title, labels = ops[0], [f"{n} {'→' if arrow == '=>' else '←'}" if n else "" for n, arrow, _ in params]
-                    ops = [v for _, _, v in params]
+                    ops = [notation.show(v, self.program) for _, _, v in params]
+                extra = [(notation.live_label(k, ins.mnemonic), v) for k, v in extra]
+                pins = [(notation.pin(k), on) for k, on in pins if notation.pin(k)]
                 paint_instruction(
                     p, QRectF(left + pl.x, row.rung_y + pl.y, pl.w, pl.h), title, ops,
                     symbols.get(ins.operands[0], "") if ins.operands else "",
                     energized=on_, selected=sel,
                     labels=labels,
                     extra=extra, pins=pins, shape=spec.shape if spec else "block",
-                    letter=spec.letter if spec else "")
+                    letter=notation.letter(ins.mnemonic, spec.letter) if spec else "")
         self._paint_drop(p)
 
     def _paint_drop(self, p: QPainter) -> None:
@@ -648,9 +651,6 @@ class LadderCanvas(QWidget):
         menu.addSeparator()
         add("Insert rung below", self.new_rung, True, "Ins")
         add("Edit rung comment…", self.edit_comment, has_rung)
-        if ins and ins.operands and ":" in ins.operands[0] and self.profile.name == "slc500":
-            menu.addSeparator()
-            add("Go to data table", lambda: self.window().show_address(ins.operands[0]))
         win = self.window()
         if ins and ins.mnemonic in ("JSR", "CALL") and ins.operands and hasattr(win, "open_routine_named"):
             menu.addSeparator()
@@ -758,7 +758,7 @@ class LadderCanvas(QWidget):
             self._drop_new(data, target)
         self.update()
 
-    # -- I/O dragged from a simulation (LogixPro style) -----------------------------------
+    # -- I/O dragged from a simulation ---------------------------------------------------
     BIT_KINDS = ("bit", "bool", "bool_opt")
     WORD_KINDS = ("value", "word", "value_opt")
     OUT_KINDS = ("dest", "word", "dest_opt")

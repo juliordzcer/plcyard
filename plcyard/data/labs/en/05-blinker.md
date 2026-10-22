@@ -3,8 +3,8 @@ title: Blinking light with timers
 simulation: io
 level: 2
 symbols:
-- I:1/0 Enable
-- O:2/0 Blinking light
+- %I0.0 Enable
+- %Q0.0 Blinking light
 ---
 # 5. Blinking light with timers
 
@@ -12,11 +12,12 @@ symbols:
 
 ## Requirements
 
-1. With I:1/0 closed, O:2/0 is on for 1 s and off for 1 s, repeating.
-2. Opening I:1/0 turns the light off and restarts the cycle.
+1. With %I0.0 closed, %Q0.0 is on for 1 s and off for 1 s, repeating.
+2. Opening %I0.0 turns the light off and restarts the cycle.
 
 ## Hints
 
-- The time base is 0.1 s: a preset of 10 is 1 s.
+- Declare two TIMER tags (Ctrl+T opens the tag list). Presets are in milliseconds: 1000 is
+  1 s, and T#1s works too.
 - The DN bit of the second timer can reset the first one.
-- Watch the EN, TT and DN bits in the data table (Ctrl+T) at a low speed.
+- Open a timer in the tag list to watch its EN, TT and DN bits at a low speed.

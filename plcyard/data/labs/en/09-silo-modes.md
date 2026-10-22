@@ -5,7 +5,7 @@ level: 3
 ---
 # 9. Operating modes with a selector
 
-**Goal:** one process, three modes chosen with the A/B/C selector (I:1/5, I:1/6, I:1/7).
+**Goal:** one process, three modes chosen with the A/B/C selector (%I0.5, %I0.6, %I0.7).
 
 ## Requirements
 
@@ -17,4 +17,4 @@ level: 3
 
 ## Hints
 
-- In mode B you must remember the Start tap until the box leaves the sensor (OTL/OTU on a B3 bit).
+- In mode B you must remember the Start tap until the box leaves the sensor (`OTL`/`OTU` on a BOOL tag).

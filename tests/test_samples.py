@@ -22,8 +22,8 @@ def test_every_example_downloads_and_runs(path):
     assert plc.mode == Processor.RUN, plc.fault
 
 
-@pytest.mark.parametrize("name,lab", [("traffic-lights-logix.plcy", "10"), ("traffic-lights.rsl", "10"),
-                                      ("silo-s7.plcy", "08"), ("silo.rsl", "08")])
+@pytest.mark.parametrize("name,lab", [("traffic-lights-routines.plcy", "10"), ("traffic-lights.plcy", "10"),
+                                      ("silo-function-block.plcy", "08"), ("silo.plcy", "08")])
 def test_examples_pass_the_matching_exercise_checks(name, lab):
     report = grader.grade(LABS[lab], formats.load(labs.SAMPLES / name))
     assert report.passed, (report.error, [(c.requirement, c.detail) for c in report.checks if not c.passed])
@@ -32,7 +32,7 @@ def test_examples_pass_the_matching_exercise_checks(name, lab):
 def test_motor_starter_instances_are_independent():
     plc, panel = Processor(), IoPanelModel()
     plc.device = panel
-    assert plc.download(formats.load(labs.SAMPLES / "motor-starters-fb-s7.plcy")) == []
+    assert plc.download(formats.load(labs.SAMPLES / "motor-starters-function-block.plcy")) == []
     plc.set_mode(Processor.RUN)
     panel.set_pressed(1, 0, True)
     for _ in range(5):
@@ -46,7 +46,7 @@ def test_motor_starter_instances_are_independent():
 def test_recipe_example_times_come_from_the_array():
     plc, panel = Processor(), IoPanelModel()
     plc.device = panel
-    assert plc.download(formats.load(labs.SAMPLES / "recipes-udt-logix.plcy")) == []
+    assert plc.download(formats.load(labs.SAMPLES / "recipes-data-type.plcy")) == []
     plc.set_mode(Processor.RUN)
     panel.set_pressed(1, 1, True)                # recipe 1: fill 4 s
     panel.set_pressed(1, 0, True)
@@ -60,11 +60,11 @@ def test_recipe_example_times_come_from_the_array():
     assert panel.lamp(2, 1) and not panel.lamp(2, 0), "mixing after 4 s"
 
 
-def test_slc_pid_example_holds_the_level():
+def test_pid_example_holds_the_level():
     plc, tank = Processor(), TankModel()
     plc.device = tank
     tank.level, tank.setpoint_knob = 30.0, 50.0
-    assert plc.download(formats.load(labs.SAMPLES / "tank-pid-slc.rsl")) == []
+    assert plc.download(formats.load(labs.SAMPLES / "tank-pid-structured-text.plcy")) == []
     plc.set_mode(Processor.RUN)
     for _ in range(12000):
         plc.tick(10)

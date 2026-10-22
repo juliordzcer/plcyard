@@ -1,0 +1,37 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "MainRoutine",
+      "language": "ST",
+      "source": "(* Tank level with a PID loop, in structured text.\n   Choose Simulations > Tank level, then move the setpoint knob and the outlet. *)\nLevel := INT_TO_REAL(%IW64) / 27648.0 * 100.0;        // 0-27648 -> 0-100 %\nSetpoint := INT_TO_REAL(%IW66) / 27648.0 * 100.0;\n\nLevelPID.PID(SP := Setpoint, PV := Level, CV => Valve);\n%QW64 := REAL_TO_INT(Valve / 100.0 * 27648.0);         // 0-100 % -> 0-27648\n\n// High level alarm with 5 % hysteresis.\nIF Level > 90.0 THEN\n    Alarm := TRUE;\nELSIF Level < 85.0 THEN\n    Alarm := FALSE;\nEND_IF;\n"
+    }
+  ],
+  "tags": {
+    "Level": {
+      "type": "REAL"
+    },
+    "Setpoint": {
+      "type": "REAL"
+    },
+    "Valve": {
+      "type": "REAL"
+    },
+    "LevelPID": {
+      "type": "PID",
+      "value": {
+        "KP": 4,
+        "TI": 15
+      }
+    },
+    "Alarm": {
+      "type": "BOOL",
+      "address": "%Q0.2"
+    }
+  },
+  "symbols": {}
+}

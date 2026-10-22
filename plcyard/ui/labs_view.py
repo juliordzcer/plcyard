@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (QHBoxLayout, QListWidget, QListWidgetItem, QPushB
 from PySide6.QtCore import Qt
 
 from .. import labs
-from ..core import profiles
+from . import notation
 
 SIM_NAMES = {"io": "I/O panel", "silo": "Silo", "traffic": "Traffic lights", "tank": "Tank level"}
 
@@ -27,8 +27,7 @@ class LabsView(QWidget):
         self.list = QListWidget()
         for lab in self.items:
             it = QListWidgetItem(f"{lab.id}. {lab.title}")
-            it.setToolTip(f"Level {lab.level}, simulation: {SIM_NAMES[lab.simulation]}, controller: "
-                          f"{profiles.get(lab.controller).title}")
+            it.setToolTip(f"Level {lab.level}, simulation: {SIM_NAMES[lab.simulation]}")
             self.list.addItem(it)
         self.text = QTextBrowser()
         self.text.setOpenExternalLinks(True)
@@ -63,9 +62,12 @@ class LabsView(QWidget):
         i = self.list.currentRow()
         return self.items[i] if 0 <= i < len(self.items) else None
 
+    def refresh_text(self) -> None:
+        self._show(self.list.currentRow())
+
     def _show(self, i: int) -> None:
         if 0 <= i < len(self.items):
-            self.text.setMarkdown(self.items[i].body)
+            self.text.setMarkdown(notation.show_text(self.items[i].body))
             self.result.hide()
 
     def show_report(self, report) -> None:

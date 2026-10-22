@@ -1,6 +1,5 @@
 # TODO
 
-Planned after the first release. The current SLC 500-style ladder trainer stays as it is until then.
 How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Before announcing
@@ -18,30 +17,17 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [ ] Post where learners ask how to practise without hardware (see the subreddit rules first),
       Show HN.
 
-## Modern PLC models
-- [x] Phase 1: controller profiles on a shared scan engine, `.plcy` project files.
-- [x] Phase 2: Logix and S7 profiles in ladder, tag list, controller-aware editor and simulations.
-- [x] Phase 3: PID (Logix PID, S7 PID_Compact), analog I/O, tank simulation with trend, exercises 11-12.
-- [x] Phase 4: structured text (ST / SCL) for Logix and S7, editor with live watch list.
-- [x] Several routines per program, mixed languages: add, rename and delete routines and blocks from
-      the project tree, each in LD or ST; `JSR` on Logix, FC/FB calls on S7, from ladder and ST.
-- [x] SLC 500 PID instruction (control block in an N file); a PID exercise for S7 (13).
-- [x] Forcing I/O; arrays and user structures; Logix routines (JSR); S7 FBs/DBs.
-- [x] Controller profiles beyond SLC 500: Logix (Studio 5000) and S7-1200/1500 (TIA Portal).
-- [x] Interface like Studio 5000 / TIA Portal: project tree, routines in tabs, block interface above
-      the code, Studio 5000's PID block operands.
-- [x] Examples: traffic lights and silo for each controller family, FB instances, UDT recipes, SLC PID.
+## The PLC
+- [x] One PLC with tags, data types, arrays, routines, functions and function blocks; two notations
+      (mnemonics / IEC symbols) chosen in Tools → Options; older programs converted on load.
+- [x] Ladder and structured text, several routines per program in either language.
+- [x] PID, analog I/O, tank simulation with trend; exercises 1-13.
+- [x] Forcing I/O; online bar; drag I/O from the simulations onto the ladder; examples.
+- [ ] PID setup dialog (tuning, configuration, scaling, alarms) for the PID instruction.
 - [ ] **Next — Phase 5:** function block diagram (FBD), see docs/ROADMAP.md.
-- [ ] Instruction blocks still missing: ramps, CTUD, R_TRIG / F_TRIG boxes, strings, date/time;
-      Logix Add-On Instructions; JSR with parameters; FC return values.
-- [x] PID exercise with a process simulation (tank level) to tune against.
-
-## Three programming languages (IEC 61131-3)
-- [x] Ladder (LD): done.
-- [ ] Function block diagram (FBD): both Allen-Bradley (Studio 5000) and Siemens (TIA Portal) have it.
-- [x] Structured text: Allen-Bradley calls it ST, Siemens calls it SCL. Same language family,
-      Pascal-like; one dialect close to both.
-- [ ] Same exercises solvable in all three, so a learner can compare them.
+- [ ] Instructions still missing: ramps, CTUD, R_TRIG / F_TRIG boxes, strings, date/time;
+      routines with parameters; function return values.
+- [ ] Same exercises solvable in ladder, structured text and FBD, so a learner can compare them.
 
 ## Documentation
 - [ ] Wiki: getting started, every instruction with an example, how the scan works, how to write an

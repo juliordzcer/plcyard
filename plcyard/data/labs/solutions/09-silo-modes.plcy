@@ -1,0 +1,46 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "plcyard",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "LD",
+      "rungs": [
+        {
+          "text": "XIC,%I0.1 BST,1 XIC,%I0.0 NXB,1 XIC,%Q0.2 BND,1 OTE,%Q0.2",
+          "comment": ""
+        },
+        {
+          "text": "XIC,%Q0.2 XIC,%I0.6 XIC,%I0.0 XIC,%Q0.4 OTL,Bits[0].0",
+          "comment": ""
+        },
+        {
+          "text": "XIO,%I0.3 OTU,Bits[0].0",
+          "comment": ""
+        },
+        {
+          "text": "XIC,%Q0.2 BST,1 XIC,%I0.5 BST,2 XIO,%I0.3 NXB,2 XIC,%Q0.4 BND,2 NXB,1 XIC,%I0.6 BST,2 XIO,%I0.3 NXB,2 XIC,Bits[0].0 BND,2 NXB,1 XIC,%I0.7 BND,1 OTE,%Q0.0",
+          "comment": ""
+        },
+        {
+          "text": "BST,1 XIC,%I0.4 NXB,1 XIC,%Q0.4 BND,1 XIC,%I0.3 OTE,%Q0.4",
+          "comment": ""
+        },
+        {
+          "text": "XIC,%Q0.2 XIO,%I0.7 XIC,%I0.3 XIO,%Q0.4 BST,1 OTE,%Q0.1 NXB,1 OTE,%Q0.3 BND,1",
+          "comment": ""
+        }
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "Bits": {
+      "type": "INT[1]"
+    }
+  },
+  "symbols": {}
+}

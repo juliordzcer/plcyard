@@ -47,12 +47,13 @@ class _EventBar(QFrame):
 
 # -- Silo ------------------------------------------------------------------------
 
-def slc_name(direction: str, slot: int, bit: int | None = None) -> str:
-    return f"{direction}:{slot}" + ("" if bit is None else f"/{bit}")
+def default_name(direction: str, slot: int, bit: int | None = None) -> str:
+    from ..core.plc import PLC
+    return PLC.io_name(direction, slot, bit)
 
 
 class SiloCanvas(Hotspots, QWidget):
-    def __init__(self, model: S.SiloModel, io_name=slc_name):
+    def __init__(self, model: S.SiloModel, io_name=default_name):
         super().__init__()
         self.n = io_name
         self.model = model
@@ -126,7 +127,7 @@ class SiloCanvas(Hotspots, QWidget):
 class SiloView(QWidget):
     reset_requested = Signal()
 
-    def __init__(self, model: S.SiloModel, io_name=slc_name):
+    def __init__(self, model: S.SiloModel, io_name=default_name):
         super().__init__()
         self.n = io_name
         self.model = model
@@ -186,7 +187,7 @@ class SiloView(QWidget):
 # -- Traffic ---------------------------------------------------------------------
 
 class TrafficCanvas(Hotspots, QWidget):
-    def __init__(self, model: T.TrafficModel, io_name=slc_name):
+    def __init__(self, model: T.TrafficModel, io_name=default_name):
         super().__init__()
         self.n = io_name
         self.model = model
@@ -260,7 +261,7 @@ class TrafficCanvas(Hotspots, QWidget):
 class TrafficView(QWidget):
     reset_requested = Signal()
 
-    def __init__(self, model: T.TrafficModel, io_name=slc_name):
+    def __init__(self, model: T.TrafficModel, io_name=default_name):
         super().__init__()
         self.n = io_name
         self.model = model

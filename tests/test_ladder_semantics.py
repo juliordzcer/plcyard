@@ -1,19 +1,19 @@
-"""Classic ladder patterns, checked against SLC-500 rules (manual 1747-RM001)."""
+"""Classic ladder patterns: seal-in, latches, rung order, one shots, branches, scan rules."""
 
 import itertools
 
 from plcyard import labs
 from plcyard.core.processor import Processor
+from plcyard import formats
+from plcyard.core.program import Program, Rung
 from plcyard.formats import rsl
 from plcyard.sims.io_panel import IoPanelModel
 
 
-def program(*rungs: str) -> str:
-    lines = ["FILE,LAD 2"]
-    for n, r in enumerate(rungs):
-        lines += [f"SOR,{n} {r} EOR,{n}", "RCM,"]
-    lines += [f"SOR,{len(rungs)} END,{len(rungs)}", "RCM,"]
-    return "\r\n".join(lines) + "\r\n"
+def program(*rungs: str) -> Program:
+    p = Program.new()
+    p.main.rungs = [Rung(rsl.parse_rung_text(r)) for r in rungs]
+    return p
 
 
 class Rig:
@@ -23,7 +23,7 @@ class Rig:
             self.panel.switch(1, bit).normally_closed = True
         self.plc = Processor()
         self.plc.device = self.panel
-        assert self.plc.download(rsl.loads(program(*rungs))) == []
+        assert self.plc.download(program(*rungs)) == []
         self.plc.set_mode(Processor.RUN)
 
     def press(self, bit: int, on: bool = True, scans: int = 1):
@@ -40,7 +40,7 @@ class Rig:
         return self.plc.dt.read_bit(addr)
 
 
-SEAL_IN = "XIC,I:1/1 BST,1 XIC,I:1/0 NXB,1 XIC,O:2/0 BND,1 OTE,O:2/0"
+SEAL_IN = "XIC,%I0.1 BST,1 XIC,%I0.0 NXB,1 XIC,%Q0.0 BND,1 OTE,%Q0.0"
 
 
 def test_seal_in_holds_after_start_released():
@@ -79,7 +79,7 @@ def test_seal_in_drops_when_returning_to_run():
 
 
 def test_latch_survives_mode_change_but_ote_does_not():
-    r = Rig("XIC,I:1/0 OTL,O:2/0", "XIC,I:1/1 OTU,O:2/0", "XIC,I:1/2 OTE,O:2/1")
+    r = Rig("XIC,%I0.0 OTL,%Q0.0", "XIC,%I0.1 OTU,%Q0.0", "XIC,%I0.2 OTE,%Q0.1")
     r.press(0)
     r.press(2)
     r.press(0, False)
@@ -95,14 +95,14 @@ def test_latch_survives_mode_change_but_ote_does_not():
 
 
 def test_unlatch_in_later_rung_wins_same_scan():
-    r = Rig("XIC,I:1/0 OTL,O:2/0", "XIC,I:1/1 OTU,O:2/0")
+    r = Rig("XIC,%I0.0 OTL,%Q0.0", "XIC,%I0.1 OTU,%Q0.0")
     r.panel.set_pressed(1, 0, True)
     r.press(1)
     assert not r.out(0)
 
 
 def test_duplicate_ote_last_rung_wins():
-    r = Rig("XIC,I:1/0 OTE,O:2/0", "XIC,I:1/1 OTE,O:2/0")
+    r = Rig("XIC,%I0.0 OTE,%Q0.0", "XIC,%I0.1 OTE,%Q0.0")
     r.press(0)
     assert not r.out(0), "rung 1 is false and writes last"
     r.press(1)
@@ -110,17 +110,17 @@ def test_duplicate_ote_last_rung_wins():
 
 
 def test_rung_order_gives_one_scan_delay():
-    # Rung 0 reads B3:0/0 before rung 1 writes it.
-    r = Rig("XIC,B3:0/0 OTE,O:2/0", "XIC,I:1/0 OTE,B3:0/0")
+    # Rung 0 reads %M0.0 before rung 1 writes it.
+    r = Rig("XIC,%M0.0 OTE,%Q0.0", "XIC,%I0.0 OTE,%M0.0")
     r.press(0)
-    assert r.b("B3:0/0") and not r.out(0)
+    assert r.b("%M0.0") and not r.out(0)
     r.scan()
     assert r.out(0)
 
 
 def test_interlock_forward_reverse():
-    fwd = "XIC,I:1/2 BST,1 XIC,I:1/0 NXB,1 XIC,O:2/0 BND,1 XIO,O:2/1 OTE,O:2/0"
-    rev = "XIC,I:1/2 BST,1 XIC,I:1/1 NXB,1 XIC,O:2/1 BND,1 XIO,O:2/0 OTE,O:2/1"
+    fwd = "XIC,%I0.2 BST,1 XIC,%I0.0 NXB,1 XIC,%Q0.0 BND,1 XIO,%Q0.1 OTE,%Q0.0"
+    rev = "XIC,%I0.2 BST,1 XIC,%I0.1 NXB,1 XIC,%Q0.1 BND,1 XIO,%Q0.0 OTE,%Q0.1"
     r = Rig(fwd, rev, nc=(2,))
     r.press(0)
     r.press(0, False)
@@ -134,10 +134,11 @@ def test_interlock_forward_reverse():
     assert r.out(1) and not r.out(0)
 
 
-def test_push_on_push_off_with_osr():
-    pulse = "XIC,I:1/0 OSR,B3:0/0 OTE,B3:0/1"
-    toggle = "BST,1 XIC,B3:0/1 XIO,O:2/0 NXB,1 XIO,B3:0/1 XIC,O:2/0 BND,1 OTE,O:2/0"
+def test_push_on_push_off_with_ons():
+    pulse = "XIC,%I0.0 ONS,%M0.0 OTE,%M0.1"
+    toggle = "BST,1 XIC,%M0.1 XIO,%Q0.0 NXB,1 XIO,%M0.1 XIC,%Q0.0 BND,1 OTE,%Q0.0"
     r = Rig(pulse, toggle)
+    r.scan()                       # the first scan after RUN never fires a one shot
     states = []
     for _ in range(4):
         r.press(0, scans=3)        # held several scans: must toggle once only
@@ -146,26 +147,27 @@ def test_push_on_push_off_with_osr():
     assert states == [True, False, True, False]
 
 
-def test_osr_true_one_scan_and_storage_follows_rung():
-    r = Rig("XIC,I:1/0 OSR,B3:0/0 OTE,B3:0/1")
-    r.press(0)
-    assert r.b("B3:0/1") and r.b("B3:0/0")
+def test_ons_true_one_scan_and_storage_follows_rung():
+    r = Rig("XIC,%I0.0 ONS,%M0.0 OTE,%M0.1")
     r.scan()
-    assert not r.b("B3:0/1") and r.b("B3:0/0")
+    r.press(0)
+    assert r.b("%M0.1") and r.b("%M0.0")
+    r.scan()
+    assert not r.b("%M0.1") and r.b("%M0.0")
     r.press(0, False)
-    assert not r.b("B3:0/0")
+    assert not r.b("%M0.0")
 
 
 def test_first_pass_bit_only_on_first_scan():
-    r = Rig("XIC,S:1/15 OTL,B3:0/0", "XIO,S:1/15 OTL,B3:0/1", "XIC,B3:0/1 XIC,S:1/15 OTL,B3:0/2")
+    r = Rig("XIC,FirstScan OTL,%M0.0", "XIO,FirstScan OTL,%M0.1", "XIC,%M0.1 XIC,FirstScan OTL,%M0.2")
     r.scan(3)
-    assert r.b("B3:0/0") and r.b("B3:0/1") and not r.b("B3:0/2")
-    assert not r.b("S:1/15")
+    assert r.b("%M0.0") and r.b("%M0.1") and not r.b("%M0.2")
+    assert not r.b("FirstScan")
 
 
 def test_nested_branches_full_truth_table():
-    rung = ("BST,1 XIC,I:1/2 XIC,I:1/3 NXB,1 XIC,I:1/4 XIO,I:1/5 "
-            "BST,2 XIC,I:1/6 NXB,2 XIC,I:1/7 BND,2 BND,1 OTE,O:2/4")
+    rung = ("BST,1 XIC,%I0.2 XIC,%I0.3 NXB,1 XIC,%I0.4 XIO,%I0.5 "
+            "BST,2 XIC,%I0.6 NXB,2 XIC,%I0.7 BND,2 BND,1 OTE,%Q0.4")
     r = Rig(rung)
     for bits in itertools.product((False, True), repeat=6):
         for i, on in zip(range(2, 8), bits):
@@ -176,7 +178,7 @@ def test_nested_branches_full_truth_table():
 
 
 def test_outputs_in_branch_follow_their_own_conditions():
-    r = Rig("XIC,I:1/0 BST,1 OTE,O:2/1 NXB,1 XIC,I:1/1 OTE,O:2/2 NXB,1 XIO,I:1/1 OTE,O:2/3 BND,1")
+    r = Rig("XIC,%I0.0 BST,1 OTE,%Q0.1 NXB,1 XIC,%I0.1 OTE,%Q0.2 NXB,1 XIO,%I0.1 OTE,%Q0.3 BND,1")
     r.press(0)
     assert r.out(1) and not r.out(2) and r.out(3)
     r.press(1)
@@ -186,11 +188,11 @@ def test_outputs_in_branch_follow_their_own_conditions():
 
 
 def test_every_branch_executes_even_after_one_is_true():
-    # An OSR in the second leg must still see its rung-in when the first leg is true.
-    r = Rig("BST,1 XIC,I:1/0 NXB,1 XIC,I:1/1 OSR,B3:0/0 BND,1 OTE,O:2/0")
+    # A one shot in the second leg must still see its rung-in when the first leg is true.
+    r = Rig("BST,1 XIC,%I0.0 NXB,1 XIC,%I0.1 ONS,%M0.0 BND,1 OTE,%Q0.0")
     r.panel.set_pressed(1, 0, True)
     r.press(1)
-    assert r.b("B3:0/0")
+    assert r.b("%M0.0")
 
 
 def test_inputs_are_read_once_per_scan():
@@ -202,7 +204,7 @@ def test_inputs_are_read_once_per_scan():
     p = Flicker()
     plc = Processor()
     plc.device = p
-    plc.download(rsl.loads(program("XIC,I:1/0 OTE,O:2/0")))
+    plc.download(program("XIC,%I0.0 OTE,%Q0.0"))
     plc.set_mode(Processor.RUN)
     p.calls = 0
     plc.tick(30)
@@ -212,9 +214,9 @@ def test_inputs_are_read_once_per_scan():
 def test_switch_types_from_symbols():
     p = IoPanelModel()
     p.configure_from_symbols({
-        "I:1/0": "Start (NO)", "I:1/1": "Stop (NC)", "I:1/2": "Stop - NC,PB", "I:1/3": "Stop N.C.",
-        "I:1/4": "Open - NO,PB", "I:1/5": "Stop (NC, pushbutton)", "I:1/6": "Level NO reached",
-        "I:1/7": "Motor NCX", "O:2/0": "Motor (NC)",
+        "%I0.0": "Start (NO)", "%I0.1": "Stop (NC)", "%I0.2": "Stop - NC,PB", "%I0.3": "Stop N.C.",
+        "%I0.4": "Open - NO,PB", "%I0.5": "Stop (NC, pushbutton)", "%I0.6": "Level NO reached",
+        "%I0.7": "Motor NCX", "%Q0.0": "Motor (NC)",
     })
     nc = {b for b in range(8) if p.switch(1, b).normally_closed}
     mom = {b for b in range(8) if p.switch(1, b).momentary}
@@ -223,7 +225,7 @@ def test_switch_types_from_symbols():
 
 
 def test_shipped_start_stop_sample():
-    prog = rsl.load(labs.SAMPLES / "start-stop.rsl")
+    prog = formats.load(labs.SAMPLES / "start-stop.plcy")
     panel = IoPanelModel()
     panel.configure_from_symbols(prog.symbols)
     plc = Processor()

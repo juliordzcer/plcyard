@@ -164,9 +164,9 @@ def toggle_contact(body: Series, path: tuple) -> None:
 
 def set_operands(body: Series, path: tuple, operands: list[str], profile=None, program=None,
                  routine: int | None = None) -> list[str]:
-    """Store the typed operands; returns their problems. `profile` defaults to SLC 500."""
-    from .profiles import SLC500
-    profile = profile or SLC500
+    """Store the typed operands; returns their problems."""
+    from .profiles import get
+    profile = profile or get()
     node = node_at(body, path)
     if not isinstance(node, Instr):
         raise EditError("not an instruction")

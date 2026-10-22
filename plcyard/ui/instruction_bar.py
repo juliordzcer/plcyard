@@ -7,11 +7,10 @@ from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtWidgets import QHBoxLayout, QTabBar, QToolButton, QVBoxLayout, QWidget
 
 from ..core import isa
-from . import theme
+from . import notation, theme
 from .ladder_view import start_new_drag
 
-FAMILIES = ["Bit", "Timer/Counter", "Compare", "Math", "Move/Logical", "File/Shift",
-            "Sequencer", "Program Control"]
+FAMILIES = ["Bit", "Timer/Counter", "Compare", "Math", "Move/Logical", "Array", "Program Control", "Process"]
 
 
 class _Button(QToolButton):
@@ -57,9 +56,9 @@ class InstructionBar(QWidget):
         self.set_specs(isa.SPECS)
         self.tabs.currentChanged.connect(self._show)
 
-    def set_specs(self, specs: dict[str, isa.Spec]) -> None:
-        """Show the instruction set of the selected controller."""
-        if specs is self.specs:
+    def set_specs(self, specs: dict[str, isa.Spec], force: bool = False) -> None:
+        """Show the instruction set (again after the notation changes)."""
+        if specs is self.specs and not force:
             return
         self.specs = specs
         present = list(dict.fromkeys(s.family for s in specs.values()))
@@ -92,7 +91,8 @@ class InstructionBar(QWidget):
         family = self.families[index]
         for m, spec in self.specs.items():
             if spec.family == family:
-                glyph = {"contact": "-] [-", "contact_nc": "-]/[-", "coil": f"-({spec.letter or ' '})-"}.get(
-                    spec.shape, spec.letter if spec.shape == "small" and spec.letter else m)
-                self._add(m, glyph, f"{m} — {spec.title}")
+                letter = notation.letter(m, spec.letter)
+                glyph = {"contact": "-] [-", "contact_nc": "-]/[-", "coil": f"-({letter or ' '})-"}.get(
+                    spec.shape, letter if spec.shape == "small" and letter else notation.mnemonic(m))
+                self._add(m, glyph, f"{notation.mnemonic(m)} — {spec.title}")
         self.row.addStretch(1)

@@ -95,16 +95,16 @@
 
   <h2 id="features">Features</h2>
   <div class="grid">
-    <div class="card"><h3>Check my program</h3><p>10 exercises, from logic gates to a traffic light
-      without crashes, each checked automatically, faster than real time.</p></div>
+    <div class="card"><h3>Check my program</h3><p>13 exercises, from logic gates to tuning a PID
+      level loop, each checked automatically, faster than real time.</p></div>
     <div class="card"><h3>Runs everywhere</h3><p>Linux, macOS and Windows, sharp on any screen.
       No licence key, no trial.</p></div>
-    <div class="card"><h3>Mistakes caught early</h3><p>Wrong address types, addresses outside the
-      data table and unset operands are reported with a suggestion.</p></div>
+    <div class="card"><h3>Mistakes caught early</h3><p>Unknown tags, wrong types and unset
+      operands are reported with a suggestion.</p></div>
     <div class="card"><h3>Machines to drive</h3><p>I/O panel with thumbwheels and a BCD display,
-      a filling line and a road crossing.</p></div>
-    <div class="card"><h3>45 instructions</h3><p>Bits, latches, one-shot, timers, counters, compare,
-      math, BCD, bit shift, sequencers and subroutines, SLC 500 style.</p></div>
+      a filling line, a road crossing and an analog tank with a live trend.</p></div>
+    <div class="card"><h3>Ladder and structured text</h3><p>Timers, counters, compare, math, arrays,
+      sequencers, PID, routines, functions and function blocks, in two notations: mnemonics or IEC.</p></div>
     <div class="card"><h3>Real scan behaviour</h3><p>Prescan, first-pass bit, outputs off in program
       mode, rung order, major faults with codes.</p></div>
   </div>
@@ -125,14 +125,14 @@ python3 -m venv .venv
   <h2 id="faq">FAQ</h2>
   <details><summary>Is it really free?</summary><p>Yes. PLCYard is open source under GPL-3.0: use it,
     share it, change it. Changed versions you distribute stay open too.</p></details>
-  <details><summary>Is it the same as a real Allen-Bradley PLC?</summary><p>It follows the SLC 500
-    instruction set and scan rules closely, so what you learn carries over. It does not talk to real
-    hardware and is not a replacement for vendor software.</p></details>
-  <details><summary>Siemens? Function blocks? Structured text?</summary><p>Ladder in the SLC 500 style
-    today. Function block diagram and structured text, in Allen-Bradley and Siemens styles, are on
-    the roadmap.</p></details>
-  <details><summary>Can I open my .rsl files?</summary><p>Yes, the plain-text .rsl ladder format opens
-    and saves; unchanged programs are saved byte for byte.</p></details>
+  <details><summary>Is it the same as a real PLC?</summary><p>It follows the instruction behaviour and
+    scan rules of industrial PLCs closely, and you can write it in the two common notations
+    (mnemonics or IEC symbols), so what you learn carries over. It does not talk to real hardware
+    yet and is not a replacement for vendor software.</p></details>
+  <details><summary>Function blocks? Structured text?</summary><p>Ladder and structured text today,
+    with functions and function blocks. Function block diagram is next on the roadmap.</p></details>
+  <details><summary>Can I open my .rsl files?</summary><p>Yes, plain-text .rsl ladder files open and
+    are converted to the PLC's tags and arrays.</p></details>
   <details><summary>Can I add exercises or simulations?</summary><p>Exercises are Markdown files with
     a reference solution and checks. Open an issue on GitHub with your idea.</p></details>
 
@@ -140,8 +140,7 @@ python3 -m venv .venv
   <a class="btn" href="https://github.com/juliordzcer/plcyard">Download on GitHub</a>
 
   <footer>
-    PLCYard is an independent project, not affiliated with or endorsed by Rockwell Automation,
-    Siemens or any PLC vendor. GPL-3.0-or-later. Made by <a href="https://juliordz.com">Julio Rodriguez</a>.
+    PLCYard is an independent project, not affiliated with or endorsed by any PLC vendor. GPL-3.0-or-later. Made by <a href="https://juliordz.com">Julio Rodriguez</a>.
   </footer>
 </main>
 </body>

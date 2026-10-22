@@ -18,7 +18,7 @@ MAX_NESTING = 8
 
 
 class Processor:
-    """The shared scan engine. Everything specific to a PLC family lives in its profile."""
+    """The scan engine. The PLC's memory, instructions and I/O mapping live in its profile (core/plc)."""
 
     PGM, RUN, STEP, FAULT = "PGM", "RUN", "STEP", "FAULT"
 
@@ -42,7 +42,7 @@ class Processor:
 
     def _use(self, profile: Profile) -> None:
         self.profile = profile
-        self.dt = profile.new_memory()        # the profile's memory (a DataTable for SLC 500)
+        self.dt = profile.new_memory()        # the PLC memory (tags and I/O)
         self._ctx = profile.context(self.dt)
         self._ctx.call = self._call
         self.forces = {}
@@ -205,8 +205,8 @@ class Processor:
         self.outputs_off()
 
     def _call(self, target: int | str, inputs: dict | None = None) -> dict:
-        """Run a subroutine file (SLC 500), a routine by name (Logix JSR), a function or a function
-        block instance (S7). Inputs go into the block's parameters; returns its outputs by name."""
+        """Run a routine (by number or name, JSR), a function or a function block instance (CALL).
+        Inputs go into the block's parameters; returns its outputs by name."""
         if isinstance(target, int):
             f, inst = self.program.files[target], None
         else:
@@ -259,8 +259,7 @@ class Processor:
             for n, rung in enumerate(f.rungs):
                 self._series(rung.body, True, (f.number, n))
         except isa.ReturnFromSubroutine:
-            if f.kind == "LAD" and self.profile.name == "slc500":
-                raise isa.PlcFault(0x0021, "RET outside a subroutine")
+            pass                                      # RET in the main routine ends it for this scan
 
     def _st_block(self, inst: str, block: str, inputs: dict) -> dict:
         return self.profile.st_call(self._ctx, self._fix(inst), block, inputs)

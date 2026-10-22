@@ -11,15 +11,15 @@ from ..sims import tank as K
 from . import theme
 from .io_drag import Hotspots, attach
 from .primitives import Lamp, SimSwitch
-from .sim_views import _EventBar, _mono, slc_name
+from .sim_views import _EventBar, _mono, default_name
 
 
-def slc_analog(direction: str, channel: int) -> str:
-    return {("I", 0): "I:7", ("I", 1): "I:6", ("O", 0): "O:7"}[(direction, channel)]
+def default_analog(direction: str, channel: int) -> str:
+    return {("I", 0): "%IW64", ("I", 1): "%IW66", ("O", 0): "%QW64"}[(direction, channel)]
 
 
 class TankCanvas(Hotspots, QWidget):
-    def __init__(self, model: K.TankModel, io_name=slc_name, analog_name=slc_analog):
+    def __init__(self, model: K.TankModel, io_name=default_name, analog_name=default_analog):
         super().__init__()
         self.model, self.n, self.a = model, io_name, analog_name
         self.setMinimumSize(320, 220)
@@ -141,7 +141,7 @@ class TrendChart(QWidget):
 class TankView(QWidget):
     reset_requested = Signal()
 
-    def __init__(self, model: K.TankModel, io_name=slc_name, analog_name=slc_analog):
+    def __init__(self, model: K.TankModel, io_name=default_name, analog_name=default_analog):
         super().__init__()
         self.model, self.n, self.a = model, io_name, analog_name
         lay = QVBoxLayout(self)

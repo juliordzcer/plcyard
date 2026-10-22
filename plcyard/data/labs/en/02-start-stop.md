@@ -3,11 +3,11 @@ title: Start/stop with seal-in
 simulation: io
 level: 1
 symbols:
-- I:1/0 Start (NO)
-- I:1/1 Stop (NC)
-- O:2/0 Motor
-- O:2/1 Running light
-- O:2/2 Stopped light
+- %I0.0 Start (NO)
+- %I0.1 Stop (NC)
+- %Q0.0 Motor
+- %Q0.1 Running light
+- %Q0.2 Stopped light
 ---
 # 2. Start/stop with seal-in
 
@@ -17,11 +17,11 @@ symbols:
 
 | Address | Device | Type |
 | --- | --- | --- |
-| I:1/0 | Start | normally open |
-| I:1/1 | Stop | **normally closed** |
-| O:2/0 | Motor | |
-| O:2/1 | Running light | |
-| O:2/2 | Stopped light | |
+| %I0.0 | Start | normally open |
+| %I0.1 | Stop | **normally closed** |
+| %Q0.0 | Motor | |
+| %Q0.1 | Running light | |
+| %Q0.2 | Stopped light | |
 
 ## Requirements
 

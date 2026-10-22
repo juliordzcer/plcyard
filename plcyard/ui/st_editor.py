@@ -240,7 +240,7 @@ class StEditor(QWidget):
             if self.memory is not None and prof is not None:
                 try:
                     t = self.memory.ref(name).type.lower()
-                    if t in ("timer", "counter", "pid", "iec_timer", "iec_counter", "pid_compact"):
+                    if t in ("timer", "counter", "control", "pid"):
                         text = prof.tag_value(self.memory, name)
                     elif t == "bool":
                         text = "TRUE" if self.memory.read_bit(name) else "FALSE"

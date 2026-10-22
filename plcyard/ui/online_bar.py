@@ -1,6 +1,6 @@
-"""Online toolbar, laid out like the one in RSLogix 500 and Studio 5000 (and the CPU status of
-TIA Portal for S7): controller mode with its drop-down menu (Go Online, Upload, Download, modes),
-forces and edits status, status LEDs, and a button that folds the details away."""
+"""Online toolbar, as PLC software usually has it: controller mode with its drop-down menu (Go Online,
+Upload, Download, modes), forces and edits status, status LEDs, and a button that folds the details
+away."""
 
 from __future__ import annotations
 
@@ -11,9 +11,7 @@ from PySide6.QtWidgets import (QFrame, QGridLayout, QHBoxLayout, QLabel, QMenu, 
 from . import theme
 from .primitives import Lamp, ModeSelector
 
-# mode text shown in the box, per controller family
-AB_MODES = {"PGM": "Rem Prog", "RUN": "Rem Run", "STEP": "Rem Test", "FAULT": "Faulted"}
-S7_MODES = {"PGM": "STOP", "RUN": "RUN", "STEP": "RUN (step)", "FAULT": "STOP (error)"}
+MODES = {"PGM": "Program", "RUN": "Run", "STEP": "Test", "FAULT": "Faulted"}
 
 
 class _Led(QWidget):
@@ -46,7 +44,6 @@ class PlcPanel(QFrame):
     def __init__(self):
         super().__init__()
         self.setFixedHeight(theme.layout("plc-strip-h") + 18)
-        self.s7 = False
         lay = QHBoxLayout(self)
         lay.setContentsMargins(8, 4, 12, 4)
         lay.setSpacing(10)
@@ -92,7 +89,7 @@ class PlcPanel(QFrame):
         self.leds: dict[str, _Led] = {}
         leds = QHBoxLayout()
         leds.setSpacing(6)
-        for name, colour in (("RUN", "lamp-green"), ("FORCE", "lamp-amber"), ("OK", "lamp-green"), ("I/O", "lamp-green")):
+        for name, colour in (("RUN", "lamp-green"), ("FORCE", "lamp-amber"), ("FAULT", "lamp-red"), ("I/O", "lamp-green")):
             self.leds[name] = _Led(name, colour)
             leds.addWidget(self.leds[name])
         dl.addLayout(leds)
@@ -138,14 +135,6 @@ class PlcPanel(QFrame):
         self._build_menu(False)
 
     # -- look ----------------------------------------------------------------
-    def set_family(self, profile: str) -> None:
-        """S7 shows STOP/RUN and the CPU's RUN/STOP, ERROR, MAINT LEDs; Allen-Bradley Rem Prog/Rem Run."""
-        self.s7 = profile == "s7"
-        names = ("RUN/STOP", "MAINT", "ERROR", "I/O") if self.s7 else ("RUN", "FORCE", "OK", "I/O")
-        for led, name in zip(self.leds.values(), names):
-            led.label.setText(name)
-        self._build_menu(self._menu_online)
-
     def set_folded(self, folded: bool) -> None:
         self.folded = folded
         self.details.setVisible(not folded)
@@ -159,12 +148,7 @@ class PlcPanel(QFrame):
         self.status.style().polish(self.status)
 
     def set_online(self, online: bool, mode: str, edits: bool) -> None:
-        if online:
-            text = (S7_MODES if self.s7 else AB_MODES).get(mode, mode)
-            if self.s7:
-                text = f"Online · {text}"
-        else:
-            text = "Offline"
+        text = f"Online · {MODES.get(mode, mode)}" if online else "Offline"
         kind = "danger" if mode == "FAULT" and online else ("success" if online and mode in ("RUN", "STEP") else "")
         if self.online_btn.text() != text:
             self.online_btn.setText(text)
@@ -183,23 +167,17 @@ class PlcPanel(QFrame):
         self.forces_btn.style().polish(self.forces_btn)
 
     def set_leds(self, *, running: bool, forced: bool, fault: bool, io: bool, mode: str) -> None:
-        run, force, ok, io_led = self.leds.values()
-        if self.s7:
-            run.set(True, "lamp-green" if running else "lamp-amber")
-            force.set(forced, "lamp-amber")
-            ok.set(fault, "lamp-red")
-        else:
-            run.set(running, "lamp-green")
-            force.set(forced, "lamp-amber")
-            ok.set(True, "lamp-red" if fault else "lamp-green")
-        io_led.set(io, "lamp-green")
+        run, force, fault_led, io_led = self.leds.values()
+        run.set(running)
+        force.set(forced)
+        fault_led.set(fault)
+        io_led.set(io)
 
     def _build_menu(self, online: bool) -> None:
         self._menu_online = online
         m = self.online_menu
         m.clear()
-        dl = "Download to device" if self.s7 else "Download"
-        up = "Upload from device" if self.s7 else "Upload..."
+        dl, up = "Download", "Upload..."
         if online:
             m.addAction("Go Offline", self.go_offline.emit)
         else:
@@ -207,9 +185,8 @@ class PlcPanel(QFrame):
         m.addAction(up, self.upload.emit)
         m.addAction(dl, self.download.click)
         m.addSeparator()
-        for mode, ab, s7 in (("PGM", "Program Mode", "STOP"), ("RUN", "Run Mode", "RUN"),
-                             ("STEP", "Test Mode (single scan)", "Single scan")):
-            a = m.addAction(s7 if self.s7 else ab, lambda _=False, md=mode: self.mode_requested.emit(md))
+        for mode, ab in (("PGM", "Program Mode"), ("RUN", "Run Mode"), ("STEP", "Test Mode (single scan)")):
+            a = m.addAction(ab, lambda _=False, md=mode: self.mode_requested.emit(md))
             a.setEnabled(online)
         m.addSeparator()
         m.addAction("Clear Faults", self.clear_fault.click)

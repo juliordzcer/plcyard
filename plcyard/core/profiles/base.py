@@ -86,12 +86,12 @@ class Profile:
     memory_fault_code = 0
 
     # -- editing -----------------------------------------------------------------
-    kinds: dict[str, str] = isa.KINDS          # operand kind → hint shown in the operand editor
+    kinds: dict[str, str] = {}                 # operand kind → hint shown in the operand editor
 
     def validate(self, mnemonic: str, operands: list[str], program: Program | None = None,
                  routine: int | None = None) -> list[str]:
         """Problems with one instruction as typed; `program` gives declared tags where they matter."""
-        return isa.validate(mnemonic, operands, self.specs)
+        return []
 
     def normalize(self, operand: str) -> str:
         """How a typed operand is stored."""
@@ -141,10 +141,10 @@ class Profile:
         raise NotImplementedError
 
     # -- tag list (tag-based controllers) -------------------------------------------
-    tag_types: tuple[str, ...] = ()            # empty: the controller has no tag list (SLC 500)
+    tag_types: tuple[str, ...] = ()            # data types offered in the tag list
     tag_fields: tuple[str, ...] = ()           # extra declaration fields shown as columns, e.g. "address"
-    routine_kinds: tuple[str, ...] = ()        # kinds of extra routines: SBR (Logix), FC and FB (S7)
-    interface_sections: tuple[str, ...] = ()   # block interface sections (S7 FC/FB)
+    routine_kinds: tuple[str, ...] = ()        # kinds of extra routines: SBR (JSR), FC and FB (blocks)
+    interface_sections: tuple[str, ...] = ()   # block interface sections (FC/FB)
 
     def build_memory(self, program: Program):
         """Memory with the program's declarations; raises one of memory_errors when they are wrong."""
@@ -175,7 +175,7 @@ class Profile:
     def new_memory(self) -> Any:
         raise NotImplementedError
 
-    def context(self, memory) -> isa.Context:
+    def context(self, memory):
         """What executing instructions may touch."""
         raise NotImplementedError
 
@@ -187,7 +187,7 @@ class Profile:
     def load(self, program: Program, memory) -> None:
         """Memory as a fresh download leaves it (I/O image kept)."""
 
-    def prescan(self, program: Program, memory, ctx: isa.Context) -> None:
+    def prescan(self, program: Program, memory, ctx) -> None:
         """Entering RUN."""
 
     def reset_timers_counters(self, memory) -> None:

@@ -19,7 +19,7 @@ def paint_instruction(p: QPainter, rect: QRectF, mnemonic: str, operands: list[s
                       pins: list[tuple[str, bool]] | None = None,
                       shape: str | None = None, letter: str | None = None) -> None:
     """Draw one instruction centred on the rung wire that crosses rect vertically centred.
-    `shape`/`letter` come from the instruction's spec; by default they follow the SLC mnemonic."""
+    `shape`/`letter` come from the instruction's spec; by default they follow the mnemonic."""
     from ..core.isa import SHAPES
     if shape is None:
         shape, default_letter = SHAPES.get(mnemonic, ("block", ""))
@@ -58,13 +58,14 @@ def paint_instruction(p: QPainter, rect: QRectF, mnemonic: str, operands: list[s
                 p.setPen(theme.color("text"))
                 p.drawText(QRectF(cx - 6, mid_y - 9, 12, 18), Qt.AlignCenter, letter)
         elif shape == "coil":
-            p.drawArc(QRectF(cx - 12, mid_y - 9, 10, 18), 90 * 16, 180 * 16)
-            p.drawArc(QRectF(cx + 2, mid_y - 9, 10, 18), -90 * 16, 180 * 16)
+            half = 6 + 3.5 * max(len(letter or ""), 1)        # wider coil for RES, RET
+            p.drawArc(QRectF(cx - half, mid_y - 9, 10, 18), 90 * 16, 180 * 16)
+            p.drawArc(QRectF(cx + half - 10, mid_y - 9, 10, 18), -90 * 16, 180 * 16)
             tag = letter
             if tag:
                 p.setFont(theme.font("sans", "xs"))
                 p.setPen(theme.color("text"))
-                p.drawText(QRectF(cx - 6, mid_y - 9, 12, 18), Qt.AlignCenter, tag)
+                p.drawText(QRectF(cx - half + 4, mid_y - 9, 2 * half - 8, 18), Qt.AlignCenter, tag)
         else:
             p.drawRect(QRectF(cx - 14, mid_y - 9, 28, 18))
             p.setFont(theme.font("sans", "xs"))
@@ -98,7 +99,7 @@ def paint_instruction(p: QPainter, rect: QRectF, mnemonic: str, operands: list[s
             if k is None:
                 rows.append((lab, val, True))
             else:
-                rows[k] = (lab, val, True)      # the operand shows its live value (Logix Accum)
+                rows[k] = (lab, val, True)      # the operand shows its live value (Accum)
         for lab, op, live in rows:
             p.setFont(theme.font("sans", "sm"))
             p.setPen(theme.color("text-muted"))

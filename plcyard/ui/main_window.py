@@ -1,5 +1,5 @@
 """Main window: menus, PLC strip, project tree, simulation | editor split with one tab per open
-routine, status bar. Laid out like the controller's own software (Studio 5000, TIA Portal)."""
+routine, status bar, laid out as PLC software usually is."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QUndoGroup
 from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QDialogButtonBox, QDockWidget, QFileDialog,
                                QFormLayout, QFrame, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow,
-                               QMessageBox, QPushButton, QScrollArea, QSlider, QSplitter, QStackedWidget, QTabWidget,
+                               QMessageBox, QPushButton, QRadioButton, QScrollArea, QSlider, QSplitter, QTabWidget,
                                QVBoxLayout, QWidget)
 
 from .. import grader, labs
@@ -30,11 +30,11 @@ from .io_panel_view import IoPanelView
 from .sim_views import SiloView, TrafficView
 from .tank_view import TankView
 from .block_editor import DataTypeDoc, RoutineDoc
-from .datatable_view import DataTableView
 from .project_tree import ProjectTree, routine_label
 from .tags_view import TagsView
 from .instruction_bar import InstructionBar
 from .labs_view import LabsView
+from . import notation
 from .online_bar import PlcPanel
 
 TICK_MS = 10
@@ -101,16 +101,12 @@ class MainWindow(QMainWindow):
         self.tree_dock.setMinimumWidth(220)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.tree_dock)
 
-        self.table_view = DataTableView(self.plc.dt, self.program.symbols)
         self.tags_view = TagsView()
         self.tags_view.edited.connect(self._edited)
         self.tags_view.force_requested.connect(self.force)
-        self.data_stack = QStackedWidget()
-        self.data_stack.addWidget(self.table_view)
-        self.data_stack.addWidget(self.tags_view)
         self.table_dock = QDockWidget("Data table", self)
         self.table_dock.setObjectName("datatable")
-        self.table_dock.setWidget(self.data_stack)
+        self.table_dock.setWidget(self.tags_view)
         self.table_dock.setMinimumWidth(theme.layout("dock-w"))
         self.addDockWidget(Qt.RightDockWidgetArea, self.table_dock)
         self.table_dock.hide()
@@ -165,11 +161,7 @@ class MainWindow(QMainWindow):
 
         f = mb.addMenu("&File")
         act(f, "&New", self.new, QKeySequence.New)
-        nf = f.addMenu("New for controller")
-        for prof in profiles.PROFILES.values():
-            act(nf, f"{prof.title} — ladder", lambda _=False, n=prof.name: self.new(n))
-            if prof.st_blocks:
-                act(nf, f"{prof.title} — structured text", lambda _=False, n=prof.name: self.new(n, "ST"))
+        act(f, "New in &structured text", lambda: self.new(language="ST"))
         act(f, "&Open…", lambda: self.open(), QKeySequence.Open)
         ex = f.addMenu("Open &example")
         for path in sorted([*labs.SAMPLES.glob("*.rsl"), *labs.SAMPLES.glob("*.plcy")]):
@@ -216,7 +208,7 @@ class MainWindow(QMainWindow):
         s.addSeparator()
         act(s, "&Reset simulation", lambda: self._rebuild_sim())
         act(s, "Reset &timers and counters", self.reset_timers_counters)
-        act(s, "Clear &data table", self.clear_data)
+        act(s, "Clear &data (start values)", self.clear_data)
         p = mb.addMenu("&Communications")
         act(p, "Go &Online", self.go_online, "Ctrl+K")
         act(p, "Go O&ffline", self.go_offline)
@@ -241,6 +233,26 @@ class MainWindow(QMainWindow):
         v.addSeparator()
         act(v, "&Light theme", lambda: self.set_theme("light"))
         act(v, "&Dark theme", lambda: self.set_theme("dark"))
+        t = mb.addMenu("&Tools")
+        act(t, "&Options…", self.options)
+
+    def options(self) -> None:
+        dlg = OptionsDialog(self)
+        if dlg.exec() == QDialog.Accepted and dlg.notation() != notation.current():
+            self.set_notation(dlg.notation())
+
+    def set_notation(self, n: str) -> None:
+        """Show the program in the other notation; the program itself does not change."""
+        notation.set_current(n)
+        self.bar.set_specs(self.plc.profile.specs, force=True)
+        for i in range(self.docs.count()):
+            w = self.docs.widget(i)
+            if isinstance(w, RoutineDoc) and w.canvas is not None:
+                w.canvas._relayout()
+        self.tags_view.set_program(self.program)
+        self._rebuild_sim()
+        self.labs_view.refresh_text() if hasattr(self.labs_view, "refresh_text") else None
+        self.update()
 
     # -- files --------------------------------------------------------------
     def maybe_save(self) -> bool:
@@ -261,10 +273,10 @@ class MainWindow(QMainWindow):
             e.ignore()
 
     def new(self, profile: str | None = None, language: str = "LD") -> None:
-        """New program for `profile`; by default the same controller as the current program."""
+        """New program with an empty main routine in `language` (LD or ST)."""
         if not self.maybe_save():
             return
-        self.program = Program.new(profile or self.program.profile, language)
+        self.program = Program.new(language=language)
         self.path = None
         self._program_changed()
         self._rebuild_sim()
@@ -312,11 +324,10 @@ class MainWindow(QMainWindow):
     def _rebuild_sim(self) -> None:
         """Fresh simulation of the selected kind. The I/O panel is wired from the program's
         symbols (NC stops, pushbuttons)."""
-        prof = profiles.get(self.program.profile)
-        name = prof.io_name
+        name = notation.io_name
         if self.sim_kind == "tank":
             self.sim = TankModel()
-            self.sim_view = TankView(self.sim, name, prof.analog_name)
+            self.sim_view = TankView(self.sim, name, notation.analog_name)
         elif self.sim_kind == "silo":
             self.sim = SiloModel()
             self.sim_view = SiloView(self.sim, name)
@@ -325,7 +336,7 @@ class MainWindow(QMainWindow):
             self.sim_view = TrafficView(self.sim, name)
         else:
             self.sim = IoPanelModel()
-            self.sim.configure_from_symbols(self.program.symbols, name)
+            self.sim.configure_from_symbols(self.program.symbols)
             self.sim_view = IoPanelView(self.sim, self.program.symbols, name)
         if hasattr(self.sim_view, "reset_requested"):
             self.sim_view.reset_requested.connect(lambda: self._rebuild_sim())
@@ -371,18 +382,14 @@ class MainWindow(QMainWindow):
         while self.docs.count():
             self._remove_doc(0)
         self.tree.set_program(self.program)
-        self.tree_dock.setWindowTitle({"logix": "Controller Organizer", "s7": "Project tree"}.get(prof.name, "Project"))
-        self.panel.set_family(prof.name)
+        self.tree_dock.setWindowTitle("Project")
         self.add_routine_act.setEnabled(bool(prof.routine_kinds))
         self.add_type_act.setEnabled(bool(prof.tag_types))
         self.open_routine(2)
-        tagged = bool(prof.tag_types)
-        self.data_stack.setCurrentWidget(self.tags_view if tagged else self.table_view)
-        self.table_dock.setWindowTitle("Tags" if tagged else "Data table")
-        self.tags_view.set_program(self.program if tagged else None)
+        self.table_dock.setWindowTitle("Tags")
+        self.tags_view.set_program(self.program)
         if isinstance(self.sim_view, IoPanelView):
             self.sim_view.symbols = self.program.symbols
-        self.table_view.symbols = self.program.symbols
         self._title()
         self._update_status()
 
@@ -418,14 +425,14 @@ class MainWindow(QMainWindow):
 
     def _doc_title(self, w) -> str:
         if isinstance(w, RoutineDoc):
-            return routine_label(self.program.profile, w.file) if w.file else "?"
+            return routine_label(w.file) if w.file else "?"
         return w.name
 
     def open_routine(self, number: int) -> None:
         """Bring a routine to the front, opening it in a new tab the first time."""
         i = self._find_doc(("routine", number))
         if i < 0:
-            if number not in self.program.files:            # SLC 500: an empty subroutine file
+            if number not in self.program.files:
                 self.program.files[number] = ProgramFile(number, "SBR", "")
             doc = RoutineDoc(self.program, number)
             doc.changed.connect(self._edited)
@@ -487,8 +494,6 @@ class MainWindow(QMainWindow):
         elif kind == "tags":
             self.table_dock.show()
             self.table_dock.raise_()
-            if self.data_stack.currentWidget() is self.table_view and isinstance(key, str) and key[:1] in "OISBTCRNF":
-                self.table_view.show_address(f"{key[0]}{key[1:]}:0" if key[0] not in "OI" else f"{key[0]}:0")
 
     # -- routines, blocks and data types --------------------------------------
     def _tree_action(self, action: str, key) -> None:
@@ -553,13 +558,12 @@ class MainWindow(QMainWindow):
     def _structure_changed(self) -> None:
         self.tree.set_program(self.program)
         self._retitle_docs()
-        self.tags_view.set_program(self.program if profiles.get(self.program.profile).tag_types else None)
+        self.tags_view.set_program(self.program)
         self._edited()
 
     # -- forcing ------------------------------------------------------------
     def force(self, ref: str, on) -> None:
-        problem = self.plc.force(ref, on) if self.plc.profile.name == self.program.profile else \
-            "download the program first"
+        problem = self.plc.force(ref, on)
         if problem:
             self.statusBar().showMessage(f"Cannot force {ref}: {problem}", 5000)
         self.tags_view.set_forces(self.plc.forces)
@@ -586,11 +590,6 @@ class MainWindow(QMainWindow):
         self._title()
         self._update_status()
 
-    def show_address(self, address: str) -> None:
-        self.table_dock.show()
-        if self.data_stack.currentWidget() is self.table_view:
-            self.table_view.show_address(address)
-
     # -- PLC ----------------------------------------------------------------
     def download(self) -> None:
         problems = self.plc.download(self.program)
@@ -614,8 +613,7 @@ class MainWindow(QMainWindow):
                     == QMessageBox.Yes:
                 self.download()
             return
-        same = self.in_sync or (self.plc.program.profile == self.program.profile
-                                and formats.plcy.dumps(self.plc.program) == formats.plcy.dumps(self.program))
+        same = self.in_sync or formats.plcy.dumps(self.plc.program) == formats.plcy.dumps(self.program)
         if not same:
             box = QMessageBox(QMessageBox.Question, "Go Online",
                               "The program in the controller is not the one open here.", parent=self)
@@ -687,7 +685,10 @@ class MainWindow(QMainWindow):
         self.plc.reset_timers_counters()
 
     def clear_data(self) -> None:
-        self.plc.dt.clear(keep_io=True)
+        """Every tag back to its start value (the program in the PLC stays)."""
+        if self.plc.program is not None:
+            self.plc.profile.load(self.plc.program, self.plc.dt)
+            self.plc.reset_timers_counters()
 
     def set_theme(self, name: str) -> None:
         theme.apply(QApplication.instance(), name)
@@ -720,7 +721,7 @@ class MainWindow(QMainWindow):
             self.panel.set_status("PLC: PGM", "")
 
     def _doc_memory(self, doc):
-        """The PLC memory as code in this routine sees it: inside an S7 block, through its instance
+        """The PLC memory as code in this routine sees it: inside a block, through its instance
         (an FB shows its first instance)."""
         f = doc.file
         if f is None or f.kind not in ("FC", "FB") or not self.in_sync:
@@ -735,12 +736,8 @@ class MainWindow(QMainWindow):
         live = self.online and self.plc.mode in (Processor.RUN, Processor.STEP)
         self.sim_view.refresh()
         same = self.in_sync and live
-        same_controller = self.plc.profile.name == self.program.profile
-        if self.data_stack.currentWidget() is self.table_view:
-            if same_controller and self.table_view.model.dt is not self.plc.dt:
-                self.table_view.model.dt = self.plc.dt      # a download switched controllers
-            self.table_view.refresh()
-        elif self.table_dock.isVisible():
+        same_controller = True
+        if self.table_dock.isVisible():
             downloaded = same_controller and self.downloaded and self.online and self.plc.program is not None
             self.tags_view.set_memory(self.plc.dt if downloaded else None)
         doc = self.doc
@@ -753,29 +750,29 @@ class MainWindow(QMainWindow):
         self.panel.set_leds(running=self.plc.mode in (Processor.RUN, Processor.STEP), forced=bool(self.plc.forces),
                             fault=self.plc.mode == Processor.FAULT, io=self.downloaded, mode=self.plc.mode)
         self.panel.scans.setText(f"{self.plc.scan_count} scans")
-        self.panel.io_words.setText("  ".join(f"{n} {v & 0xFFFF:04X}h" for n, v in self.plc.profile.io_image(self.plc.dt)))
+        self.panel.io_words.setText("  ".join(f"{notation.show(n)} {v & 0xFFFF:04X}h"
+                                              for n, v in self.plc.profile.io_image(self.plc.dt)))
         self._update_status()
 
 
 class NewRoutineDialog(QDialog):
-    """Name, kind and language of a new routine (Logix) or block (S7)."""
+    """Name, kind and language of a new routine or block."""
 
     def __init__(self, parent, prof):
         super().__init__(parent)
-        s7 = prof.name == "s7"
-        self.setWindowTitle("Add new block" if s7 else "New routine")
+        self.setWindowTitle("New routine or block")
         form = QFormLayout(self)
         self.name = QLineEdit()
-        self.name.setPlaceholderText("Motor_Control" if s7 else "Filling")
+        self.name.setPlaceholderText("Filling")
         form.addRow("Name", self.name)
         self.kind = QComboBox()
         for k in prof.routine_kinds:
-            self.kind.addItem({"SBR": "Routine", "FC": "Function (FC)", "FB": "Function block (FB)"}[k], k)
+            self.kind.addItem({"SBR": "Routine (called with JSR, no parameters)", "FC": "Function (FC, parameters)",
+                               "FB": "Function block (FB, parameters and its own data)"}[k], k)
         form.addRow("Type", self.kind)
         self.language = QComboBox()
-        self.language.addItem("Ladder Diagram (LAD)" if s7 else "Ladder Diagram", "LD")
-        if prof.st_blocks:
-            self.language.addItem("SCL" if s7 else "Structured Text", "ST")
+        self.language.addItem("Ladder diagram", "LD")
+        self.language.addItem("Structured text", "ST")
         form.addRow("Language", self.language)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.accepted.connect(self.accept)
@@ -824,3 +821,29 @@ def rename_type(program: Program, old: str, new: str) -> None:
         for sec in g.interface.values():
             for n, t in sec.items():
                 sec[n] = pattern.sub(new, t)
+
+
+class OptionsDialog(QDialog):
+    """Tools → Options: how instructions and addresses are written."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("Options")
+        lay = QVBoxLayout(self)
+        lay.addWidget(QLabel("Notation for instructions, addresses and timer members:"))
+        self.buttons = {}
+        for key, text in notation.NAMES.items():
+            b = QRadioButton(text)
+            b.setChecked(key == notation.current())
+            self.buttons[key] = b
+            lay.addWidget(b)
+        note = QLabel("Programs are the same in both; switch whenever you like.")
+        note.setProperty("muted", "true")
+        lay.addWidget(note)
+        box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        box.accepted.connect(self.accept)
+        box.rejected.connect(self.reject)
+        lay.addWidget(box)
+
+    def notation(self) -> str:
+        return next(k for k, b in self.buttons.items() if b.isChecked())
