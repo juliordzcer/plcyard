@@ -80,6 +80,21 @@ undo, redo, Tags and zoom (− +); ladder and function block diagrams scroll wit
 Phones cannot drag, so: select an instruction, go to **Machine** and **tap an address**: it goes
 into the operand box and you are back in the program.
 
+## Install it, use it offline
+
+After the first visit PLCYard works **without internet**: the browser keeps the page, the PLC and
+the exercises (⚙ shows "Works offline on this device"). A new release is fetched the next time you
+are online, and the page offers to reload.
+
+To have it as an app with its own icon:
+
+- **Android (Chrome)**, Windows, Linux, macOS (Chrome or Edge): ⚙ → **Install PLCYard as an app**,
+  or the install icon in the address bar.
+- **iPhone, iPad (Safari)**: the Share button → **Add to Home Screen**.
+
+Your programs and progress stay in that browser on that device; use File → Save to keep a program
+as a file or move it to another device.
+
 ## What stays in the desktop app
 
 Data types, forcing, the PID setup dialog, single-scan stepping and comparing your solution with

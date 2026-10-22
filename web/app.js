@@ -53,6 +53,7 @@ async function start() {
     render(true);
     setInterval(loop, TICK_MS);
     watchVersion();
+    offline();
     if (!store.get("plcyard.welcomed")) { store.set("plcyard.welcomed", "1"); $("d-welcome").showModal(); }
   } catch (e) {
     $("loadmsg").textContent = "Could not start the simulator: " + e;
@@ -808,6 +809,26 @@ function check() {
     $("report").innerHTML = `<p class="${r.passed ? "passed" : ""}"><strong>${r.passed ? "✔ All requirements met" : "Score"}: ${esc(r.score)}</strong></p><ul>` +
       r.checks.map((c) => `<li><span class="${c.passed ? "ok" : "bad"}">${c.passed ? "✔" : "✘"}</span> ${esc(c.text)}${!c.passed && c.detail ? `<span class="detail">${esc(c.detail)}</span>` : ""}</li>`).join("") + "</ul>";
   }, 20);
+}
+
+// Installable and usable offline: a service worker caches the page, the package and Pyodide.
+function offline() {
+  if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
+  navigator.serviceWorker.register("sw.js").then(async () => {
+    await navigator.serviceWorker.ready;
+    $("offline-ok").hidden = false;
+  }).catch(() => { /* private window or blocked: works online only */ });
+  let prompt = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); prompt = e; $("b-install").hidden = false; });
+  window.addEventListener("appinstalled", () => { $("b-install").hidden = true; });
+  $("b-install").onclick = async () => {
+    closeMenus();
+    if (!prompt) return;
+    prompt.prompt();
+    await prompt.userChoice;
+    prompt = null;
+    $("b-install").hidden = true;
+  };
 }
 
 // A tab left open keeps running the version it loaded: ask the site, now and then, for the current one.

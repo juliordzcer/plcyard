@@ -56,6 +56,8 @@ def build(out: Path) -> None:
     for f in sorted(WEB.iterdir()):
         if f.is_file():
             digest.update(f.read_bytes())
+    for f in sorted((WEB / "icons").iterdir()):
+        digest.update(f.read_bytes())
     for f in ("tokens.css", "plcyard.zip"):
         digest.update((out / f).read_bytes())
     version = digest.hexdigest()[:12]
@@ -63,6 +65,7 @@ def build(out: Path) -> None:
         if f.is_file():
             text = f.read_text(encoding="utf-8")
             (out / f.name).write_text(text.replace("__VERSION__", version), encoding="utf-8")
+    shutil.copytree(WEB / "icons", out / "icons", dirs_exist_ok=True)   # PNG icons for installing the app
     (out / "version.json").write_text(json.dumps({"version": version}) + "\n", encoding="utf-8")
     print(f"web version in {out} ({n} files in plcyard.zip)")
 

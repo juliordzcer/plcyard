@@ -78,6 +78,10 @@ def test_build_packs_the_python_and_the_page(tmp_path):
     assert f'app.js?v={version}' in page and "__VERSION__" not in page
     webbuild.build(tmp_path)                       # same sources, same version
     assert json.loads((tmp_path / "version.json").read_text())["version"] == version
+    sw = (tmp_path / "sw.js").read_text()           # installable and offline: the worker caches this release
+    assert f'const VERSION = "{version}"' in sw and "pyodide/v0.26.4" in page and "pyodide/v0.26.4" in sw
+    manifest = json.loads((tmp_path / "manifest.webmanifest").read_text())
+    assert all((tmp_path / i["src"]).exists() for i in manifest["icons"])
 
 
 def test_a_new_program_does_not_keep_old_outputs_on():

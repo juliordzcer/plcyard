@@ -6,6 +6,11 @@
 <title>PLCYard Web</title>
 <meta name="description" content="A free PLC trainer in the browser: write ladder logic, structured text or function blocks, run it on a simulated PLC with an I/O panel, and check it against an exercise.">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#2456d3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PLCYard">
 <link rel="stylesheet" href="tokens.css?v=__VERSION__">
 <link rel="stylesheet" href="style.css?v=__VERSION__">
 </head>
@@ -52,6 +57,8 @@
           </select></label>
         <hr>
         <button id="b-welcome">How it works…</button>
+        <button id="b-install" hidden>Install PLCYard as an app</button>
+        <span id="offline-ok" class="muted small" hidden>✔ Works offline on this device</span>
         <a class="ddlink" href="../" target="_blank" rel="noopener">The wiki: manual and reference ↗</a>
       </div></details>
   </div>

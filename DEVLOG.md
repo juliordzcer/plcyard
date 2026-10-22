@@ -835,3 +835,17 @@ keys:      web, thumbnails, pickers, wiki
 - Checked in Chromium at 390 × 844 with touch: welcome, exercise, program, tap-to-use, RUN, FBD,
   pickers; no sideways scrolling of the page. Still to try on real phones.
 keys:      web, phone, mobile, touch, tabs
+
+## C-046 — Web version as an installable app that works offline (PWA)
+2026-10-22 · commits: 7f5a91c
+- `web/manifest.webmanifest` (name, colours, standalone) with PNG icons made from the SVG icon
+  (192, 512, maskable 512, Apple touch 180) in `web/icons/`, copied by webbuild.
+- `web/sw.js`, a service worker per release (`__VERSION__`): it caches the page and every
+  versioned file of this release, and Pyodide and the markdown library from the CDN (pinned, kept
+  across releases); the page is network-first (offline: the cached one), version.json always goes
+  to the network, old release caches are deleted.
+- ⚙ shows "Works offline on this device" once the worker is ready and **Install PLCYard as an app**
+  where the browser offers it; the wiki explains Android/desktop install and Add to Home Screen on
+  iOS.
+- Checked in Chromium: first load online, then offline reload starts the PLC and opens an exercise.
+keys:      web, pwa, offline, service worker, install

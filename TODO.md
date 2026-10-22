@@ -71,8 +71,8 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [x] Phone-friendly web version: one view at a time (Machine, Program, Exercise) with RUN in a
       bottom bar, touch-sized controls, scrolling instruction bar, zoom, tap an address to use it,
       full-screen pickers. Still to try on real Android Chrome and iOS Safari.
-- [ ] Mobile, from the web version: (1) PWA (manifest + service worker, offline, add to home
-      screen on Android and iOS); (2) Android APK with Capacitor (direct download, Play Store
+- [ ] Mobile, from the web version: (1) PWA done (manifest, icons, service worker: installable,
+      offline after the first visit); (2) Android APK with Capacitor (direct download, Play Store
       later); (3) iOS with Capacitor (needs an Apple Developer account). Phone layout: simulation
       and ladder in tabs.
 - [ ] Web version: the core, simulations and checker in the browser with Pyodide and a new HTML/JS
