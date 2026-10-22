@@ -1,6 +1,8 @@
 site_name: PLCYard
 site_description: A free, open-source PLC trainer
+site_url: https://juliordz.com/plcyard/
 repo_url: https://github.com/juliordzcer/plcyard
+edit_uri: edit/main/docs/wiki/
 docs_dir: docs/wiki
 theme:
   name: readthedocs
@@ -10,6 +12,7 @@ markdown_extensions:
       permalink: true
 nav:
   - Home: index.md
+  - Download: download.md
   - Getting started: getting-started.md
   - The scan cycle: scan-cycle.md
   - Notations: notations.md

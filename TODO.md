@@ -53,6 +53,9 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [ ] Humidity in the room climate simulation; a second floor of parking; a fourth elevator floor.
 
 ## Later
+- [ ] Web version: the core, simulations and checker in the browser with Pyodide and a new HTML/JS
+      UI (ladder/ST/FBD editors, animations), hosted statically at juliordz.com/plcyard. Step 1 done:
+      wiki and download page on the site. Next: a web demo with the I/O panel and the ladder editor.
 - [ ] Real hardware I/O: Arduino and/or ESP32 as remote I/O over USB serial (then Wi-Fi), to test
       programs with real switches and lamps (docs/ROADMAP.md, "Later").
 - [ ] More UI languages (main languages); English only for now.

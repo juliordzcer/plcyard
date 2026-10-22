@@ -65,6 +65,9 @@ with the full test suite green.
 
 ## Later
 
+- Web version: reuse the pure-Python core, simulations and checker in the browser (Pyodide) with an
+  HTML/JS UI; static hosting, nothing to install. Step 1 (wiki and downloads on the site) done.
+
 - UI languages (Qt translations; exercises as `labs/<lang>/`).
 - More simulations (list in TODO.md): elevator, bottle line, sorting conveyor, pick and place,
   parking garage, pump station, HVAC room, washing machine; exercises for the newer ones.
