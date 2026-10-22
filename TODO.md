@@ -34,8 +34,21 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [ ] Wiki: getting started, every instruction with an example, how the scan works, how to write an
       exercise and its checks, how to add a simulation.
 
+## Simulations
+- [x] Two tanks in series (two analog loops or a cascade), garage door (limits, photo-eye, warning
+      light), batch mixer (two ingredients, level switches, mixer, heater, temperature, batch grading),
+      each with an example program.
+- [ ] Exercises with checks for the two tanks, the garage door and the batch mixer (in LD, ST and FBD).
+- [ ] Elevator: three floors, call and car buttons, door, floor sensors, overtravel limits.
+- [ ] Bottle line: conveyor, filler with level, capper, reject gate for bad bottles, counters.
+- [ ] Sorting conveyor: boxes of three heights, sensors, pushers into three bins.
+- [ ] Pick and place: two-axis pneumatic arm with cylinders, end sensors and a vacuum gripper.
+- [ ] Parking garage: entry/exit barriers, car counter, "full" sign.
+- [ ] Pump station: two pumps alternating, level switches, pump failure and standby.
+- [ ] HVAC room: temperature and humidity with heater, cooler and fan (analog, two loops).
+- [ ] Washing machine sequence: fill, wash, drain, spin with door lock and timers.
+
 ## Later
 - [ ] Real hardware I/O: Arduino and/or ESP32 as remote I/O over USB serial (then Wi-Fi), to test
       programs with real switches and lamps (docs/ROADMAP.md, "Later").
 - [ ] More UI languages (main languages); English only for now.
-- [ ] More simulations: door, elevator, batch mixing, bottle line.

@@ -66,7 +66,8 @@ with the full test suite green.
 ## Later
 
 - UI languages (Qt translations; exercises as `labs/<lang>/`).
-- More simulations: door, elevator, batch mixing, bottle line.
+- More simulations (list in TODO.md): elevator, bottle line, sorting conveyor, pick and place,
+  parking garage, pump station, HVAC room, washing machine; exercises for the newer ones.
 - Real hardware: an Arduino and/or ESP32 as remote I/O over USB serial (later Wi-Fi), so a program
   running in PLCYard reads real switches and drives real LEDs/relays. A small firmware sketch
   speaks a line protocol (input word in, output word out each scan), and an `IODevice` on the PC

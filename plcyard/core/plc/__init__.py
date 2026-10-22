@@ -3,7 +3,7 @@
 Simulated rack (canonical addresses; the other notation shows Local:<slot>:I.Data.<point>):
   inputs   slot 1 → %I0.0-%I1.7, slot 3 → %I2.0-%I3.7, slot 5 → %IW4 (BCD thumbwheels)
   outputs  slot 2 → %Q0.0-%Q1.7, slot 4 → %Q2.0-%Q3.7, slot 6 → %QW4 (BCD display)
-  analog   %IW64 level, %IW66 setpoint knob, %QW64 valve: 0-27648 = 0-10 V
+  analog   inputs %IW64 %IW66 %IW68 %IW70, outputs %QW64 %QW66 %QW68: 0-27648 = 0-10 V
 """
 
 from __future__ import annotations
@@ -354,13 +354,16 @@ class PlcYard(Profile):
             words[slot] = w if slot in WORD_SLOTS else _slot_to_bytes(w)
         device.set_output_words(words)
         if hasattr(device, "set_analog_outputs"):
-            raw = int.from_bytes(mem.areas["Q"][ANALOG_OUT[0]:ANALOG_OUT[0] + 2], "big", signed=True)
-            device.set_analog_outputs({0: min(max(raw, 0), FULL_SCALE) / FULL_SCALE * 10.0})
+            volts = {}
+            for ch, byte in ANALOG_OUT.items():
+                raw = int.from_bytes(mem.areas["Q"][byte:byte + 2], "big", signed=True)
+                volts[ch] = min(max(raw, 0), FULL_SCALE) / FULL_SCALE * 10.0
+            device.set_analog_outputs(volts)
 
     def outputs_off(self, mem: Memory, device: IODevice) -> None:
         device.set_output_words({s: 0 for s in OUTPUT_SLOTS})
         if hasattr(device, "set_analog_outputs"):
-            device.set_analog_outputs({0: 0.0})
+            device.set_analog_outputs({ch: 0.0 for ch in ANALOG_OUT})
 
 
 PLC = PlcYard()

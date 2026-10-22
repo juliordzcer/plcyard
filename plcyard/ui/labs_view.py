@@ -10,7 +10,9 @@ from PySide6.QtCore import Qt
 from .. import labs
 from . import notation
 
-SIM_NAMES = {"io": "I/O panel", "silo": "Silo", "traffic": "Traffic lights", "tank": "Tank level"}
+from ..sims import MODELS
+
+SIM_NAMES = {k: name for k, (name, _) in MODELS.items()}
 
 
 class LabsView(QWidget):

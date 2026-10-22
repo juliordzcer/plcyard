@@ -699,3 +699,18 @@ def test_F19_H1_compare_shows_three_languages_and_opens_one(win, qtbot, monkeypa
     qtbot.mouseClick(lv.compare_btn, Qt.LeftButton)
     assert shown["langs"] == ["LD", "ST", "FBD"]
     assert win.program.main.language == "FBD" and win.doc.fbd is not None
+
+
+# -- F20 more simulations ------------------------------------------------------------------------------------
+@pytest.mark.parametrize("kind,sample", [("two_tanks", "two-tanks-cascade.plcy"), ("garage", "garage-door.plcy"),
+                                         ("mixer", "batch-mixer-st.plcy")])
+def test_F20_H1_new_simulations_run_their_examples(win, kind, sample):
+    win.select_sim(kind)
+    win.open(str(SAMPLES / sample))
+    win.download()
+    assert win.warnings == []
+    go(win, "RUN")
+    run(win, 500)
+    win.sim_view.canvas.grab()
+    assert win.sim_view.canvas._spots, "address labels on the drawing can be dragged"
+    assert win.plc.mode == Processor.RUN

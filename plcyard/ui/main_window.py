@@ -202,7 +202,8 @@ class MainWindow(QMainWindow):
         group = QActionGroup(self)
         self.sim_actions = {}
         for key, label in (("io", "&I/O panel"), ("silo", "&Silo"), ("traffic", "&Traffic lights"),
-                           ("tank", "Tank level (&analog)")):
+                           ("tank", "Tank level (&analog)"), ("two_tanks", "T&wo tanks (analog)"),
+                           ("garage", "&Garage door"), ("mixer", "Batch &mixer")):
             a = act(s, label, lambda _=False, k=key: self.select_sim(k))
             a.setCheckable(True)
             a.setChecked(key == self.sim_kind)
@@ -344,6 +345,12 @@ class MainWindow(QMainWindow):
         elif self.sim_kind == "traffic":
             self.sim = TrafficModel()
             self.sim_view = TrafficView(self.sim, name)
+        elif self.sim_kind in ("two_tanks", "garage", "mixer"):
+            from ..sims import MODELS
+            from . import more_sim_views as V
+            self.sim = MODELS[self.sim_kind][1]()
+            view = {"two_tanks": V.TwoTankView, "garage": V.GarageView, "mixer": V.MixerView}[self.sim_kind]
+            self.sim_view = view(self.sim, name, notation.analog_name)
         else:
             self.sim = IoPanelModel()
             self.sim.configure_from_symbols(self.program.symbols)

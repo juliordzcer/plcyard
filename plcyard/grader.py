@@ -44,7 +44,8 @@ class Rig:
     def __init__(self, program: Program, simulation: str, symbols: dict[str, str]):
         prog = copy.deepcopy(program)
         prog.symbols = {**prog.symbols, **symbols}
-        self.sim = {"io": IoPanelModel, "silo": SiloModel, "traffic": TrafficModel, "tank": TankModel}[simulation]()
+        from .sims import MODELS
+        self.sim = MODELS[simulation][1]()
         if isinstance(self.sim, IoPanelModel):
             self.sim.configure_from_symbols(prog.symbols)
         self.plc = Processor()

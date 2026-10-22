@@ -576,3 +576,22 @@ keys:      FBD, function block diagram, wire, pin, data flow, R_TRIG, SR, SCALE
   in the exercises panel.
 - Tests: 39 graded solutions, e2e F19. 335 in total.
 keys:      three languages, compare, solutions, .st.plcy, .fbd.plcy, BCD
+
+## C-029 — Three more simulations: two tanks, garage door, batch mixer
+2026-10-22 · commit: 09519ac
+- `sims/two_tanks.py`: tank 1 → transfer valve → tank 2 → outlet, flows ∝ √level, pump or inlet
+  valve, three level switches, setpoint knob, overflow events, trend of 5 signals.
+- `sims/garage.py`: door 0-100 % at 10 %/s, open/close/stop buttons, end limits, fail-safe photo-eye,
+  car in the doorway (hit below 30 %), events for crash, end-stop strain and up+down at once.
+- `sims/mixer.py`: ingredients A and B, low/mid/high switches, mixer, heater, temperature on AI0,
+  drain; every drained batch is graded (ratio, fill, mixing time, 50-60 °C); dry heating, empty
+  mixing and overflow events.
+- `ui/more_sim_views.py`: panels and animated drawings (water flow, door panels and car, mixing
+  colour, rotating blade, glowing heater, thermometer), draggable address labels, trends.
+- `sims.MODELS` registry used by the window, the checker and the exercises panel. Analog channels:
+  4 inputs (%IW64-70), 3 outputs (%QW64-68).
+- Examples: `two-tanks-cascade.plcy` (master/slave PID), `garage-door.plcy` (reversing on the beam,
+  flashing warning, courtesy light), `batch-mixer-st.plcy` (state machine in ST).
+- More simulations and their exercises listed in TODO.md.
+- Tests: `test_more_sims.py` (6), e2e F20 (3). 350 in total.
+keys:      two tanks, cascade, garage door, photo-eye, batch mixer, heater, MODELS

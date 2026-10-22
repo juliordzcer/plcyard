@@ -50,8 +50,8 @@ FULL_SCALE = 27648                  # analog counts at 10 V
 INPUT_SLOTS = {1: 0, 3: 2, 5: 4}
 OUTPUT_SLOTS = {2: 0, 4: 2, 6: 4}
 WORD_SLOTS = (5, 6)                 # whole words (BCD thumbwheels and display), not 16 points
-ANALOG_IN = {0: 64, 1: 66}          # channel → %IW byte (module slot 7)
-ANALOG_OUT = {0: 64}                # channel → %QW byte (module slot 8)
+ANALOG_IN = {0: 64, 1: 66, 2: 68, 3: 70}   # channel → %IW byte (module slot 7)
+ANALOG_OUT = {0: 64, 1: 66, 2: 68}         # channel → %QW byte (module slot 8)
 ANALOG_IN_SLOT, ANALOG_OUT_SLOT = 7, 8
 
 _BIT = re.compile(r"^%?([IQM])(\d+)\.([0-7])$", re.I)

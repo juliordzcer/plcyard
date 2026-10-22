@@ -38,8 +38,10 @@ no licence key.
   automatic checks of every written requirement. Runs faster than real time. **Compare
   languages** shows each reference solution in ladder, structured text and function block diagram.
 - **Simulations**: I/O panel (16 inputs, 16 outputs per card, thumbwheels and a 7-segment BCD
-  display), a filling line (silo), a road crossing (traffic lights) and an analog **tank level**
-  process with a live trend of setpoint, level and valve.
+  display), a filling line (silo), a road crossing (traffic lights), an analog **tank level**
+  process with a live trend, **two tanks in series** (cascade control), a **garage door** with
+  limit switches and a safety photo-eye, and a **batch mixer** with ingredients, mixer, heater and
+  temperature. Every label with an address can be dragged onto the program.
 - **Tags, data types and arrays**: BOOL, INT, DINT, REAL, TIME, TIMER, COUNTER, CONTROL, PID, your
   own data types and arrays (`Recipe[Step].FillTime`); marker and I/O addresses (`%M10.0`, `%MW20`).
 - **Instructions**: contacts and coils, set/reset, one shots and edge contacts, TON/TOF/RTO/TP,
