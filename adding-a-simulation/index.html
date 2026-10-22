@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://juliordz.com/plcyard/adding-a-simulation/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Adding a simulation - PLCYard</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Adding a simulation";
+        var mkdocs_page_input_path = "adding-a-simulation.md";
+        var mkdocs_page_url = "/plcyard/adding-a-simulation/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> PLCYard
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../download/">Download</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../scan-cycle/">The scan cycle</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../notations/">Notations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ladder/">Ladder</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../structured-text/">Structured text</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../fbd/">Function block diagram</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../tags/">Tags, data types and arrays</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../routines/">Routines and blocks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../simulations/">Simulations</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/instructions/">Instructions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/function-blocks/">Function blocks</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/st-functions/">Structured text functions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/simulations/">Simulations</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../writing-exercises/">Writing exercises</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Adding a simulation</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#the-model">The model</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-view">The view</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-example-and-the-tests">The example and the tests</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">PLCYard</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Adding a simulation</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/juliordzcer/plcyard/edit/main/docs/wiki/adding-a-simulation.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="adding-a-simulation">Adding a simulation<a class="headerlink" href="#adding-a-simulation" title="Permanent link">&para;</a></h1>
+<p>A simulation is two classes: a <strong>model</strong> (the physics, no UI) and a <strong>view</strong> (the drawing).</p>
+<h2 id="the-model">The model<a class="headerlink" href="#the-model" title="Permanent link">&para;</a></h2>
+<p><code>plcyard/sims/my_machine.py</code>. Its module docstring documents the I/O: it becomes the
+<a href="../reference/simulations/">simulation reference</a>.</p>
+<pre><code class="language-python">&quot;&quot;&quot;Conveyor with a photo-eye.
+
+Digital (slot words):
+  %I0.0 Start (NO)   %I0.1 Stop (NC)   %I0.2 Photo-eye
+  %Q0.0 Motor
+&quot;&quot;&quot;
+
+@dataclass
+class ConveyorModel:
+    name = &quot;Conveyor&quot;
+    position: float = 0.0
+    start_pressed: bool = False
+    stop_pressed: bool = False
+    outputs: int = 0
+    events: list[str] = field(default_factory=list)
+
+    def input_words(self) -&gt; dict[int, int]:          # slot → 16-bit word, read every input scan
+        return {1: int(self.start_pressed) | int(not self.stop_pressed) &lt;&lt; 1}
+
+    def set_output_words(self, words: dict[int, int]) -&gt; None:   # written every output scan
+        self.outputs = words.get(2, 0) &amp; 0xFFFF
+
+    def step(self, dt_ms: float) -&gt; None:              # advance the physics after each scan
+        ...
+</code></pre>
+<ul>
+<li>Slot 1 is <code>%I0.x</code>, slot 2 is <code>%Q0.x</code>.</li>
+<li>Analog: <code>analog_inputs()</code> returns <code>{channel: volts}</code> (0-10 V, channel 0 is <code>%IW64</code>);
+  <code>set_analog_outputs(volts)</code> receives the outputs.</li>
+<li>Append a line to <code>events</code> for misuse (a crash, an overflow).</li>
+</ul>
+<p>Register it in <code>MODELS</code> in <code>plcyard/sims/__init__.py</code>: <code>"conveyor": ("Conveyor", ConveyorModel)</code>.</p>
+<h2 id="the-view">The view<a class="headerlink" href="#the-view" title="Permanent link">&para;</a></h2>
+<p>A <code>QWidget</code> that takes the model and repaints it (see <code>plcyard/ui/sim_views3.py</code> for examples
+built on the shared canvas and control panel), registered in <code>VIEWS</code>. Give every labelled device
+its address so it can be dragged onto a program.</p>
+<h2 id="the-example-and-the-tests">The example and the tests<a class="headerlink" href="#the-example-and-the-tests" title="Permanent link">&para;</a></h2>
+<p>Add a working example in <code>plcyard/data/samples/</code> and a test that runs it on the model and checks the
+machine does its job. Then regenerate the reference:</p>
+<pre><code class="language-bash">python -m plcyard.docgen
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../writing-exercises/" class="btn btn-neutral float-left" title="Writing exercises"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../contributing/" class="btn btn-neutral float-right" title="Contributing">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/juliordzcer/plcyard" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../writing-exercises/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../contributing/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

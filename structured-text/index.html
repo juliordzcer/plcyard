@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://juliordz.com/plcyard/structured-text/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Structured text - PLCYard</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Structured text";
+        var mkdocs_page_input_path = "structured-text.md";
+        var mkdocs_page_url = "/plcyard/structured-text/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> PLCYard
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../download/">Download</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../scan-cycle/">The scan cycle</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../notations/">Notations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../ladder/">Ladder</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Structured text</a>
+    <ul class="current">
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../fbd/">Function block diagram</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../tags/">Tags, data types and arrays</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../routines/">Routines and blocks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../simulations/">Simulations</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/instructions/">Instructions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/function-blocks/">Function blocks</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/st-functions/">Structured text functions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../reference/simulations/">Simulations</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../writing-exercises/">Writing exercises</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../adding-a-simulation/">Adding a simulation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../contributing/">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">PLCYard</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Structured text</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/juliordzcer/plcyard/edit/main/docs/wiki/structured-text.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="structured-text">Structured text<a class="headerlink" href="#structured-text" title="Permanent link">&para;</a></h1>
+<pre><code>IF Start AND NOT Stop THEN
+    Motor := TRUE;
+ELSIF Stop THEN
+    Motor := FALSE;
+END_IF;
+
+Delay.TON(IN := Motor, PT := T#5s);
+Lamp := Delay.DN;
+</code></pre>
+<ul>
+<li>Statements: <code>:=</code>, <code>IF/ELSIF/ELSE</code>, <code>CASE</code>, <code>FOR</code>, <code>WHILE</code>, <code>REPEAT</code>, <code>EXIT</code>, <code>RETURN</code>.</li>
+<li>Operators: <code>+ - * / MOD **</code>, <code>AND OR XOR NOT</code>, <code>= &lt;&gt; &lt; &lt;= &gt; &gt;=</code>.</li>
+<li>Literals: <code>TRUE</code>, <code>16#FF</code>, <code>2#1010</code>, <code>T#1m30s</code>, <code>3.5</code>.</li>
+<li>Timers, counters and PID are called on their tag: <code>Delay.TON(…)</code>, <code>Parts.CTU(CU := Sensor, PV := 10)</code>,
+  <code>Loop.PID(PV := Level, SP := 50.0, CV =&gt; Valve)</code>.</li>
+<li>Routines and blocks: <code>JSR(Fill);</code>, <code>"Scale"(In := Raw, Out =&gt; Level);</code>, <code>"Motor1"(Run := Start);</code>.</li>
+<li>Arrays and members: <code>Recipe[Step].FillTime</code>.</li>
+</ul>
+<p>The editor colours keywords, numbers lines and shows errors as you type. Online, a watch list next to
+the code shows the live value of every name used.</p>
+<p>See the <a href="../reference/st-functions/">function reference</a>.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../ladder/" class="btn btn-neutral float-left" title="Ladder"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../fbd/" class="btn btn-neutral float-right" title="Function block diagram">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/juliordzcer/plcyard" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../ladder/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../fbd/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://juliordz.com/plcyard/reference/function-blocks/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Function blocks - PLCYard</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Function blocks";
+        var mkdocs_page_input_path = "reference/function-blocks.md";
+        var mkdocs_page_url = "/plcyard/reference/function-blocks/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> PLCYard
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../download/">Download</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../scan-cycle/">The scan cycle</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../notations/">Notations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../ladder/">Ladder</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../structured-text/">Structured text</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../fbd/">Function block diagram</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../tags/">Tags, data types and arrays</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../routines/">Routines and blocks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../simulations/">Simulations</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../instructions/">Instructions</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Function blocks</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#bit-logic">Bit logic</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#timers">Timers</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#counters">Counters</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#compare">Compare</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#math">Math</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#move">Move</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#process">Process</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../st-functions/">Structured text functions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../simulations/">Simulations</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../writing-exercises/">Writing exercises</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../adding-a-simulation/">Adding a simulation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../contributing/">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">PLCYard</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Reference</li>
+      <li class="breadcrumb-item active">Function blocks</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/juliordzcer/plcyard/edit/main/docs/wiki/reference/function-blocks.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="function-blocks-fbd">Function blocks (FBD)<a class="headerlink" href="#function-blocks-fbd" title="Permanent link">&para;</a></h1>
+<p>Blocks of the function block diagram editor. An input pin takes a wire or an operand (a tag,
+an address or a constant); an output pin may feed wires and write an operand. Blocks with an
+instance keep their state in a tag of that type.</p>
+<h2 id="bit-logic">Bit logic<a class="headerlink" href="#bit-logic" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>What it does</th>
+<th>Inputs</th>
+<th>Outputs</th>
+<th>Instance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AND</code></td>
+<td>AND (more inputs: right-click → Add input)</td>
+<td>IN1 (BOOL), IN2 (BOOL)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>OR</code></td>
+<td>OR (more inputs: right-click → Add input)</td>
+<td>IN1 (BOOL), IN2 (BOOL)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>XOR</code></td>
+<td>Exclusive OR</td>
+<td>IN1 (BOOL), IN2 (BOOL)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>NOT</code></td>
+<td>NOT</td>
+<td>IN (BOOL)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>SR</code></td>
+<td>Set dominant flip-flop</td>
+<td>S1 (BOOL), R (BOOL)</td>
+<td>Q1 (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>RS</code></td>
+<td>Reset dominant flip-flop</td>
+<td>S (BOOL), R1 (BOOL)</td>
+<td>Q1 (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>R_TRIG</code></td>
+<td>Rising edge</td>
+<td>CLK (BOOL)</td>
+<td>Q (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>F_TRIG</code></td>
+<td>Falling edge</td>
+<td>CLK (BOOL)</td>
+<td>Q (BOOL)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2 id="timers">Timers<a class="headerlink" href="#timers" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>What it does</th>
+<th>Inputs</th>
+<th>Outputs</th>
+<th>Instance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TON</code></td>
+<td>On delay</td>
+<td>IN (BOOL), PT (number)</td>
+<td>Q (BOOL), ET (number)</td>
+<td>TIMER</td>
+</tr>
+<tr>
+<td><code>TOF</code></td>
+<td>Off delay</td>
+<td>IN (BOOL), PT (number)</td>
+<td>Q (BOOL), ET (number)</td>
+<td>TIMER</td>
+</tr>
+<tr>
+<td><code>TP</code></td>
+<td>Pulse</td>
+<td>IN (BOOL), PT (number)</td>
+<td>Q (BOOL), ET (number)</td>
+<td>TIMER</td>
+</tr>
+<tr>
+<td><code>RTO</code></td>
+<td>Retentive on delay</td>
+<td>IN (BOOL), PT (number), R (BOOL)</td>
+<td>Q (BOOL), ET (number)</td>
+<td>TIMER</td>
+</tr>
+</tbody>
+</table>
+<h2 id="counters">Counters<a class="headerlink" href="#counters" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>What it does</th>
+<th>Inputs</th>
+<th>Outputs</th>
+<th>Instance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CTU</code></td>
+<td>Count up</td>
+<td>CU (BOOL), R (BOOL), PV (number)</td>
+<td>Q (BOOL), CV (number)</td>
+<td>COUNTER</td>
+</tr>
+<tr>
+<td><code>CTD</code></td>
+<td>Count down</td>
+<td>CD (BOOL), LD (BOOL), PV (number)</td>
+<td>Q (BOOL), CV (number)</td>
+<td>COUNTER</td>
+</tr>
+</tbody>
+</table>
+<h2 id="compare">Compare<a class="headerlink" href="#compare" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>What it does</th>
+<th>Inputs</th>
+<th>Outputs</th>
+<th>Instance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EQ</code></td>
+<td>Equal</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>NE</code></td>
+<td>Not equal</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>LT</code></td>
+<td>Less than</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>LE</code></td>
+<td>Less or equal</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>GT</code></td>
+<td>Greater than</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>GE</code></td>
+<td>Greater or equal</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (BOOL)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>LIMIT</code></td>
+<td>Limit to a range</td>
+<td>MN (number), IN (number), MX (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2 id="math">Math<a class="headerlink" href="#math" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>What it does</th>
+<th>Inputs</th>
+<th>Outputs</th>
+<th>Instance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ADD</code></td>
+<td>Add (more inputs: right-click → Add input)</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>SUB</code></td>
+<td>Subtract</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>MUL</code></td>
+<td>Multiply (more inputs: right-click → Add input)</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>DIV</code></td>
+<td>Divide</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>MOD</code></td>
+<td>Modulo</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>MAX</code></td>
+<td>Maximum (more inputs: right-click → Add input)</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>MIN</code></td>
+<td>Minimum (more inputs: right-click → Add input)</td>
+<td>IN1 (number), IN2 (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>ABS</code></td>
+<td>Absolute value</td>
+<td>IN (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>SQRT</code></td>
+<td>Square root</td>
+<td>IN (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2 id="move">Move<a class="headerlink" href="#move" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>What it does</th>
+<th>Inputs</th>
+<th>Outputs</th>
+<th>Instance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MOVE</code></td>
+<td>Move</td>
+<td>IN (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>SEL</code></td>
+<td>Select</td>
+<td>G (BOOL), IN0 (number), IN1 (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>TO_BCD</code></td>
+<td>Integer to BCD</td>
+<td>IN (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>FROM_BCD</code></td>
+<td>BCD to integer</td>
+<td>IN (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>SCALE</code></td>
+<td>Scale a range</td>
+<td>IN (number), IN_MIN (number), IN_MAX (number), OUT_MIN (number), OUT_MAX (number)</td>
+<td>OUT (number)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2 id="process">Process<a class="headerlink" href="#process" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>What it does</th>
+<th>Inputs</th>
+<th>Outputs</th>
+<th>Instance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PID</code></td>
+<td>PID controller</td>
+<td>PV (number), SP (number)</td>
+<td>CV (number)</td>
+<td>PID</td>
+</tr>
+</tbody>
+</table>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../instructions/" class="btn btn-neutral float-left" title="Instructions"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../st-functions/" class="btn btn-neutral float-right" title="Structured text functions">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/juliordzcer/plcyard" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../instructions/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../st-functions/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

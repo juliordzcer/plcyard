@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://juliordz.com/plcyard/reference/simulations/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Simulations - PLCYard</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Simulations";
+        var mkdocs_page_input_path = "reference/simulations.md";
+        var mkdocs_page_url = "/plcyard/reference/simulations/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> PLCYard
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../download/">Download</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../scan-cycle/">The scan cycle</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../notations/">Notations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../ladder/">Ladder</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../structured-text/">Structured text</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../fbd/">Function block diagram</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../tags/">Tags, data types and arrays</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../routines/">Routines and blocks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../simulations/">Simulations</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../instructions/">Instructions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../function-blocks/">Function blocks</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../st-functions/">Structured text functions</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Simulations</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#io-panel">I/O panel</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#silo">Silo</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#traffic-lights">Traffic lights</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#tank-level">Tank level</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#two-tanks">Two tanks</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#garage-door">Garage door</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#batch-mixer">Batch mixer</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#elevator">Elevator</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#bottle-line">Bottle line</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#sorting-conveyor">Sorting conveyor</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pick-and-place">Pick and place</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#parking-garage">Parking garage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pump-station">Pump station</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#room-climate">Room climate</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#washing-machine">Washing machine</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../writing-exercises/">Writing exercises</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../adding-a-simulation/">Adding a simulation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../contributing/">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">PLCYard</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Reference</li>
+      <li class="breadcrumb-item active">Simulations</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/juliordzcer/plcyard/edit/main/docs/wiki/reference/simulations.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="simulations">Simulations<a class="headerlink" href="#simulations" title="Permanent link">&para;</a></h1>
+<p>Every simulation, its inputs and outputs as the PLC sees them (canonical addresses; the
+mnemonic notation shows them as <code>Local:&lt;slot&gt;:I.Data.&lt;point&gt;</code>). Choose one in the
+Simulations menu.</p>
+<h2 id="io-panel">I/O panel<a class="headerlink" href="#io-panel" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>io</code>.</p>
+<p>Generic I/O trainer: 2 input cards of switches, 2 output cards of lamps,
+4 BCD thumbwheels on %IW4 and a 4-digit BCD display on %QW4.</p>
+<h2 id="silo">Silo<a class="headerlink" href="#silo" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>silo</code>.</p>
+<p>Silo filling line: boxes ride a conveyor, stop under a hopper, fill, move on.</p>
+<p>I/O:
+  %I0.0 Start (NO pushbutton)   %I0.1 Stop (NC pushbutton)
+  %I0.3 Prox sensor (box under the hopper)   %I0.4 Level sensor (box full)
+  %I0.5 / %I0.6 / %I0.7 Selector A / B / C
+  %Q0.0 Conveyor motor   %Q0.1 Fill solenoid   %Q0.2 Run lamp   %Q0.3 Fill lamp   %Q0.4 Full lamp
+Idle input word is 0022h: Stop is NC (closed) and the selector rests on A.</p>
+<h2 id="traffic-lights">Traffic lights<a class="headerlink" href="#traffic-lights" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>traffic</code>.</p>
+<p>Intersection with two traffic directions, crosswalk buttons and two cars.</p>
+<p>I/O:
+  %Q0.0 Red A   %Q0.1 Amber A   %Q0.2 Green A   %Q0.3 Walk (crossing A)
+  %Q0.4 Red B   %Q0.5 Amber B   %Q0.6 Green B   %Q0.7 Walk (crossing B)
+  %I0.0 Crosswalk button A   %I0.1 Crosswalk button B
+  %I0.2 Car waiting at A     %I0.3 Car waiting at B
+Car A drives along road A (lights %Q0.0-%Q0.2), car B along road B (%Q0.4-%Q0.6).
+A car stops at its stop line unless its light is green; on amber it keeps going if it is
+already close to the line. Two cars inside the junction at the same time is a crash.</p>
+<h2 id="tank-level">Tank level<a class="headerlink" href="#tank-level" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>tank</code>.</p>
+<p>Tank level process: an analog loop to control with on/off or PID.</p>
+<p>Water enters through a pump (on/off) or a proportional inlet valve (0-10 V) and leaves through an
+outlet whose opening the user sets (the disturbance). The level is measured 0-100 % and sent as
+0-10 V; a setpoint knob sends 0-10 V on a second analog input.</p>
+<p>Digital I/O (slot words, like the other simulations):
+  %I0.0 Start (NO pushbutton)   %I0.1 Stop (NC pushbutton)
+  %I0.2 High level switch (level &gt;= 90 %)   %I0.3 Low level switch (level &lt;= 10 %)
+  %Q0.0 Pump (fixed flow)   %Q0.1 Run lamp   %Q0.2 High alarm lamp
+Analog: AI0 level (0-10 V = 0-100 %), AI1 setpoint knob (0-10 V), AO0 inlet valve (0-10 V = 0-100 %).</p>
+<h2 id="two-tanks">Two tanks<a class="headerlink" href="#two-tanks" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>two_tanks</code>.</p>
+<p>Two tanks in series: an analog process for two loops or a cascade.</p>
+<p>Water enters the upper tank 1 through a proportional inlet valve (or an on/off pump), flows down
+into tank 2 through a proportional transfer valve, and leaves tank 2 through an outlet whose
+opening the user sets (the disturbance). Flows through the valves fall with the square root of
+the level above them, as in a real gravity-fed tank.</p>
+<p>Digital (slot words): %I0.0 Start (NO)  %I0.1 Stop (NC)  %I0.2 Tank 1 high (&gt;= 90 %)
+  %I0.3 Tank 2 high (&gt;= 90 %)  %I0.4 Tank 2 low (&lt;= 10 %)
+  %Q0.0 Feed pump (fixed flow)  %Q0.1 Run lamp  %Q0.2 Alarm lamp
+Analog: AI0 tank 1 level, AI1 tank 2 level, AI2 setpoint knob (0-10 V = 0-100 %);
+  AO0 inlet valve, AO1 transfer valve (0-10 V = 0-100 %).</p>
+<h2 id="garage-door">Garage door<a class="headerlink" href="#garage-door" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>garage</code>.</p>
+<p>Garage door: a motor that opens and closes a sectional door, end-of-travel switches, a safety
+photo-eye across the doorway and a flashing warning light.</p>
+<p>Digital (slot words):
+  %I0.0 Open button (NO)   %I0.1 Close button (NO)   %I0.2 Stop button (NC)
+  %I0.3 Open limit (door fully up)   %I0.4 Closed limit (door fully down)
+  %I0.5 Photo-eye beam clear (TRUE when nothing is in the doorway: fails safe)
+  %Q0.0 Motor up   %Q0.1 Motor down   %Q0.2 Warning light   %Q0.3 Courtesy light
+The door travels 0-100 % in 10 s. A car parked in the doorway is hit if the door reaches 30 %
+while closing on it.</p>
+<h2 id="batch-mixer">Batch mixer<a class="headerlink" href="#batch-mixer" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>mixer</code>.</p>
+<p>Batch mixer: fill with two ingredients, mix and heat, then drain the batch.</p>
+<p>Digital (slot words):
+  %I0.0 Start (NO)   %I0.1 Stop (NC)   %I0.2 Low level (&gt;= 5 %)   %I0.3 Middle level (&gt;= 50 %)
+  %I0.4 High level (&gt;= 90 %)
+  %Q0.0 Valve A   %Q0.1 Valve B   %Q0.2 Mixer motor   %Q0.3 Heater   %Q0.4 Drain valve
+  %Q0.5 Batch done lamp
+Analog: AI0 temperature, 0-10 V = 0-100 °C.</p>
+<p>A good batch: ingredient A up to the middle level, ingredient B on top up to the high level,
+mixed at least 5 s and at 50-60 °C before it is drained. Every drained batch is graded.</p>
+<h2 id="elevator">Elevator<a class="headerlink" href="#elevator" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>elevator</code>.</p>
+<p>Elevator for three floors: hall and car buttons, floor sensors, a door with limits and a safety
+edge, overtravel limits at both ends of the shaft.</p>
+<p>Digital (slot words):
+  %I0.0-%I0.2 Hall call floors 1-3   %I0.3-%I0.5 Car buttons floors 1-3
+  %I0.6 %I0.7 %I1.0 Car at floor 1, 2, 3   %I1.1 Door open limit   %I1.2 Door closed limit
+  %I1.3 Door safety edge clear (TRUE unless someone is in the doorway)
+  %I1.4 Top overtravel OK   %I1.5 Bottom overtravel OK (TRUE unless the car passed the end)
+  %Q0.0 Motor up   %Q0.1 Motor down   %Q0.2 Door open   %Q0.3 Door close
+  %Q0.4-%Q0.6 Position lamps floors 1-3
+The car travels a floor in 3 s, the door opens or closes in 2 s. A call is served when the door
+opens at its floor.</p>
+<h2 id="bottle-line">Bottle line<a class="headerlink" href="#bottle-line" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>bottles</code>.</p>
+<p>Bottle line: a conveyor carries empty bottles past a filler, a capper and an inspection station
+with a reject pusher. Every fifth bottle gets a bad cap from the capper and must be rejected.</p>
+<p>Digital (slot words):
+  %I0.0 Start (NO)   %I0.1 Stop (NC)   %I0.2 Bottle at the filler   %I0.3 Bottle full
+  %I0.4 Bottle at the capper   %I0.5 Bottle at inspection   %I0.6 Bottle at inspection is good
+  %Q0.0 Conveyor   %Q0.1 Fill valve   %Q0.2 Capper press   %Q0.3 Reject pusher   %Q0.4 Run lamp
+A bottle stops under a station only if the conveyor stops while the station's sensor sees it.</p>
+<h2 id="sorting-conveyor">Sorting conveyor<a class="headerlink" href="#sorting-conveyor" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>sorter</code>.</p>
+<p>Sorting conveyor: boxes of three heights pass two light beams that measure them, then three
+pushers send each box into the bin for its size.</p>
+<p>Digital (slot words):
+  %I0.0 Start (NO)   %I0.1 Stop (NC)   %I0.2 Box at the measuring point
+  %I0.3 Low beam blocked (medium or large box)   %I0.4 High beam blocked (large box)
+  %I0.5 %I0.6 %I0.7 Box in front of pusher 1, 2, 3
+  %Q0.0 Conveyor   %Q0.1 Pusher 1 (small)   %Q0.2 Pusher 2 (medium)   %Q0.3 Pusher 3 (large)
+  %Q0.4 Run lamp
+Boxes arrive in the order small, large, medium, medium, small, large, …; a box that reaches the end
+of the belt falls off.</p>
+<h2 id="pick-and-place">Pick and place<a class="headerlink" href="#pick-and-place" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>pick_place</code>.</p>
+<p>Pick and place: a two-axis pneumatic arm moves parts from an infeed to a tray with a vacuum
+gripper.</p>
+<p>Digital (slot words):
+  %I0.0 Start (NO)   %I0.1 Stop (NC)   %I0.2 Arm at pick side (horizontal retracted)
+  %I0.3 Arm at place side (horizontal extended)   %I0.4 Arm up   %I0.5 Arm down
+  %I0.6 Part waiting at the pick point   %I0.7 Vacuum OK (a part is held)
+  %Q0.0 Horizontal cylinder: extend   %Q0.1 Vertical cylinder: down   %Q0.2 Vacuum
+  %Q0.3 Cycle lamp
+Each cylinder takes 1 s from end to end. Moving sideways while the arm is down knocks things over.</p>
+<h2 id="parking-garage">Parking garage<a class="headerlink" href="#parking-garage" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>parking</code>.</p>
+<p>Parking garage: entry and exit barriers with car detectors, a car counter and a FULL sign.
+Ten spaces.</p>
+<p>Digital (slot words):
+  %I0.0 Car waiting at the entry   %I0.1 Car passed the entry barrier (beam)
+  %I0.2 Car waiting at the exit   %I0.3 Car passed the exit barrier (beam)
+  %I0.4 Entry barrier up   %I0.5 Exit barrier up
+  %Q0.0 Raise entry barrier   %Q0.1 Raise exit barrier   %Q0.2 FULL sign
+  %QW4 Free spaces on the display (BCD)
+Cars arrive from the "Car arrives" and "Car leaves" buttons, or every few seconds with "Traffic".
+A barrier rises in 1 s and stays up while its output is on.</p>
+<h2 id="pump-station">Pump station<a class="headerlink" href="#pump-station" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>pumps</code>.</p>
+<p>Pump station: a sump fills with an inflow you set; two pumps empty it. They should take turns
+(equal running hours), the second one helps when the level keeps rising, and a failed pump is
+replaced by the other.</p>
+<p>Digital (slot words):
+  %I0.0 Reset alarm (NO)   %I0.1 Stop (NC)   %I0.2 Low level (&gt;= 15 %)   %I0.3 Start level (&gt;= 50 %)
+  %I0.4 High level (&gt;= 75 %)   %I0.5 Overflow alarm level (&gt;= 95 %)
+  %I0.6 Pump 1 fault   %I0.7 Pump 2 fault (TRUE when the pump's protection tripped)
+  %Q0.0 Pump 1   %Q0.1 Pump 2   %Q0.2 Alarm lamp
+Analog: AI0 level, 0-10 V = 0-100 %.</p>
+<h2 id="room-climate">Room climate<a class="headerlink" href="#room-climate" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>hvac</code>.</p>
+<p>Room climate: temperature with a heater and a cooler (analog), a fan they need, an outside
+temperature and a window that can be opened.</p>
+<p>Digital (slot words):
+  %I0.0 System on (NO)   %I0.1 System off (NC)   %I0.2 Window open   %I0.3 Airflow (fan running)
+  %Q0.0 Fan   %Q0.1 Heating lamp   %Q0.2 Cooling lamp
+Analog: AI0 room temperature 0-10 V = 0-50 °C, AI1 setpoint knob 0-10 V = 0-50 °C,
+  AO0 heater 0-10 V = 0-100 %, AO1 cooler 0-10 V = 0-100 %.
+Heating or cooling without the fan overheats the coil; heating and cooling together wastes energy.</p>
+<h2 id="washing-machine">Washing machine<a class="headerlink" href="#washing-machine" title="Permanent link">&para;</a></h2>
+<p>Menu key <code>washer</code>.</p>
+<p>Washing machine: lock the door, fill, wash turning left and right, drain, spin, unlock.</p>
+<p>Digital (slot words):
+  %I0.0 Start (NO)   %I0.1 Stop (NC)   %I0.2 Door closed   %I0.3 Door locked
+  %I0.4 Water present (level &gt;= 10 %)   %I0.5 Water full (&gt;= 80 %)   %I0.6 Drum stopped
+  %Q0.0 Door lock   %Q0.1 Fill valve   %Q0.2 Wash left   %Q0.3 Wash right   %Q0.4 Spin
+  %Q0.5 Drain pump   %Q0.6 Done lamp
+A good wash: the clothes turn in water at least 10 s each way, the water is drained before the
+spin, the spin lasts at least 5 s, and the door unlocks only once the drum has stopped.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../st-functions/" class="btn btn-neutral float-left" title="Structured text functions"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../writing-exercises/" class="btn btn-neutral float-right" title="Writing exercises">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/juliordzcer/plcyard" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../st-functions/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../writing-exercises/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

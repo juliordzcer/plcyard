@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://juliordz.com/plcyard/reference/instructions/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Instructions - PLCYard</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Instructions";
+        var mkdocs_page_input_path = "reference/instructions.md";
+        var mkdocs_page_url = "/plcyard/reference/instructions/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> PLCYard
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../download/">Download</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../getting-started/">Getting started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../scan-cycle/">The scan cycle</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../notations/">Notations</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../ladder/">Ladder</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../structured-text/">Structured text</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../fbd/">Function block diagram</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../tags/">Tags, data types and arrays</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../routines/">Routines and blocks</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../simulations/">Simulations</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Reference</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Instructions</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#bit">Bit</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#timercounter">Timer/Counter</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#compare">Compare</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#math">Math</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#movelogical">Move/Logical</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#array">Array</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#program-control">Program Control</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#process">Process</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#pid">PID</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#call">CALL</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../function-blocks/">Function blocks</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../st-functions/">Structured text functions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../simulations/">Simulations</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../writing-exercises/">Writing exercises</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../adding-a-simulation/">Adding a simulation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../contributing/">Contributing</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">PLCYard</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Reference</li>
+      <li class="breadcrumb-item active">Instructions</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/juliordzcer/plcyard/edit/main/docs/wiki/reference/instructions.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="instructions">Instructions<a class="headerlink" href="#instructions" title="Permanent link">&para;</a></h1>
+<p>Every ladder instruction, generated from the instruction set. The <em>IEC</em> column is the name
+shown in the IEC-symbols notation (Tools → Options). Operands in <em>italics</em> are optional.</p>
+<h2 id="bit">Bit<a class="headerlink" href="#bit" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mnemonic</th>
+<th>IEC</th>
+<th>What it does</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>XIC</code></td>
+<td><code>NO</code></td>
+<td>Examine if closed (normally open contact)</td>
+<td>Bit (bool)</td>
+</tr>
+<tr>
+<td><code>XIO</code></td>
+<td><code>NC</code></td>
+<td>Examine if open (normally closed contact)</td>
+<td>Bit (bool)</td>
+</tr>
+<tr>
+<td><code>OTE</code></td>
+<td><code>COIL</code></td>
+<td>Output energize (coil)</td>
+<td>Bit (bool)</td>
+</tr>
+<tr>
+<td><code>OTL</code></td>
+<td><code>S</code></td>
+<td>Output latch (set coil)</td>
+<td>Bit (bool)</td>
+</tr>
+<tr>
+<td><code>OTU</code></td>
+<td><code>R</code></td>
+<td>Output unlatch (reset coil)</td>
+<td>Bit (bool)</td>
+</tr>
+<tr>
+<td><code>ONS</code></td>
+<td><code>P_TRIG</code></td>
+<td>One shot (rising edge of the rung)</td>
+<td>Storage bit (bool)</td>
+</tr>
+<tr>
+<td><code>OSR</code></td>
+<td><code>OSR</code></td>
+<td>One shot rising</td>
+<td>Storage bit (bool)<br>Output bit (bool)</td>
+</tr>
+<tr>
+<td><code>OSF</code></td>
+<td><code>OSF</code></td>
+<td>One shot falling</td>
+<td>Storage bit (bool)<br>Output bit (bool)</td>
+</tr>
+<tr>
+<td><code>P</code></td>
+<td><code>P</code></td>
+<td>Positive edge of an operand</td>
+<td>Operand (bool)<br>Edge memory bit (bool)</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td><code>N</code></td>
+<td>Negative edge of an operand</td>
+<td>Operand (bool)<br>Edge memory bit (bool)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="timercounter">Timer/Counter<a class="headerlink" href="#timercounter" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mnemonic</th>
+<th>IEC</th>
+<th>What it does</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TON</code></td>
+<td><code>TON</code></td>
+<td>Timer on delay</td>
+<td>Timer (timer)<br>Preset (time)<br><em>Accum (value)</em></td>
+</tr>
+<tr>
+<td><code>TOF</code></td>
+<td><code>TOF</code></td>
+<td>Timer off delay</td>
+<td>Timer (timer)<br>Preset (time)<br><em>Accum (value)</em></td>
+</tr>
+<tr>
+<td><code>RTO</code></td>
+<td><code>RTO</code></td>
+<td>Retentive timer on</td>
+<td>Timer (timer)<br>Preset (time)<br><em>Accum (value)</em></td>
+</tr>
+<tr>
+<td><code>TP</code></td>
+<td><code>TP</code></td>
+<td>Pulse timer</td>
+<td>Timer (timer)<br>Preset (time)<br><em>Accum (value)</em></td>
+</tr>
+<tr>
+<td><code>CTU</code></td>
+<td><code>CTU</code></td>
+<td>Count up</td>
+<td>Counter (counter)<br>Preset (value)<br><em>Reset (bool)</em></td>
+</tr>
+<tr>
+<td><code>CTD</code></td>
+<td><code>CTD</code></td>
+<td>Count down</td>
+<td>Counter (counter)<br>Preset (value)<br><em>Load (bool)</em></td>
+</tr>
+<tr>
+<td><code>RES</code></td>
+<td><code>RESET</code></td>
+<td>Reset a timer, counter or control</td>
+<td>Timer or counter (element)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="compare">Compare<a class="headerlink" href="#compare" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mnemonic</th>
+<th>IEC</th>
+<th>What it does</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EQU</code></td>
+<td><code>CMP ==</code></td>
+<td>Equal</td>
+<td>Source A (value)<br>Source B (value)</td>
+</tr>
+<tr>
+<td><code>NEQ</code></td>
+<td><code>CMP &lt;&gt;</code></td>
+<td>Not equal</td>
+<td>Source A (value)<br>Source B (value)</td>
+</tr>
+<tr>
+<td><code>LES</code></td>
+<td><code>CMP &lt;</code></td>
+<td>Less than</td>
+<td>Source A (value)<br>Source B (value)</td>
+</tr>
+<tr>
+<td><code>LEQ</code></td>
+<td><code>CMP &lt;=</code></td>
+<td>Less than or equal</td>
+<td>Source A (value)<br>Source B (value)</td>
+</tr>
+<tr>
+<td><code>GRT</code></td>
+<td><code>CMP &gt;</code></td>
+<td>Greater than</td>
+<td>Source A (value)<br>Source B (value)</td>
+</tr>
+<tr>
+<td><code>GEQ</code></td>
+<td><code>CMP &gt;=</code></td>
+<td>Greater than or equal</td>
+<td>Source A (value)<br>Source B (value)</td>
+</tr>
+<tr>
+<td><code>LIM</code></td>
+<td><code>IN_RANGE</code></td>
+<td>Limit test (value within range)</td>
+<td>Low limit (value)<br>Test (value)<br>High limit (value)</td>
+</tr>
+<tr>
+<td><code>MEQ</code></td>
+<td><code>MEQ</code></td>
+<td>Masked equal</td>
+<td>Source (value)<br>Mask (value)<br>Compare (value)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="math">Math<a class="headerlink" href="#math" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mnemonic</th>
+<th>IEC</th>
+<th>What it does</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ADD</code></td>
+<td><code>ADD</code></td>
+<td>Add</td>
+<td>Source A (value)<br>Source B (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>SUB</code></td>
+<td><code>SUB</code></td>
+<td>Subtract</td>
+<td>Source A (value)<br>Source B (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>MUL</code></td>
+<td><code>MUL</code></td>
+<td>Multiply</td>
+<td>Source A (value)<br>Source B (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>DIV</code></td>
+<td><code>DIV</code></td>
+<td>Divide</td>
+<td>Source A (value)<br>Source B (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>MOD</code></td>
+<td><code>MOD</code></td>
+<td>Modulo</td>
+<td>Source A (value)<br>Source B (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>NEG</code></td>
+<td><code>NEG</code></td>
+<td>Negate</td>
+<td>Source (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>SQR</code></td>
+<td><code>SQRT</code></td>
+<td>Square root</td>
+<td>Source (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>SCP</code></td>
+<td><code>SCP</code></td>
+<td>Scale with parameters</td>
+<td>Input (value)<br>Input min (value)<br>Input max (value)<br>Scaled min (value)<br>Scaled max (value)<br>Output (dest)</td>
+</tr>
+<tr>
+<td><code>NORM_X</code></td>
+<td><code>NORM_X</code></td>
+<td>Normalize to 0.0-1.0</td>
+<td>Min (value)<br>Value (value)<br>Max (value)<br>Out (dest)</td>
+</tr>
+<tr>
+<td><code>SCALE_X</code></td>
+<td><code>SCALE_X</code></td>
+<td>Scale 0.0-1.0 to a range</td>
+<td>Min (value)<br>Value (value)<br>Max (value)<br>Out (dest)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="movelogical">Move/Logical<a class="headerlink" href="#movelogical" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mnemonic</th>
+<th>IEC</th>
+<th>What it does</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MOV</code></td>
+<td><code>MOVE</code></td>
+<td>Move</td>
+<td>Source (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>NOT</code></td>
+<td><code>NOT</code></td>
+<td>Bitwise NOT</td>
+<td>Source (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>TOD</code></td>
+<td><code>TO_BCD</code></td>
+<td>Convert to BCD</td>
+<td>Source (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>FRD</code></td>
+<td><code>FROM_BCD</code></td>
+<td>Convert from BCD</td>
+<td>Source (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>AND</code></td>
+<td><code>AND</code></td>
+<td>Bitwise AND</td>
+<td>Source A (value)<br>Source B (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>OR</code></td>
+<td><code>OR</code></td>
+<td>Bitwise OR</td>
+<td>Source A (value)<br>Source B (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>XOR</code></td>
+<td><code>XOR</code></td>
+<td>Bitwise XOR</td>
+<td>Source A (value)<br>Source B (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>MVM</code></td>
+<td><code>MVM</code></td>
+<td>Masked move</td>
+<td>Source (value)<br>Mask (value)<br>Dest (dest)</td>
+</tr>
+<tr>
+<td><code>CLR</code></td>
+<td><code>CLR</code></td>
+<td>Clear</td>
+<td>Dest (dest)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="array">Array<a class="headerlink" href="#array" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mnemonic</th>
+<th>IEC</th>
+<th>What it does</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BSL</code></td>
+<td><code>BSL</code></td>
+<td>Bit shift left</td>
+<td>Array (array)<br>Control (control)<br>Source bit (bool)<br>Length (value)</td>
+</tr>
+<tr>
+<td><code>BSR</code></td>
+<td><code>BSR</code></td>
+<td>Bit shift right</td>
+<td>Array (array)<br>Control (control)<br>Source bit (bool)<br>Length (value)</td>
+</tr>
+<tr>
+<td><code>SQO</code></td>
+<td><code>SQO</code></td>
+<td>Sequencer output</td>
+<td>Array (array)<br>Mask (value)<br>Dest (dest)<br>Control (control)<br>Length (value)<br><em>Position (value)</em></td>
+</tr>
+<tr>
+<td><code>SQC</code></td>
+<td><code>SQC</code></td>
+<td>Sequencer compare</td>
+<td>Array (array)<br>Mask (value)<br>Source (value)<br>Control (control)<br>Length (value)<br><em>Position (value)</em></td>
+</tr>
+<tr>
+<td><code>SQL</code></td>
+<td><code>SQL</code></td>
+<td>Sequencer load</td>
+<td>Array (array)<br>Source (value)<br>Control (control)<br>Length (value)<br><em>Position (value)</em></td>
+</tr>
+<tr>
+<td><code>COP</code></td>
+<td><code>COP</code></td>
+<td>Copy array elements</td>
+<td>Source (array)<br>Dest (array)<br>Length (value)</td>
+</tr>
+<tr>
+<td><code>FLL</code></td>
+<td><code>FLL</code></td>
+<td>Fill array elements</td>
+<td>Source (value)<br>Dest (array)<br>Length (value)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="program-control">Program Control<a class="headerlink" href="#program-control" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mnemonic</th>
+<th>IEC</th>
+<th>What it does</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>JSR</code></td>
+<td><code>CALL</code></td>
+<td>Jump to subroutine (call a routine)</td>
+<td>Routine (routine)</td>
+</tr>
+<tr>
+<td><code>RET</code></td>
+<td><code>RET</code></td>
+<td>Return</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>CALL</code></td>
+<td><code>CALL</code></td>
+<td>Call a function or function block</td>
+<td>Block (block)<br><em>up to 8 parameters <code>Name:=value</code> or <code>Name=&gt;tag</code></em></td>
+</tr>
+<tr>
+<td><code>NOP</code></td>
+<td><code>NOP</code></td>
+<td>No operation</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2 id="process">Process<a class="headerlink" href="#process" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mnemonic</th>
+<th>IEC</th>
+<th>What it does</th>
+<th>Operands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PID</code></td>
+<td><code>PID</code></td>
+<td>PID controller</td>
+<td>PID (pid)<br>Process variable (value)<br>Control variable (dest)<br><em>Setpoint (value)</em><br><em>Tieback (value)</em><br><em>Master loop (pid)</em><br><em>Inhold bit (bool)</em><br><em>Inhold value (value)</em></td>
+</tr>
+</tbody>
+</table>
+<h3 id="pid">PID<a class="headerlink" href="#pid" title="Permanent link">&para;</a></h3>
+<p>Every loop update time (UPD) while the rung is true. The process variable is scaled from
+MINI..MAXI to MINS..MAXS (engineering units), the output in % goes to the control variable
+scaled to MINCV..MAXCV. Optional: a setpoint (else the SP member), a tieback the output follows
+in manual, a master loop whose output (in %) becomes this loop's setpoint (cascade), and an
+inhold bit that holds the output at the inhold value (bumpless restart). PID Setup in the
+editor sets the members.</p>
+<h3 id="call">CALL<a class="headerlink" href="#call" title="Permanent link">&para;</a></h3>
+<p>A function by name, a function block by its instance (<code>Motor1</code>, or <code>#Inner</code> inside a block).
+Parameters: <code>Start:=Button</code> (input) or <code>Running=&gt;Lamp</code> (output). EN → ENO.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../simulations/" class="btn btn-neutral float-left" title="Simulations"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../function-blocks/" class="btn btn-neutral float-right" title="Function blocks">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/juliordzcer/plcyard" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../../simulations/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../function-blocks/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
