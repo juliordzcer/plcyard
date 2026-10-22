@@ -29,7 +29,7 @@ const Fbd = (() => {
   function blockSvg(b, sel, bad) {
     const h = height(b);
     let s = `<g class="blk" data-block="${b.id}">`;
-    s += `<rect class="box${sel ? " picked" : ""}${bad ? " bad" : ""}" x="${b.x}" y="${b.y}" width="${BLOCK_W}" height="${h}" rx="4"><title>${e(b.title)}</title></rect>`;
+    s += `<rect class="box${sel ? " picked" : ""}${bad ? " bad" : ""}" x="${b.x}" y="${b.y}" width="${BLOCK_W}" height="${h}" rx="4"><title>${e(b.title)}${bad ? "\n" + e(bad.join("\n")) : ""}</title></rect>`;
     s += `<text class="title" x="${b.x + BLOCK_W / 2}" y="${b.y + 19}" text-anchor="middle">${e(b.type)}</text>`;
     if (b.kind) s += `<text class="${b.instance ? "" : "unset"}" x="${b.x + BLOCK_W / 2}" y="${b.y - 6}" text-anchor="middle">${e(b.instance || "?")}</text>`;
     for (const [out, pins] of [[false, b.inputs], [true, b.outputs]]) {
@@ -64,7 +64,7 @@ const Fbd = (() => {
       s += `<path class="w nofill${on(w) ? " on" : ""}${picked ? " picked" : ""}" d="${d}"/>`;
       s += `<path class="wirehit" data-wire="${k}" d="${d}"/>`;
     });
-    for (const b of fbd.blocks) s += blockSvg(b, sel && sel[0] === "block" && sel[1] === b.id, !!fbd.problems[String(b.id)]);
+    for (const b of fbd.blocks) s += blockSvg(b, sel && sel[0] === "block" && sel[1] === b.id, fbd.problems[String(b.id)]);
     const w = Math.max(el.clientWidth - 8, ...fbd.blocks.map((b) => b.x + BLOCK_W + 260));
     const h = Math.max(el.clientHeight - 8, ...fbd.blocks.map((b) => b.y + height(b) + 80));
     if (!fbd.blocks.length) s += `<text class="empty" x="${w / 2}" y="80" text-anchor="middle">Empty diagram. Click a block above, or drag it here.</text>`;

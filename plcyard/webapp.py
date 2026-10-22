@@ -82,6 +82,7 @@ class Session:
         self.lab: labs.Lab | None = None
         self._st_key, self._st = None, {}
         self._fbd_key, self._fbd = None, {}
+        self._ld_key, self._ld = None, {}
 
     # -- files ----------------------------------------------------------------------------------
     def _open(self, program: Program, lab=None, sim: str | None = None) -> None:
@@ -625,6 +626,26 @@ class Session:
             self._fbd_key, self._fbd = key, by
         return self._fbd
 
+    def _ld_check(self) -> dict:
+        """Problems of every instruction of the routine in the editor, by (rung, path); cached."""
+        key = (self.cur, plcy.dumps(self.program))
+        if key != self._ld_key:
+            out: dict = {}
+            prof = self.plc.profile
+            try:
+                mem = prof.build_memory(self.program)
+            except Exception:
+                mem = None                           # the tag list is wrong: the tag pane says why
+            if mem is not None and self.file.language == "LD":
+                local = prof.scoped_memory(self.program, mem, self.file)
+                for n, rung in enumerate(self.file.rungs):
+                    for pl in _instrs(rung.body, ()):
+                        msgs = prof._problems(self.program, local, pl[1].mnemonic, pl[1].operands)
+                        if msgs:
+                            out[(n, pl[0])] = [notation.show_text(m) for m in msgs]
+            self._ld_key, self._ld = key, out
+        return self._ld
+
     def _fbd_view(self) -> dict:
         d, live = self.diagram, self._live()
         vals = self.plc.fbd_values.get(self.cur, {}) if live else {}
@@ -714,6 +735,7 @@ class Session:
         spec = self.plc.profile.specs.get(ins.mnemonic)
         labels = notation.labels(ins.mnemonic, list(spec.labels)) if spec else []
         return {"mnemonic": notation.mnemonic(ins.mnemonic), "title": spec.title if spec else "",
+                "problems": self._ld_check().get((self.sel[1], tuple(self.sel[2])), []),
                 "labels": labels, "values": [notation.show(o, self.program) if o != "?" else "" for o in ins.operands]}
 
     def _live(self) -> bool:
@@ -748,6 +770,7 @@ class Session:
                 "shape": spec.shape if spec else "block",
                 "letter": notation.letter(ins.mnemonic, spec.letter) if spec else "",
                 "title": title, "ops": ops, "labels": labels, "on": on,
+                "problems": self._ld_check().get((n, tuple(pl.path)), []),
                 "symbol": self.program.symbols.get(ins.operands[0], "") if ins.operands else "",
                 "extra": [[notation.live_label(k, ins.mnemonic), v] for k, v in extra],
                 "pins": [[notation.pin(k), bool(v)] for k, v in pins if notation.pin(k)]})
@@ -869,3 +892,15 @@ def _empty_legs(node, path: tuple):
                 yield path + (b,)
             else:
                 yield from _empty_legs(br, path + (b,))
+
+
+def _instrs(node, path: tuple):
+    """(path, instruction) of every instruction in a rung tree, with the rung paths of core/edit."""
+    if isinstance(node, Series):
+        for k, item in enumerate(node.items):
+            yield from _instrs(item, path + (k,))
+    elif isinstance(node, Parallel):
+        for b, br in enumerate(node.branches):
+            yield from _instrs(br, path + (b,))
+    else:
+        yield path, node

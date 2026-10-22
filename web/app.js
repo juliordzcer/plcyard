@@ -108,6 +108,8 @@ function render(force) {
   if (st) { $("operands").hidden = true; opsKey = ""; renderSt(state.st); }
   else if (fb) { renderFbd(state); renderBlockForm(state); }
   else { renderLadder(state); renderOperands(state); }
+  renderSuggestions(state);
+  placeForm();
   if (!$("tagpane").hidden) renderTags(state.tags);
 }
 
@@ -185,6 +187,37 @@ function renderInterface(st) {
   if (box.dataset.routine !== which) { box.dataset.routine = which; box.open = !f.rows.length; }
 }
 
+// -- the operand form, next to what it edits -----------------------------------------------------------
+let suggKey = "";
+function renderSuggestions(st) {
+  const out = new Map();
+  const add = (v, label) => { if (v && !out.has(v)) out.set(v, label || ""); };
+  if (st.io) for (const c of st.io.inputs.concat(st.io.outputs)) for (const p of c.points) if (p.symbol || p.used) add(p.addr, p.symbol);
+  const m = st.machine;
+  if (m && m.devices) for (const [label, addr] of m.devices.inputs.concat(m.devices.outputs)) add(addr, label);
+  else if (m && m.addr) for (const [k, v] of Object.entries(m.addr)) for (const a of [].concat(v)) add(a, k.replace(/_/g, " "));
+  for (const t of st.tags) add(t.name, `${t.type}${t.comment ? " · " + t.comment : ""}`);
+  const key = JSON.stringify([...out]);
+  if (key === suggKey) return;
+  suggKey = key;
+  $("opsugg").innerHTML = [...out].map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
+}
+
+function placeForm() {
+  const form = $("operands");
+  if (form.hidden) return;
+  const ed = form.parentElement.getBoundingClientRect();
+  const target = state.language === "FBD" ? $("fbd").querySelector(".box.picked, path.w.picked") : $("ladder").querySelector("rect.sel");
+  const r = target && target.getBoundingClientRect();
+  if (!r || r.bottom < ed.top || r.top > ed.bottom || window.innerWidth < 700) { form.classList.remove("float"); return; }
+  form.classList.add("float");
+  const fw = form.offsetWidth, fh = form.offsetHeight;
+  let top = r.bottom - ed.top + 6;
+  if (top + fh > ed.height - 4) top = Math.max(4, r.top - ed.top - fh - 6);
+  form.style.top = `${top}px`;
+  form.style.left = `${Math.min(Math.max(8, r.left - ed.left), Math.max(8, ed.width - fw - 8))}px`;
+}
+
 // -- function blocks -------------------------------------------------------------------------------
 function renderFbd(st) {
   const key = JSON.stringify([st.fbd, st.sel, $("fbd").clientWidth]);
@@ -202,7 +235,7 @@ function renderBlockForm(st) {
   form.hidden = !b && !wireSel;
   if (wireSel) { form.innerHTML = `<span class="what">Wire</span><button type="button" id="b-del">Delete wire</button>`; return; }
   if (!b) return;
-  const field = (name, label, value, attrs = "") => `<label>${esc(label)}<input name="${esc(name)}" value="${esc(value)}" autocomplete="off" spellcheck="false" ${attrs}></label>`;
+  const field = (name, label, value, attrs = "") => `<label>${esc(label)}<input name="${esc(name)}" list="opsugg" value="${esc(value)}" autocomplete="off" spellcheck="false" ${attrs}></label>`;
   form.innerHTML = `<span class="what" title="${esc(b.title)}">${esc(b.type)}</span>` +
     (b.kind ? field("@instance", `${b.kind} tag`, b.instance) : "") +
     b.pins.map((p) => p.wired ? field(p.name, p.name, "wired", "disabled") : field(p.name, p.name + (p.out ? " →" : ""), p.op, `placeholder="${p.out ? "none" : "tag, address or value"}"`)).join("") +
@@ -308,7 +341,8 @@ function instrSvg(it, n, ox, oy, sel) {
       py_ += 16;
     }
   }
-  s += `<rect class="hit" data-n="${n}" data-path="${it.path.join(",")}" x="${x}" y="${y}" width="${w}" height="${h}"/>`;
+  if (it.problems.length) s += `<rect class="badbox" x="${x + 1}" y="${y + 1}" width="${w - 2}" height="${h - 2}" rx="4"/>`;
+  s += `<rect class="hit" data-n="${n}" data-path="${it.path.join(",")}" x="${x}" y="${y}" width="${w}" height="${h}">${it.problems.length ? `<title>${esc(it.problems.join("\n"))}</title>` : ""}</rect>`;
   return s;
 }
 
@@ -348,7 +382,7 @@ function renderLadder(st) {
 function renderOperands(st) {
   const form = $("operands");
   const o = st.operands;
-  const key = o ? JSON.stringify([st.sel, o.mnemonic, o.labels, o.values]) : "";
+  const key = o ? JSON.stringify([st.sel, o.mnemonic, o.labels, o.values, o.problems]) : "";
   if (key === opsKey) return;
   opsKey = key;
   if (!o) {
@@ -361,9 +395,10 @@ function renderOperands(st) {
   const n = Math.max(o.values.length, 1);
   form.hidden = false;
   form.innerHTML = `<span class="what" title="${esc(o.title)}">${esc(o.mnemonic)}</span>` +
-    Array.from({ length: n }, (_, i) => `<label>${esc(o.labels[i] || "Operand")}<input name="op" value="${esc(o.values[i] || "")}" autocomplete="off" spellcheck="false"></label>`).join("") +
+    Array.from({ length: n }, (_, i) => `<label>${esc(o.labels[i] || "Operand")}<input name="op" list="opsugg" value="${esc(o.values[i] || "")}" placeholder="address or tag" autocomplete="off" spellcheck="false"></label>`).join("") +
     `<button class="primary" type="submit">Apply</button><button type="button" id="b-branch">Branch</button>
-     <button type="button" id="b-leg">Add leg</button><button type="button" id="b-del">Delete</button>`;
+     <button type="button" id="b-leg">Add leg</button><button type="button" id="b-del">Delete</button>` +
+    (o.problems.length ? `<span class="probs">${esc(o.problems.join(" · "))}</span>` : "");
 }
 
 const ICON = {
@@ -517,7 +552,10 @@ function wire() {
     input?.focus();
   });
 
+  $("ladder").addEventListener("scroll", placeForm);
+  $("fbd").addEventListener("scroll", placeForm);
   const form = $("operands");
+  form.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); S.select(null); render(true); $("ladder").focus(); } });
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     if (state.block) {

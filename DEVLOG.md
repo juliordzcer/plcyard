@@ -796,3 +796,15 @@ keys:      exercises, grader, pumps, hvac, washer, elevator
   insert. Problems show as a red banner.
 - TODO: inline address entry and problems on the instruction; phone layout.
 keys:      web, usability, welcome, header, exercises picker
+
+## C-043 — Web version: edit where you click, problems where they are
+2026-10-22 · commits: 71103d4
+- The operand form floats right under (or over) the selected instruction, rung, block or wire
+  instead of the bottom of the editor; it follows scrolling, Esc closes it, and it docks at the
+  bottom again on narrow screens.
+- Address suggestions while typing: the machine's devices with their names (Start (NO) %I0.0…),
+  the named and used I/O points, and the tags with their type.
+- Every ladder instruction with a problem gets a red dashed box and the reason on hover, and the
+  form lists it; FBD blocks with problems show the reason on hover too. (`webapp._ld_check`, cached
+  per program, uses the same instruction checks as the download.)
+keys:      web, usability, operand form, suggestions, problems

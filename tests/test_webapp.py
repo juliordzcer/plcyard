@@ -301,3 +301,14 @@ def test_pickers_and_compact_io_data():
     io = json.loads(s.state(800))["io"]
     used = [p["bit"] for p in io["inputs"][0]["points"] if p["used"]]
     assert used == [0, 1] and io["bcd_used"]          # the exercise's devices and its display
+
+
+def test_problems_by_instruction():
+    s = Session()
+    s.insert("XIC")
+    s.add_branch()
+    s.insert("XIC")
+    s.set_operands(["%I0.0"])
+    st = json.loads(s.state(800))
+    probs = {tuple(i["path"]): i["problems"] for i in st["rungs"][0]["instrs"]}
+    assert probs[(0, 0, 0)] and not probs[(0, 1, 0)] and st["operands"]["problems"] == []

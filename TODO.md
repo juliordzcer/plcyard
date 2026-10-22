@@ -65,11 +65,9 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [x] Exercises for the newer simulations, with checks and LD/ST/FBD solutions: 17-24 (pick and
       place, bottle line, sorting conveyor, parking garage, pump station, room climate, washing
       machine, elevator).
-- [ ] Web usability, second part: type an address right on the instruction (with suggestions
-      of tags and machine devices instead of the form at the bottom), problems shown on the
-      instruction or block that has them. (First part done: header, welcome, exercise and example
-      pickers with progress, Check at the top, compact I/O panel, IEC notation by default,
-      instruction icons.)
+- [x] Web usability: header, welcome, exercise and example pickers with progress, Check at the
+      top, compact I/O panel, IEC notation by default, instruction icons; operand form next to the
+      selected instruction or block with address suggestions; problems marked on the instruction.
 - [ ] Phone-friendly web version: a layout for narrow screens (simulation, editor, exercise in
       tabs or a bottom bar), touch-sized buttons and pins, the instruction bar and operand form
       usable with the on-screen keyboard, pinch/scroll on the ladder and FBD canvas, tested on
