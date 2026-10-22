@@ -65,6 +65,9 @@ with the full test suite green.
 
 ## Later
 
+- Desktop installers (PyInstaller via GitHub Actions: Windows installer, macOS .dmg, Linux AppImage)
+  and PyPI.
+- Mobile from the web version: PWA first, then Android APK and iOS with Capacitor.
 - Web version: reuse the pure-Python core, simulations and checker in the browser (Pyodide) with an
   HTML/JS UI; static hosting, nothing to install. Step 1 (wiki and downloads on the site) and step 2
   (ladder editor, I/O panel, exercises 1-7 at juliordz.com/plcyard/app) and step 3 (silo, traffic

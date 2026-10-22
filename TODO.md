@@ -53,6 +53,13 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [ ] Humidity in the room climate simulation; a second floor of parking; a fourth elevator floor.
 
 ## Later
+- [ ] Desktop installers built by GitHub Actions on each release tag with PyInstaller: Windows
+      installer (Inno Setup), macOS .dmg (Intel and Apple Silicon), Linux AppImage (and .deb);
+      linked from the wiki. Unsigned at first (SmartScreen / Gatekeeper notes). Also PyPI.
+- [ ] Mobile, from the web version: (1) PWA (manifest + service worker, offline, add to home
+      screen on Android and iOS); (2) Android APK with Capacitor (direct download, Play Store
+      later); (3) iOS with Capacitor (needs an Apple Developer account). Phone layout: simulation
+      and ladder in tabs.
 - [ ] Web version: the core, simulations and checker in the browser with Pyodide and a new HTML/JS
       UI (ladder/ST/FBD editors, animations), hosted statically at juliordz.com/plcyard. Step 1 done:
       wiki and download page on the site. Step 2 done: juliordz.com/plcyard/app (ladder editor, I/O
