@@ -1,19 +1,24 @@
-"""Main window: menus, PLC strip, simulation | ladder split, file tabs, status bar."""
+"""Main window: menus, PLC strip, project tree, simulation | editor split with one tab per open
+routine, status bar. Laid out like the controller's own software (Studio 5000, TIA Portal)."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
+import re
+
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QAction, QActionGroup, QKeySequence
-from PySide6.QtWidgets import (QApplication, QDockWidget, QFileDialog, QFrame, QHBoxLayout, QLabel, QMainWindow,
-                               QMessageBox, QPushButton, QScrollArea, QSlider, QSplitter, QStackedWidget, QTabBar,
+from PySide6.QtGui import QAction, QActionGroup, QKeySequence, QUndoGroup
+from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QDialogButtonBox, QDockWidget, QFileDialog,
+                               QFormLayout, QFrame, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow,
+                               QMessageBox, QPushButton, QScrollArea, QSlider, QSplitter, QStackedWidget, QTabWidget,
                                QVBoxLayout, QWidget)
 
 from .. import grader, labs
 from ..core import profiles
 from ..core.processor import Processor
-from ..core.program import Program
+from ..core.profiles.base import ScopedMemory, scoped
+from ..core.program import Program, ProgramFile
 from .. import formats
 from ..sims.io_panel import IoPanelModel
 from . import theme
@@ -23,12 +28,12 @@ from ..sims.traffic import TrafficModel
 from .io_panel_view import IoPanelView
 from .sim_views import SiloView, TrafficView
 from .tank_view import TankView
+from .block_editor import DataTypeDoc, RoutineDoc
 from .datatable_view import DataTableView
-from .st_editor import StEditor
+from .project_tree import ProjectTree, routine_label
 from .tags_view import TagsView
 from .instruction_bar import InstructionBar
 from .labs_view import LabsView
-from .ladder_view import LadderView
 from .primitives import ModeSelector
 
 TICK_MS = 10
@@ -60,6 +65,10 @@ class PlcPanel(QFrame):
         self.io_words = QLabel()
         self.io_words.setFont(theme.font("mono", "sm"))
         self.io_words.setProperty("muted", "true")
+        self.forces = QLabel("I/O FORCED")
+        self.forces.setProperty("status", "warning")
+        self.forces.setToolTip("Some I/O points are forced (right-click them to remove the force)")
+        self.forces.setVisible(False)
         speed_label = QLabel("Speed")
         speed_label.setProperty("muted", "true")
         self.speed = QSlider(Qt.Horizontal)
@@ -67,7 +76,8 @@ class PlcPanel(QFrame):
         self.speed.setValue(10)
         self.speed.setFixedWidth(140)
         self.speed.setAccessibleName("Simulation speed")
-        for w in (self.status, self.clear_fault, self.download, self.mode, self.step, self.scans, self.io_words):
+        for w in (self.status, self.clear_fault, self.download, self.mode, self.step, self.scans, self.io_words,
+                  self.forces):
             lay.addWidget(w)
         lay.addStretch(1)
         lay.addWidget(speed_label)
@@ -100,26 +110,22 @@ class MainWindow(QMainWindow):
         sim_scroll.setWidget(self.sim_view)
         sim_scroll.setWidgetResizable(True)
         sim_scroll.setMinimumWidth(theme.layout("sim-pane-min-w"))
-        self.ladder = LadderView()
-        self.tabs = QTabBar()
-        self.tab_files: list[int] = []
-        self.tabs.currentChanged.connect(lambda i: 0 <= i < len(self.tab_files) and self._show_file(self.tab_files[i]))
-        self.st_editor = StEditor()
-        self.st_editor.changed.connect(self._edited)
+        self.undo_group = QUndoGroup(self)
+        self.docs = QTabWidget()              # one tab per open routine or data type
+        self.docs.setTabsClosable(True)
+        self.docs.setMovable(True)
+        self.docs.setDocumentMode(True)
+        self.docs.tabCloseRequested.connect(self.close_doc)
+        self.docs.currentChanged.connect(self._doc_changed)
 
         right = QWidget()
         rl = QVBoxLayout(right)
         rl.setContentsMargins(0, 0, 0, 0)
         rl.setSpacing(0)
         self.bar = InstructionBar()
-        self.bar.picked.connect(self.ladder.canvas.insert_mnemonic)
+        self.bar.picked.connect(self._insert)
         rl.addWidget(self.bar)
-        self.editor_stack = QStackedWidget()
-        self.editor_stack.addWidget(self.ladder)
-        self.editor_stack.addWidget(self.st_editor)
-        rl.addWidget(self.editor_stack, 1)
-        rl.addWidget(self.tabs)
-        self.ladder.canvas.changed.connect(self._edited)
+        rl.addWidget(self.docs, 1)
         split = QSplitter()
         split.addWidget(sim_scroll)
         split.addWidget(right)
@@ -134,9 +140,19 @@ class MainWindow(QMainWindow):
         cl.addWidget(split, 1)
         self.setCentralWidget(central)
 
+        self.tree = ProjectTree()
+        self.tree.open_item.connect(self._open_item)
+        self.tree.action.connect(self._tree_action)
+        self.tree_dock = QDockWidget("Project", self)
+        self.tree_dock.setObjectName("project")
+        self.tree_dock.setWidget(self.tree)
+        self.tree_dock.setMinimumWidth(220)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.tree_dock)
+
         self.table_view = DataTableView(self.plc.dt, self.program.symbols)
         self.tags_view = TagsView()
         self.tags_view.edited.connect(self._edited)
+        self.tags_view.force_requested.connect(self.force)
         self.data_stack = QStackedWidget()
         self.data_stack.addWidget(self.table_view)
         self.data_stack.addWidget(self.tags_view)
@@ -206,23 +222,30 @@ class MainWindow(QMainWindow):
         f.addSeparator()
         act(f, "&Quit", self.close, QKeySequence.Quit)
         e = mb.addMenu("&Edit")
-        undo = self.ladder.canvas.undo.createUndoAction(self, "&Undo")
+        undo = self.undo_group.createUndoAction(self, "&Undo")
         undo.setShortcut(QKeySequence.Undo)
-        redo = self.ladder.canvas.undo.createRedoAction(self, "&Redo")
+        redo = self.undo_group.createRedoAction(self, "&Redo")
         redo.setShortcut(QKeySequence.Redo)
         e.addAction(undo)
         e.addAction(redo)
         e.addSeparator()
-        c = self.ladder.canvas
-        act(e, "Cu&t", lambda: c.copy_selection(cut=True))
-        act(e, "&Copy", c.copy_selection)
-        act(e, "&Paste", c.paste)
-        act(e, "&Delete", c.delete_selection)
+
+        def on_canvas(method):
+            return lambda: self.canvas is not None and getattr(self.canvas, method)()
+        act(e, "Cu&t", lambda: self.canvas is not None and self.canvas.copy_selection(cut=True))
+        act(e, "&Copy", on_canvas("copy_selection"))
+        act(e, "&Paste", on_canvas("paste"))
+        act(e, "&Delete", on_canvas("delete_selection"))
         e.addSeparator()
-        act(e, "&Insert rung", c.new_rung)
-        act(e, "Edit &operands…", c.open_operand_editor)
-        act(e, "Edit rung co&mment…", c.edit_comment)
-        act(e, "Edit s&ymbol…", c.edit_symbol)
+        act(e, "&Insert rung", on_canvas("new_rung"))
+        act(e, "Edit &operands…", on_canvas("open_operand_editor"))
+        act(e, "Edit rung co&mment…", on_canvas("edit_comment"))
+        act(e, "Edit s&ymbol…", on_canvas("edit_symbol"))
+        pr = mb.addMenu("P&roject")
+        self.add_routine_act = act(pr, "Add &routine or block…", lambda: self._tree_action("add_routine", None))
+        self.add_type_act = act(pr, "New &data type…", lambda: self._tree_action("add_type", None))
+        pr.addSeparator()
+        act(pr, "Remove all &forces", self.remove_forces)
         s = mb.addMenu("&Simulations")
         group = QActionGroup(self)
         self.sim_actions = {}
@@ -245,6 +268,9 @@ class MainWindow(QMainWindow):
         act(p, "Single &scan", self.step, "F10")
         act(p, "&Clear fault", self.clear_fault)
         v = mb.addMenu("&View")
+        tree = self.tree_dock.toggleViewAction()
+        tree.setShortcut(QKeySequence("Ctrl+Shift+P"))
+        v.addAction(tree)
         dock = self.table_dock.toggleViewAction()
         dock.setShortcut(QKeySequence("Ctrl+T"))
         v.addAction(dock)
@@ -380,8 +406,13 @@ class MainWindow(QMainWindow):
     def _show_program(self) -> None:
         prof = profiles.get(self.program.profile)
         self.bar.set_specs(prof.specs)
-        self.ladder.canvas.set_program(self.program)
-        self._show_tabs()
+        while self.docs.count():
+            self._remove_doc(0)
+        self.tree.set_program(self.program)
+        self.tree_dock.setWindowTitle({"logix": "Controller Organizer", "s7": "Project tree"}.get(prof.name, "Project"))
+        self.add_routine_act.setEnabled(bool(prof.routine_kinds))
+        self.add_type_act.setEnabled(bool(prof.tag_types))
+        self.open_routine(2)
         tagged = bool(prof.tag_types)
         self.data_stack.setCurrentWidget(self.tags_view if tagged else self.table_view)
         self.table_dock.setWindowTitle("Tags" if tagged else "Data table")
@@ -392,36 +423,187 @@ class MainWindow(QMainWindow):
         self._title()
         self._update_status()
 
-    def _show_tabs(self) -> None:
-        """One tab per program file: LAD 2 and SBR 3-9 on SLC 500, the main routine on Logix."""
-        if self.program.profile == "slc500":
-            files = list(range(2, 10))
-            label = {n: "LAD 2" if n == 2 else f"SBR {n}" for n in files}
-        else:
-            files = sorted(self.program.files)
-            label = {n: self.program.files[n].title or f"Routine {n}" for n in files}
-        self.tabs.blockSignals(True)
-        while self.tabs.count():
-            self.tabs.removeTab(0)
-        for n in files:
-            st_file = n in self.program.files and self.program.files[n].language == "ST"
-            self.tabs.addTab(label[n] + (" (ST)" if st_file else ""))
-        self.tab_files = files
-        self.tabs.setCurrentIndex(0)
-        self.tabs.blockSignals(False)
-        self._show_file(files[0])
+    # -- documents ----------------------------------------------------------
+    @property
+    def doc(self):
+        return self.docs.currentWidget()
 
-    def _show_file(self, number: int) -> None:
-        """Ladder canvas or structured text editor, whichever the file is written in."""
-        f = self.program.files.get(number)
-        if f is not None and f.language == "ST":
-            self.st_editor.set_program(self.program, number)
-            self.editor_stack.setCurrentWidget(self.st_editor)
-            self.bar.hide()
-        else:
-            self.ladder.canvas.set_file(number)
-            self.editor_stack.setCurrentWidget(self.ladder)
-            self.bar.show()
+    @property
+    def canvas(self):
+        d = self.doc
+        return d.canvas if isinstance(d, RoutineDoc) else None
+
+    @property
+    def ladder(self):
+        d = self.doc
+        return d.ladder if isinstance(d, RoutineDoc) else None
+
+    @property
+    def st_editor(self):
+        d = self.doc
+        return d.st if isinstance(d, RoutineDoc) else None
+
+    def _doc_key(self, w):
+        if isinstance(w, RoutineDoc):
+            return ("routine", w.number)
+        if isinstance(w, DataTypeDoc):
+            return ("type", w.name)
+        return None
+
+    def _find_doc(self, key) -> int:
+        return next((i for i in range(self.docs.count()) if self._doc_key(self.docs.widget(i)) == key), -1)
+
+    def _doc_title(self, w) -> str:
+        if isinstance(w, RoutineDoc):
+            return routine_label(self.program.profile, w.file) if w.file else "?"
+        return w.name
+
+    def open_routine(self, number: int) -> None:
+        """Bring a routine to the front, opening it in a new tab the first time."""
+        i = self._find_doc(("routine", number))
+        if i < 0:
+            if number not in self.program.files:            # SLC 500: an empty subroutine file
+                self.program.files[number] = ProgramFile(number, "SBR", "")
+            doc = RoutineDoc(self.program, number)
+            doc.changed.connect(self._edited)
+            if doc.canvas is not None:
+                self.undo_group.addStack(doc.canvas.undo)
+            i = self.docs.addTab(doc, self._doc_title(doc))
+        self.docs.setCurrentIndex(i)
+
+    def open_routine_named(self, name: str) -> None:
+        f = self.program.routine(name)
+        if f is None:                                        # an FB instance: open its block
+            t = str(self.program.tags.get(name.strip('"#'), {}).get("type", ""))
+            f = self.program.routine(t)
+        if f is not None:
+            self.open_routine(f.number)
+
+    def open_type(self, name: str) -> None:
+        i = self._find_doc(("type", name))
+        if i < 0:
+            doc = DataTypeDoc(self.program, name)
+            doc.changed.connect(self._edited)
+            i = self.docs.addTab(doc, name)
+        self.docs.setCurrentIndex(i)
+
+    def close_doc(self, i: int) -> None:
+        if self.docs.count() > 1:
+            self._remove_doc(i)
+
+    def _remove_doc(self, i: int) -> None:
+        w = self.docs.widget(i)
+        if isinstance(w, RoutineDoc) and w.canvas is not None:
+            self.undo_group.removeStack(w.canvas.undo)
+        self.docs.removeTab(i)
+        w.deleteLater()
+
+    def _doc_changed(self, _i: int) -> None:
+        canvas = self.canvas
+        self.bar.setVisible(canvas is not None)
+        self.undo_group.setActiveStack(canvas.undo if canvas is not None else None)
+
+    def _insert(self, mnemonic: str) -> None:
+        if self.canvas is not None:
+            self.canvas.insert_mnemonic(mnemonic)
+
+    def _retitle_docs(self) -> None:
+        for i in reversed(range(self.docs.count())):
+            w = self.docs.widget(i)
+            if isinstance(w, RoutineDoc) and w.number not in self.program.files or \
+                    isinstance(w, DataTypeDoc) and w.name not in self.program.types:
+                self._remove_doc(i)
+            else:
+                self.docs.setTabText(i, self._doc_title(w))
+
+    def _open_item(self, kind: str, key) -> None:
+        if kind == "routine":
+            self.open_routine(key)
+        elif kind == "type":
+            self.open_type(key)
+        elif kind == "tags":
+            self.table_dock.show()
+            self.table_dock.raise_()
+            if self.data_stack.currentWidget() is self.table_view and isinstance(key, str) and key[:1] in "OISBTCRNF":
+                self.table_view.show_address(f"{key[0]}{key[1:]}:0" if key[0] not in "OI" else f"{key[0]}:0")
+
+    # -- routines, blocks and data types --------------------------------------
+    def _tree_action(self, action: str, key) -> None:
+        prof = profiles.get(self.program.profile)
+        if action == "add_routine" and prof.routine_kinds:
+            dlg = NewRoutineDialog(self, prof)
+            if dlg.exec() != QDialog.Accepted:
+                return
+            name, kind, language = dlg.values()
+            problem = self._name_problem(name)
+            if problem:
+                return QMessageBox.warning(self, "Cannot add", problem)
+            number = max(self.program.files) + 1
+            self.program.files[number] = ProgramFile(number, kind, name, language=language)
+            self._structure_changed()
+            self.open_routine(number)
+        elif action == "rename_routine":
+            f = self.program.files[key]
+            name, ok = QInputDialog.getText(self, "Rename", "New name:", text=f.title or "")
+            if ok and name.strip() and name.strip() != f.title:
+                problem = self._name_problem(name.strip())
+                if problem:
+                    return QMessageBox.warning(self, "Cannot rename", problem)
+                rename_routine(self.program, f.title, name.strip())
+                self._structure_changed()
+        elif action == "delete_routine":
+            f = self.program.files[key]
+            if QMessageBox.question(self, "Delete", f"Delete {f.title or key}? Calls to it stop the download "
+                                    "until they are removed.") == QMessageBox.Yes:
+                del self.program.files[key]
+                self._structure_changed()
+        elif action == "add_type":
+            name, ok = QInputDialog.getText(self, "New data type", "Name:")
+            if ok and name.strip():
+                problem = self._name_problem(name.strip())
+                if problem:
+                    return QMessageBox.warning(self, "Cannot add", problem)
+                self.program.types[name.strip()] = {}
+                self._structure_changed()
+                self.open_type(name.strip())
+        elif action == "rename_type":
+            name, ok = QInputDialog.getText(self, "Rename", "New name:", text=key)
+            if ok and name.strip() and name.strip() != key:
+                problem = self._name_problem(name.strip())
+                if problem:
+                    return QMessageBox.warning(self, "Cannot rename", problem)
+                rename_type(self.program, key, name.strip())
+                self._structure_changed()
+        elif action == "delete_type":
+            if QMessageBox.question(self, "Delete", f"Delete data type {key}?") == QMessageBox.Yes:
+                del self.program.types[key]
+                self._structure_changed()
+
+    def _name_problem(self, name: str) -> str:
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+            return f"{name!r} is not a valid name (letters, digits and _; no leading digit)"
+        taken = {(f.title or "").lower() for f in self.program.files.values()} | {t.lower() for t in self.program.types}
+        if name.lower() in taken:
+            return f"{name} is already used by a routine, block or data type"
+        return ""
+
+    def _structure_changed(self) -> None:
+        self.tree.set_program(self.program)
+        self._retitle_docs()
+        self.tags_view.set_program(self.program if profiles.get(self.program.profile).tag_types else None)
+        self._edited()
+
+    # -- forcing ------------------------------------------------------------
+    def force(self, ref: str, on) -> None:
+        problem = self.plc.force(ref, on) if self.plc.profile.name == self.program.profile else \
+            "download the program first"
+        if problem:
+            self.statusBar().showMessage(f"Cannot force {ref}: {problem}", 5000)
+        self.tags_view.set_forces(self.plc.forces)
+
+    def remove_forces(self) -> None:
+        self.plc.forces.clear()
+        self.tags_view.set_forces(self.plc.forces)
 
     def _title(self) -> None:
         name = self.path.name if self.path else "Untitled"
@@ -430,8 +612,12 @@ class MainWindow(QMainWindow):
     def _edited(self) -> None:
         self.dirty = True
         self.in_sync = False
-        if self.sender() is self.tags_view and self.editor_stack.currentWidget() is self.st_editor:
+        if self.sender() is self.tags_view and self.st_editor is not None:
             self.st_editor.check()                    # a new or renamed tag may fix (or break) the code
+        if isinstance(self.sender(), DataTypeDoc):
+            self.tags_view.set_program(self.program)
+        if self.sender() is self.tags_view:
+            self.tree.set_program(self.program)          # data blocks are listed with the blocks
         if isinstance(self.sim_view, IoPanelView):
             self.sim_view.symbols = self.program.symbols
         self._title()
@@ -516,6 +702,18 @@ class MainWindow(QMainWindow):
         else:
             self.panel.set_status("PLC: PGM", "")
 
+    def _doc_memory(self, doc):
+        """The PLC memory as code in this routine sees it: inside an S7 block, through its instance
+        (an FB shows its first instance)."""
+        f = doc.file
+        if f is None or f.kind not in ("FC", "FB") or not self.in_sync:
+            return self.plc.dt
+        insts = self.plc._instances(f) if self.plc.program else []
+        if not insts:
+            return self.plc.dt
+        names = {n.lower() for sec in f.interface.values() for n in sec}
+        return ScopedMemory(self.plc.dt, lambda text: scoped(text, insts[0], names))
+
     def _refresh(self) -> None:
         live = self.plc.mode in (Processor.RUN, Processor.STEP)
         self.sim_view.refresh()
@@ -528,9 +726,82 @@ class MainWindow(QMainWindow):
         elif self.table_dock.isVisible():
             downloaded = same_controller and self.downloaded and self.plc.program is not None
             self.tags_view.set_memory(self.plc.dt if downloaded else None)
-        self.ladder.canvas.set_live(self.plc.dt, live and same_controller, self.plc.trace if same else None)
-        if self.editor_stack.currentWidget() is self.st_editor:
-            self.st_editor.set_live(self.plc.dt if same_controller and self.downloaded else None)
+        doc = self.doc
+        if isinstance(doc, RoutineDoc):
+            if doc.canvas is not None:
+                doc.canvas.set_live(self._doc_memory(doc), live and same_controller, self.plc.trace if same else None)
+            else:
+                doc.st.set_live(self._doc_memory(doc) if same_controller and self.downloaded else None)
+        self.panel.forces.setVisible(bool(self.plc.forces))
         self.panel.scans.setText(f"{self.plc.scan_count} scans")
         self.panel.io_words.setText("  ".join(f"{n} {v & 0xFFFF:04X}h" for n, v in self.plc.profile.io_image(self.plc.dt)))
         self._update_status()
+
+
+class NewRoutineDialog(QDialog):
+    """Name, kind and language of a new routine (Logix) or block (S7)."""
+
+    def __init__(self, parent, prof):
+        super().__init__(parent)
+        s7 = prof.name == "s7"
+        self.setWindowTitle("Add new block" if s7 else "New routine")
+        form = QFormLayout(self)
+        self.name = QLineEdit()
+        self.name.setPlaceholderText("Motor_Control" if s7 else "Filling")
+        form.addRow("Name", self.name)
+        self.kind = QComboBox()
+        for k in prof.routine_kinds:
+            self.kind.addItem({"SBR": "Routine", "FC": "Function (FC)", "FB": "Function block (FB)"}[k], k)
+        form.addRow("Type", self.kind)
+        self.language = QComboBox()
+        self.language.addItem("Ladder Diagram (LAD)" if s7 else "Ladder Diagram", "LD")
+        if prof.st_blocks:
+            self.language.addItem("SCL" if s7 else "Structured Text", "ST")
+        form.addRow("Language", self.language)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def values(self) -> tuple[str, str, str]:
+        return self.name.text().strip(), self.kind.currentData(), self.language.currentData()
+
+
+def _rename_word(text: str, old: str, new: str) -> str:
+    return re.sub(rf'(?<![\w.])("?){re.escape(old)}("?)(?!\w)', lambda m: f"{m[1]}{new}{m[2]}", text, flags=re.I)
+
+
+def rename_routine(program: Program, old: str, new: str) -> None:
+    """Rename a routine or block and every call to it (JSR, CALL, ST calls, FB instance types)."""
+    from ..core.program import walk
+    f = program.routine(old)
+    f.title = new
+    for g in program.files.values():
+        for rung in g.rungs:
+            for ins in walk(rung.body):
+                if ins.mnemonic in ("JSR", "CALL") and ins.operands and ins.operands[0].strip('"').lower() == old.lower():
+                    ins.operands[0] = new
+        if g.language == "ST":
+            g.source = _rename_word(g.source, old, new)
+        for sec in g.interface.values():
+            for n, t in sec.items():
+                if t.lower() == old.lower():
+                    sec[n] = new
+    for d in program.tags.values():
+        if str(d.get("type", "")).lower() == old.lower():
+            d["type"] = new
+
+
+def rename_type(program: Program, old: str, new: str) -> None:
+    """Rename a data type where tags, other types and block interfaces use it."""
+    program.types = {(new if k == old else k): v for k, v in program.types.items()}
+    pattern = re.compile(rf"\b{re.escape(old)}\b", re.I)
+    for d in program.tags.values():
+        d["type"] = pattern.sub(new, str(d.get("type", "")))
+    for ms in program.types.values():
+        for n, t in ms.items():
+            ms[n] = pattern.sub(new, t)
+    for g in program.files.values():
+        for sec in g.interface.values():
+            for n, t in sec.items():
+                sec[n] = pattern.sub(new, t)

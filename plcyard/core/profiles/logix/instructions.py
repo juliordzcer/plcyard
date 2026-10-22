@@ -7,6 +7,8 @@ S:V (a minor fault on a real controller, not a stop).
 
 from __future__ import annotations
 
+import re
+
 from ... import isa, pid
 from .tags import TagError, TagTable
 
@@ -329,18 +331,32 @@ def _pid_prescan(ctx, ops):
     ctx.pid_state.pop(ops[0].lower(), None)
 
 
-@instruction("PID", "Proportional integral derivative", "Process", ["pid", "value", "dest"],
-             ["PID", "PV", "CV"], output=True, on_prescan=_pid_prescan)
+def _unused(op: str) -> bool:
+    return op.strip() in ("", "0", "?")
+
+
+@instruction("PID", "Proportional integral derivative", "Process",
+             ["pid", "value", "value_opt", "dest", "pid_opt", "bool_opt", "value_opt"],
+             ["PID", "Process variable", "Tieback", "Control variable", "PID master loop", "Inhold bit",
+              "Inhold value"], output=True, on_prescan=_pid_prescan)
 def pid_(ctx, ops, cond):
-    """Simplified Logix PID (dependent gains, TI/TD in seconds): runs every scan the rung is true."""
+    """Simplified Logix PID (dependent gains, TI/TD in seconds): runs every scan the rung is true.
+    Operands as in Studio 5000; 0 leaves Tieback, master loop and inhold unused. In manual (MO) the
+    output follows the tieback when one is given; a master loop sets this loop's setpoint (cascade);
+    while the inhold bit is on, the output is held at the inhold value (bumpless restart)."""
     if not cond:
         ctx.timer_marks.pop("pid:" + ops[0].lower(), None)
         return cond
-    ctx.store(ops[2], run_pid(ctx, ops[0], float(ctx.value(ops[1]))))
+    el = ctx.element(ops[0])
+    if not _unused(ops[4]):
+        el["SP"] = float(ctx.element(ops[4])["CV"])
+    tieback = None if _unused(ops[2]) else float(ctx.value(ops[2]))
+    hold = None if _unused(ops[5]) or not ctx.bit(ops[5]) else float(ctx.value(ops[6]))
+    ctx.store(ops[3], run_pid(ctx, ops[0], float(ctx.value(ops[1])), tieback, hold))
     return cond
 
 
-def run_pid(ctx, instance: str, pv: float) -> float:
+def run_pid(ctx, instance: str, pv: float, tieback: float | None = None, hold: float | None = None) -> float:
     """One evaluation of a PID tag; returns CV (also used from structured text)."""
     el, key = ctx.element(instance), instance.lower()
     mark_key = "pid:" + key
@@ -349,14 +365,33 @@ def run_pid(ctx, instance: str, pv: float) -> float:
     dt = 0.0 if last is None else (ctx.now_ms - last) / 1000.0
     el["PV"] = pv
     state = ctx.pid_state.setdefault(key, {"CV": el["CV"], "I": el["CV"]})
+    if hold is not None:
+        state.update(CV=hold, I=hold)
+        el["CV"] = hold
+        return hold
+    manual_value = tieback if tieback is not None else el["SO"]
     el["CV"] = pid.step(state, el["SP"], pv, dt, kc=el["KP"], ti=el["TI"], td=el["TD"],
-                        out_min=el["MINO"], out_max=el["MAXO"], manual=el["MO"], manual_value=el["SO"],
+                        out_min=el["MINO"], out_max=el["MAXO"], manual=el["MO"], manual_value=manual_value,
                         reverse=el["CA"])
     return el["CV"]
 
 
 @instruction("NOP", "No operation", "Program Control", [], [])
 def nop(ctx, ops, cond):
+    return cond
+
+
+@instruction("JSR", "Jump to subroutine", "Program Control", ["routine"], ["Routine name"], output=True)
+def jsr(ctx, ops, cond):
+    if cond:
+        ctx.call(ops[0])
+    return cond
+
+
+@instruction("RET", "Return", "Program Control", [], [], output=True)
+def ret(ctx, ops, cond):
+    if cond:
+        raise isa.ReturnFromSubroutine()
     return cond
 
 
@@ -369,16 +404,25 @@ KINDS = {
     "counter": "a COUNTER tag, like Parts",
     "element": "a TIMER or COUNTER tag",
     "pid": "a PID tag, like LevelPID",
+    "pid_opt": "a PID tag (cascade master), or 0",
+    "bool_opt": "a BOOL tag, or 0",
+    "value_opt": "a number or numeric tag, or 0",
+    "routine": "the name of a routine in this program, like Filling",
 }
-WANT = {"bool": ("BOOL",), "value": ("BOOL", "INT", "DINT", "REAL"), "dest": ("INT", "DINT", "REAL"),
-        "timer": ("TIMER",), "counter": ("COUNTER",), "element": ("TIMER", "COUNTER"), "pid": ("PID",)}
+WANT = {"bool": ("BOOL",), "value": ("BOOL", "SINT", "INT", "DINT", "REAL"), "dest": ("SINT", "INT", "DINT", "REAL"),
+        "timer": ("TIMER",), "counter": ("COUNTER",), "element": ("TIMER", "COUNTER"), "pid": ("PID",),
+        "pid_opt": ("PID",), "bool_opt": ("BOOL",), "value_opt": ("BOOL", "SINT", "INT", "DINT", "REAL")}
 
 
 def check_operand(tags: TagTable, kind: str, op: str) -> str | None:
-    if kind == "value" and literal(op) is not None:
+    if kind in ("value", "value_opt") and literal(op) is not None:
         return None
+    if kind.endswith("_opt") and op.strip() == "0":
+        return None
+    if kind == "routine":
+        return None if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", op.strip()) else f"{op!r} is not a routine name"
     try:
-        r = tags.ref(op)
+        r = tags.ref(op, True)
     except TagError as e:
         return str(e)
     if r.type not in WANT[kind]:

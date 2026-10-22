@@ -30,12 +30,13 @@ no licence key.
 
 ## Features
 
-- **Check my program**: 12 exercises, from logic gates to tuning a PID level loop, each
+- **Check my program**: 13 exercises, from logic gates to tuning a PID level loop, each
   with automatic checks of every written requirement. Runs faster than real time.
 - **Simulations**: I/O panel (16 inputs, 16 outputs per card, thumbwheels and a 7-segment BCD
   display), a filling line (silo), a road crossing (traffic lights) and an analog **tank level**
   process with a live trend of setpoint, level and valve.
-- **PID and analog I/O**: Logix `PID` and S7 `PID_Compact` blocks, analog channels in each
+- **PID and analog I/O**: SLC 500 `PID` (control block in an N file), Logix `PID` (Studio 5000
+  operands) and S7 `PID_Compact` blocks, analog channels in each
   controller's own units (SLC counts, Logix volts, S7 0-27648) and scaling instructions.
 - **Three controller styles**, chosen with File → New for controller:
   - **SLC 500**: data table addresses (`I:1/0`, `T4:0`, `N7:5`), 45 instructions including
@@ -44,7 +45,16 @@ no licence key.
     milliseconds, DINT math, SCP scaling.
   - **S7-1200/1500 (TIA Portal style)**: `%I0.0`, `%Q0.0`, `%MW10` and symbolic tags, IEC timers
     and counters (TON, TOF, TP, CTU, CTD) with instances, edge contacts, NORM_X/SCALE_X.
-- **Tag list** for Logix and S7: declare tags, watch and change values while running.
+- **Laid out like the real software**: a Controller Organizer (Studio 5000) or Project tree (TIA
+  Portal) on the left, each routine or block in its own tab, several open at once.
+- **Several routines per program, in any language**: a ladder main routine calling an ST routine
+  with `JSR` (Logix), functions and function blocks with their interface and instance data blocks
+  (S7, `CALL` box or `"Block"(…)` in SCL).
+- **User data types and arrays**: Logix UDTs and S7 PLC data types, `Recipe[Step].FillTime`.
+- **Tag list** for Logix and S7: declare tags, open structures and arrays, watch and change values
+  while running, **force** I/O points (also from the ladder and on SLC 500).
+- **Examples** for every controller: traffic lights, silo filling line, motor starters as FB
+  instances, recipes in a UDT array, PID tank loops.
 - **Structured text** (ST / SCL) for Logix and S7, next to ladder: IF, CASE, FOR, WHILE, REPEAT,
   math and conversion functions, timer, counter and PID blocks called on their instance
   (`"Delay".TON(IN := Start, PT := T#2s)`). Syntax colours, line numbers, errors as you type and a

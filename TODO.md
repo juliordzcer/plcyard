@@ -23,17 +23,17 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [x] Phase 2: Logix and S7 profiles in ladder, tag list, controller-aware editor and simulations.
 - [x] Phase 3: PID (Logix PID, S7 PID_Compact), analog I/O, tank simulation with trend, exercises 11-12.
 - [x] Phase 4: structured text (ST / SCL) for Logix and S7, editor with live watch list.
-- [ ] **Before Phase 5 — several routines per program, mixed languages:** add, rename and delete
-      routines from the UI, each in LD or ST (later FBD); call them with `JSR` on Logix and as FC
-      calls on S7, from ladder and from ST (e.g. a ladder main routine calling an ST calculation).
-      The project format and the engine already hold several files with their own language.
+- [x] Several routines per program, mixed languages: add, rename and delete routines and blocks from
+      the project tree, each in LD or ST; `JSR` on Logix, FC/FB calls on S7, from ladder and ST.
+- [x] SLC 500 PID instruction (control block in an N file); a PID exercise for S7 (13).
+- [x] Forcing I/O; arrays and user structures; Logix routines (JSR); S7 FBs/DBs.
+- [x] Controller profiles beyond SLC 500: Logix (Studio 5000) and S7-1200/1500 (TIA Portal).
+- [x] Interface like Studio 5000 / TIA Portal: project tree, routines in tabs, block interface above
+      the code, Studio 5000's PID block operands.
+- [x] Examples: traffic lights and silo for each controller family, FB instances, UDT recipes, SLC PID.
 - [ ] **Next — Phase 5:** function block diagram (FBD), see docs/ROADMAP.md.
-- [ ] SLC 500 PID instruction (control block in an N file); a PID exercise for S7.
-- [ ] Forcing I/O from the tag list; arrays and user structures; Logix routines (JSR); S7 FBs/DBs.
-- [ ] Controller profiles beyond SLC 500: a Logix-style controller (tags instead of file addresses,
-      as in Studio 5000) and an S7-1200/1500-style controller (Siemens TIA Portal).
-- [ ] New instruction blocks those controllers have: PID, scaling (SCP), ramps, edge detection
-      (R_TRIG / F_TRIG), IEC timers and counters (TON/TOF/TP, CTU/CTD/CTUD), string and date/time.
+- [ ] Instruction blocks still missing: ramps, CTUD, R_TRIG / F_TRIG boxes, strings, date/time;
+      Logix Add-On Instructions; JSR with parameters; FC return values.
 - [x] PID exercise with a process simulation (tank level) to tune against.
 
 ## Three programming languages (IEC 61131-3)
@@ -48,5 +48,7 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
       exercise and its checks, how to add a simulation.
 
 ## Later
+- [ ] Real hardware I/O: Arduino and/or ESP32 as remote I/O over USB serial (then Wi-Fi), to test
+      programs with real switches and lamps (docs/ROADMAP.md, "Later").
 - [ ] More UI languages (main languages); English only for now.
 - [ ] More simulations: door, elevator, batch mixing, bottle line.

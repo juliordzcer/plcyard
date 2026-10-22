@@ -114,7 +114,7 @@ def run(prog, sp=60.0):
 def test_logix_pid_holds_the_level_through_a_disturbance():
     plc, tank = run(program("logix", [
         "MUL,Local:7:I.Ch0Data,10.0,PV", "MUL,Local:7:I.Ch1Data,10.0,LevelPID.SP",
-        "PID,LevelPID,PV,Out", "DIV,Out,10.0,Local:8:O.Ch0Data"],
+        "PID,LevelPID,PV,0,Out,0,0,0", "DIV,Out,10.0,Local:8:O.Ch0Data"],
         {"PV": {"type": "REAL"}, "Out": {"type": "REAL"},
          "LevelPID": {"type": "PID", "value": {"KP": 4, "TI": 15}}}))
     assert abs(settle(plc, tank, 60) - 60) < 2
@@ -154,3 +154,48 @@ def test_slc_analog_output_drives_the_valve():
     plc, tank = run(program("slc500", ["MOV,16383,O:7"]))
     settle(plc, tank, 1)
     assert tank.valve == pytest.approx(50.0, abs=0.1)
+
+
+# -- SLC 500 PID (control block in an N file) ------------------------------------------------------
+def slc_tank_program(kc=20, ti=5, update=10):
+    from plcyard.core.program import Program, ProgramFile, Rung
+    from plcyard.formats import rsl
+    p = Program.new()
+    p.files[2] = ProgramFile(2, "LAD", rungs=[Rung(rsl.parse_rung_text(t)) for t in [
+        "XIC,S:1/15 MOV,%d,N7:103 MOV,%d,N7:104 MOV,%d,N7:113" % (kc, ti, update),
+        "MOV,I:6,N7:102",
+        "PID,N7:100,I:7,N7:0",
+        "MUL,N7:0,2,O:7",
+    ]])
+    return p
+
+
+def test_slc_pid_needs_a_23_word_control_block():
+    from plcyard.core.processor import Processor
+    p = slc_tank_program()
+    p.files[2].rungs[2] = __import__("plcyard.core.program", fromlist=["Rung"]).Rung(
+        __import__("plcyard.formats.rsl", fromlist=["x"]).parse_rung_text("PID,N7:250,I:7,N7:0"))
+    assert any("23 words" in str(d) for d in Processor().download(p))
+
+
+def test_slc_pid_holds_the_tank_level():
+    from plcyard.core.processor import Processor
+    from plcyard.sims.tank import TankModel
+    plc, tank = Processor(), TankModel()
+    plc.device = tank
+    tank.level, tank.setpoint_knob = 20.0, 60.0
+    assert plc.download(slc_tank_program()) == []
+    plc.set_mode(Processor.RUN)
+    for _ in range(12000):
+        plc.tick(10)
+    assert abs(tank.level - 60.0) <= 2.0, tank.level
+    assert plc.dt.read_bit("N7:100/15") and plc.dt.read_word("N7:101") == 0
+
+
+def test_slc_pid_without_loop_update_time_reports_error_11h():
+    from plcyard.core.processor import Processor
+    plc = Processor()
+    assert plc.download(slc_tank_program(update=0)) == []
+    plc.set_mode(Processor.RUN)
+    plc.tick(30)
+    assert plc.dt.read_word("N7:101") == 0x11 and plc.dt.read_word("N7:0") == 0

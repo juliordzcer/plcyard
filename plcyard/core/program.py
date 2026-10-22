@@ -31,12 +31,13 @@ class Rung:
 @dataclass
 class ProgramFile:
     number: int
-    kind: str = "LAD"          # LAD (main, file 2) or SBR
+    kind: str = "LAD"          # LAD (main, file 2), SBR (subroutine / Logix routine), FC or FB (S7 blocks)
     title: str | None = None   # None: header written without ':'
     rungs: list[Rung] = field(default_factory=list)   # END rung is implicit
     end_comment: str = ""
     language: str = "LD"       # LD (rungs) or ST (structured text in `source`)
     source: str = ""
+    interface: dict[str, dict[str, str]] = field(default_factory=dict)   # S7 FC/FB: section → {name: type}
 
 
 @dataclass
@@ -47,12 +48,13 @@ class Program:
     symbols_section: bool = True                                   # write SYMBOLS even when empty
     profile: str = "slc500"                                        # controller family, see core/profiles
     tags: dict[str, dict] = field(default_factory=dict)            # tag-based controllers: {name: {type, value}}
+    types: dict[str, dict[str, str]] = field(default_factory=dict)  # user data types: {name: {member: type}}
 
     @classmethod
     def new(cls, profile: str = "slc500", language: str = "LD") -> "Program":
         if profile != "slc500":             # tag-based controllers: one main routine, tags instead of tables
             p = cls(profile=profile, symbols_section=False)
-            p.files[2] = ProgramFile(2, "LAD", "MainRoutine", language=language)
+            p.files[2] = ProgramFile(2, "LAD", "Main" if profile == "s7" else "MainRoutine", language=language)
             return p
         p = cls()
         p.files[2] = ProgramFile(2, "LAD")
@@ -64,6 +66,11 @@ class Program:
     @property
     def main(self) -> ProgramFile:
         return self.files[2]
+
+    def routine(self, name: str) -> ProgramFile | None:
+        """A routine or block by name (case-insensitive), other than the main one."""
+        low = name.strip().strip('"').lower()
+        return next((f for n, f in self.files.items() if n != 2 and (f.title or "").lower() == low), None)
 
 
 def walk(node: Union[Series, Parallel, Instr]) -> Iterator[Instr]:

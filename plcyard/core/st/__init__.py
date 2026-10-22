@@ -6,10 +6,13 @@
     FOR i := 1 TO 10 BY 1 DO ... END_FOR;  WHILE ... DO ... END_WHILE;  REPEAT ... UNTIL ... END_REPEAT;
     EXIT; RETURN;
     Delay.TON(IN := Start, PT := T#2s);  Lamp := Delay.Q;     // block calls on an instance tag
+    Recipe[Step + 1] := 0;  Pump.Speed := 50.0;              // arrays and structures
+    JSR(Filling);  "Scale"(Raw := x, Out => y);  "Motor_DB"(Start := b);   // routines, FC, FB instances
     x := LIMIT(0, ABS(y) * 2, 100);  r := INT_TO_REAL(n);  (* comments *) /* too */
 
 Variables are the controller's tags and addresses (`Motor`, `"Motor"`, `#Motor`, `Delay.DN`,
-`Flags.3`, `Local:1:I.Data.0`, `%MW10`). The program runs top to bottom once per scan.
+`Flags.3`, `Local:1:I.Data.0`, `%MW10`). Inside an S7 block, `#Name` is a local variable and
+`"Name"` a global one. The program runs top to bottom once per scan.
 """
 
 from __future__ import annotations
@@ -65,10 +68,8 @@ def tokens(src: str) -> list[Tok]:
         kind, text = m.lastgroup, m.group()
         if kind == "name" and text.upper() in KEYWORDS:
             kind, text = "kw", text.upper()
-        elif kind == "name" and text.startswith("#"):
-            text = text[1:]
-        elif kind == "quoted":
-            kind, text = "name", text[1:-1]
+        elif kind == "quoted":                 # kept quoted ("global"), as #local keeps its #
+            kind = "name"
         if kind not in ("ws", "nl", "comment"):
             out.append(Tok(kind, text, line))
         line += text.count("\n") if kind == "comment" else (1 if kind == "nl" else 0)
@@ -99,6 +100,7 @@ class Num:
 class Var:
     ref: str            # what the controller's memory understands: "Delay.DN", "%I0.0"
     line: int
+    index: list = field(default_factory=list)    # expressions for the [{}] holes of ref: Recipe[{}]
 
 
 @dataclass
@@ -136,6 +138,15 @@ class Call:
     block: str                       # TON, TOF, TP, RTO, CTU, CTD, PID, PID_Compact…
     inputs: dict                     # name → expression
     outputs: dict                    # name → Var  (Q => Lamp)
+    line: int
+    index: list = field(default_factory=list)    # holes of an instance like Timers[{}]
+
+
+@dataclass
+class RoutineCall:
+    name: str                        # a routine (JSR), a function or a function block instance
+    inputs: dict
+    outputs: dict
     line: int
 
 
@@ -266,9 +277,23 @@ class Parser:
                 return Exit(tok.line) if k == "EXIT" else Return(tok.line)
             raise StError(tok.line, f"{k} cannot start a statement")
         target = self.reference()
-        if self.at("op", "(") and "." in target.ref:              # Instance.TON(…)
+        if self.at("op", "(") and "." in target.ref and not target.ref.endswith("]"):   # Instance.TON(…)
             inst, _, block = target.ref.rpartition(".")
-            return self.call(inst, block, tok.line)
+            call = self.call(inst, block, tok.line)
+            call.index = target.index
+            return call
+        if self.at("op", "(") and not target.index:                 # JSR(Name); "Fc"(…); "Fb_DB"(…);
+            if target.ref.upper() == "JSR":
+                self.take()
+                name = self.reference()
+                if self.at("op", ","):                              # JSR(Name, 0): no parameters
+                    self.take()
+                    self.expect("int")
+                self.expect("op", ")")
+                self.semi()
+                return RoutineCall(name.ref, {}, {}, tok.line)
+            c = self.call(target.ref, "", tok.line)
+            return RoutineCall(c.instance, c.inputs, c.outputs, tok.line)
         self.expect("op", ":=")
         expr = self.expr()
         self.semi()
@@ -474,13 +499,22 @@ class Parser:
         ref = tok.text
         if tok.kind == "addr":
             return Var(ref.upper(), tok.line)
-        while self.at("op", "."):
-            self.take()
+        index = []
+        while self.at("op", ".") or self.at("op", "["):
+            if self.take().text == "[":
+                e = self.expr()
+                self.expect("op", "]")
+                if isinstance(e, Num) and isinstance(e.value, int) and not isinstance(e.value, bool):
+                    ref += f"[{e.value}]"
+                else:
+                    ref += "[{}]"
+                    index.append(e)
+                continue
             part = self.take()
             if part.kind not in ("name", "int"):
                 raise StError(part.line, f"expected a member or bit after '.', found {part.text!r}")
             ref += "." + part.text
-        return Var(ref, tok.line)
+        return Var(ref, tok.line, index)
 
 
 def parse(src: str) -> list:
@@ -489,9 +523,13 @@ def parse(src: str) -> list:
 
 # -- checks and execution -------------------------------------------------------------------------------
 def children(n) -> list:
+    if isinstance(n, Var):
+        return list(n.index)
     if isinstance(n, Assign):
         return [n.target, n.expr]
     if isinstance(n, Call):
+        return [*n.index, *n.inputs.values(), *n.outputs.values()]
+    if isinstance(n, RoutineCall):
         return [*n.inputs.values(), *n.outputs.values()]
     if isinstance(n, If):
         return [x for cond, body in n.branches for x in (cond, *body)] + n.orelse
@@ -543,9 +581,10 @@ def is_bool(memory, ref: str) -> bool:
 class Runner:
     """Executes a parsed routine against a controller memory and its block calls."""
 
-    def __init__(self, memory, call_block):
+    def __init__(self, memory, call_block, call_routine=None):
         self.m = memory
         self.call_block = call_block          # (instance, block, inputs, line) → outputs dict
+        self.call_routine = call_routine      # (name, inputs, line) → outputs dict
         self.budget = 0
 
     def run(self, body: list) -> None:
@@ -566,9 +605,15 @@ class Runner:
         if self.budget < 0:
             raise PlcFault(0x0601, f"line {line}: loop ran more than {MAX_LOOP} times in one scan (watchdog)")
 
+    def ref(self, v) -> str:
+        """A variable's reference with its array indexes evaluated."""
+        if not v.index:
+            return v.ref
+        return v.ref.format(*(int(self.eval(i)) for i in v.index))
+
     def stmt(self, s) -> None:
         if isinstance(s, Assign):
-            self.store(s.target.ref, self.eval(s.expr))
+            self.store(self.ref(s.target), self.eval(s.expr))
         elif isinstance(s, If):
             for cond, body in s.branches:
                 if self.truth(cond):
@@ -587,9 +632,9 @@ class Runner:
             try:
                 while (i <= stop) if step > 0 else (i >= stop):
                     self.tick(s.line)
-                    self.store(s.var.ref, i)
+                    self.store(self.ref(s.var), i)
                     self.block(s.body)
-                    i = int(self.m.read_word(s.var.ref)) + step
+                    i = int(self.m.read_word(self.ref(s.var))) + step
             except _Exit:
                 pass
         elif isinstance(s, While):
@@ -614,11 +659,19 @@ class Runner:
             raise _Return()
         elif isinstance(s, Call):
             ins = {k: self.eval(v) for k, v in s.inputs.items()}
-            outs = self.call_block(s.instance, s.block, ins, s.line)
+            inst = s.instance.format(*(int(self.eval(i)) for i in s.index)) if s.index else s.instance
+            outs = self.call_block(inst, s.block, ins, s.line)
             for name, var in s.outputs.items():
                 if name not in outs:
                     raise PlcFault(0x0601, f"line {s.line}: {s.block} has no output {name}")
-                self.store(var.ref, outs[name])
+                self.store(self.ref(var), outs[name])
+        elif isinstance(s, RoutineCall):
+            ins = {k: self.eval(v) for k, v in s.inputs.items()}
+            outs = self.call_routine(s.name, ins, s.line)
+            for name, var in s.outputs.items():
+                if name not in outs:
+                    raise PlcFault(0x0601, f"line {s.line}: {s.name} has no output {name}")
+                self.store(self.ref(var), outs[name])
 
     def truth(self, e) -> bool:
         return bool(self.eval(e))
@@ -633,7 +686,8 @@ class Runner:
         if isinstance(e, Num):
             return e.value
         if isinstance(e, Var):
-            return self.m.read_bit(e.ref) if is_bool(self.m, e.ref) else self.m.read_word(e.ref)
+            ref = self.ref(e)
+            return self.m.read_bit(ref) if is_bool(self.m, ref) else self.m.read_word(ref)
         if isinstance(e, Unary):
             v = self.eval(e.arg)
             return (not v) if e.op == "NOT" else -v
@@ -692,25 +746,33 @@ class Runner:
         raise PlcFault(0x0601, f"cannot evaluate {e!r}")
 
 
-def check(body: list, memory, blocks: dict[str, tuple[str, ...]]) -> list[tuple[int, str]]:
+def static_ref(var: Var) -> str:
+    """A reference with computed indexes left open, for checking before it runs."""
+    return var.ref.format(*("*" for _ in var.index)) if var.index else var.ref
+
+
+def check(body: list, memory, blocks: dict[str, tuple[str, ...]], routine=None) -> list[tuple[int, str]]:
     """Problems (line, message) with the variables and block calls of a parsed routine.
-    `blocks` maps a block name to the instance types it accepts."""
+    `blocks` maps a block name to the instance types it accepts; `routine(name, inputs, outputs)`
+    gives the problem with a routine or block call, or None."""
     problems = []
     seen = set()
 
     def ref_ok(var: Var, write: bool = False):
-        key = (var.ref, write, var.line)
+        text = static_ref(var)
+        key = (text, write, var.line)
         if key in seen:
             return
         seen.add(key)
         try:
-            r = memory.ref(var.ref)
+            r = memory.ref(text, True)
         except Exception as e:
             problems.append((var.line, str(e)))
             return
-        t = r.type.lower()
-        if t in ("timer", "counter", "pid", "iec_timer", "iec_counter", "pid_compact"):
-            problems.append((var.line, f"{var.ref} is a {r.type}; use a member like {var.ref}.Q or call it"))
+        if not memory.is_scalar(r.type):
+            hint = "use a member like {0}.Q or call it".format(var.ref) if r.type.lower() in (
+                "timer", "counter", "pid", "iec_timer", "iec_counter", "pid_compact") else "use one of its members or elements"
+            problems.append((var.line, f"{var.ref} is a {r.type}; {hint}"))
 
     for n in walk(body):
         if isinstance(n, Assign):
@@ -725,12 +787,19 @@ def check(body: list, memory, blocks: dict[str, tuple[str, ...]]) -> list[tuple[
                 problems.append((n.line, f"{n.block} cannot be called here (blocks: {', '.join(sorted(blocks))})"))
                 continue
             try:
-                t = memory.ref(n.instance).type
+                inst = n.instance.format(*("*" for _ in n.index)) if n.index else n.instance
+                t = memory.ref(inst, True).type
             except Exception as e:
                 problems.append((n.line, str(e)))
                 continue
             if t not in types:
                 problems.append((n.line, f"{n.instance} is a {t}; {n.block} needs a {' or '.join(types)}"))
+            for v in n.outputs.values():
+                ref_ok(v, True)
+        elif isinstance(n, RoutineCall):
+            msg = routine(n.name, list(n.inputs), list(n.outputs)) if routine else f"{n.name} cannot be called here"
+            if msg:
+                problems.append((n.line, msg))
             for v in n.outputs.values():
                 ref_ok(v, True)
     return problems

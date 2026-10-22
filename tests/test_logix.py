@@ -49,7 +49,7 @@ def test_tag_references():
 
 
 @pytest.mark.parametrize("ref,msg", [
-    ("Nope", "does not exist"), ("Delay.XX", "has no member"), ("Level.3", "only INT and DINT"),
+    ("Nope", "does not exist"), ("Delay.XX", "has no member"), ("Level.3", "only SINT, INT and DINT"),
     ("Count.32", "out of range"), ("Local:1:I.Bits", "use Local:1:I.Data"), ("3abc", "not a tag reference"),
 ])
 def test_bad_references(ref, msg):

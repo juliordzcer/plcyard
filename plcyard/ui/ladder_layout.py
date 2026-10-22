@@ -23,7 +23,7 @@ BRANCH_GAP = 14
 WIRE_Y = 26
 ROW_H = 17
 LIVE_ROWS = {"TON": ["Accum"], "TOF": ["Accum"], "RTO": ["Accum"], "CTU": ["Accum"], "CTD": ["Accum"],
-             "SQO": [], "SQC": [], "SQL": [], "PID": ["SP", "Output"], "PID_Compact": ["Output"]}
+             "SQO": [], "SQC": [], "SQL": [], "PID": ["Setpoint", "Process Variable", "Output %"], "PID_Compact": ["Output"]}
 
 Tag = tuple[tuple, str]   # (path, "in" | "out")
 

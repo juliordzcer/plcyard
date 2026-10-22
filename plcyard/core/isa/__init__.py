@@ -90,6 +90,7 @@ class Context:
         self.dt = dt
         self.now_ms = 0.0
         self.timer_marks: dict[str, float] = {}
+        self.pid_state: dict[str, dict] = {}
         self.call: Callable[[int], None] = lambda n: None
 
     # operands
@@ -221,7 +222,7 @@ def is_output(mnemonic: str, specs: dict[str, Spec] | None = None) -> bool:
     return bool(spec and spec.output)
 
 
-from . import bit, timers, compare, math, files, program_control  # noqa: E402,F401  (register)
+from . import bit, timers, compare, math, files, program_control, process  # noqa: E402,F401  (register)
 
 __all__ = ["SPECS", "Spec", "Context", "validate", "is_output", "PlcFault",
            "ReturnFromSubroutine", "DataTableError", "to_int16"]

@@ -76,6 +76,25 @@ Split what is shared from what belongs to a controller family:
   `ui/st_editor.py` (colours, line numbers, problems as you type, watch list). SLC 500 has no ST, as
   on the real controller. Not yet: Studio 5000's own TONR/FBD_TIMER, user functions, arrays.
 
+## Phase 4b — Several routines, data types, forcing (L) — done
+
+- Logix: routines in the MainProgram called with `JSR` (ladder and `JSR(Name);` in ST), `RET`;
+  user-defined types and one-dimensional arrays (`Pump.Speed`, `Recipe[Step]`, indexes by tag in
+  ladder, by expression in ST); `PID` with Studio 5000's seven operands (tieback, cascade master,
+  inhold).
+- S7: functions (FC) and function blocks (FB) with an interface (Input, Output, InOut, Static,
+  Temp), called with a `CALL` box (`Start:=Button`, `Run=>Lamp`) or `"Block"(…)` in SCL; FB
+  instances are data blocks (tags of the FB's type), multi-instances inside FBs, `#local` and
+  `"global"` names; PLC data types and arrays (`Array[1..5] of Int`); `Count.%X3`.
+- SLC 500: `PID` with a 23-word control block in an N file (RSLogix 500 layout), exercise 13 PID on
+  S7 with `PID_Compact`.
+- Forcing I/O (all three controllers) from the tag list or the ladder, "I/O FORCED" on the panel.
+- UI laid out like the controller's software: Controller Organizer / Project tree / Project on the
+  left, every routine or data type in its own tab (several open at once, any language), the
+  block interface above its code as in TIA Portal, the tag list as a tree with members.
+- Examples: traffic lights (SLC; Logix with an ST sequence and a ladder routine), silo (SLC; S7 FB
+  and instance DB), two motor starters (S7 FB instances), recipes (Logix UDT array), SLC PID tank.
+
 ## Phase 5 — Function block diagram (L)
 
 - Model: blocks (instances of the same function blocks ST uses), pins, wires, execution order
@@ -104,6 +123,10 @@ Split what is shared from what belongs to a controller family:
 
 - UI languages (Qt translations; exercises as `labs/<lang>/`).
 - More simulations: door, elevator, batch mixing, bottle line.
+- Real hardware: an Arduino and/or ESP32 as remote I/O over USB serial (later Wi-Fi), so a program
+  running in PLCYard reads real switches and drives real LEDs/relays. A small firmware sketch
+  speaks a line protocol (input word in, output word out each scan), and an `IODevice` on the PC
+  side replaces the simulation. Watchdog: outputs off when the link drops.
 
 ## Order and size
 

@@ -162,7 +162,8 @@ def toggle_contact(body: Series, path: tuple) -> None:
     node.mnemonic = "XIO" if node.mnemonic == "XIC" else "XIC"
 
 
-def set_operands(body: Series, path: tuple, operands: list[str], profile=None, program=None) -> list[str]:
+def set_operands(body: Series, path: tuple, operands: list[str], profile=None, program=None,
+                 routine: int | None = None) -> list[str]:
     """Store the typed operands; returns their problems. `profile` defaults to SLC 500."""
     from .profiles import SLC500
     profile = profile or SLC500
@@ -170,7 +171,7 @@ def set_operands(body: Series, path: tuple, operands: list[str], profile=None, p
     if not isinstance(node, Instr):
         raise EditError("not an instruction")
     node.operands = [profile.normalize(o) if o.strip() else "?" for o in operands]
-    return profile.validate(node.mnemonic, node.operands, program)
+    return profile.validate(node.mnemonic, node.operands, program, routine)
 
 
 def instructions_in_order(body: Series) -> list[tuple]:

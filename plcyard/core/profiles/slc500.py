@@ -42,11 +42,24 @@ class Slc500(Profile):
                 for ins in walk(rung.body):
                     problems += [Diagnostic(f.number, i, m) for m in isa.validate(ins.mnemonic, ins.operands)]
                     problems += [Diagnostic(f.number, i, m) for m in self._range_problems(memory, ins)]
+                    if ins.mnemonic == "PID" and not problems:
+                        problems += [Diagnostic(f.number, i, m) for m in self._pid_problems(memory, ins.operands[0])]
                     if ins.mnemonic == "JSR" and not problems:
                         n = int(ins.operands[0].split(":")[1])
                         if n not in program.files or program.files[n].kind != "SBR":
                             problems.append(Diagnostic(f.number, i, f"JSR: subroutine file {n} does not exist"))
         return problems
+
+    @staticmethod
+    def _pid_problems(dt: DataTable, block: str) -> list[str]:
+        a = dt.addr(block)
+        if a.type != "N" or a.sub is not None or a.bit is not None or a.is_indirect:
+            return [f"PID: the control block must be an integer word like N10:0, not {block}"]
+        try:
+            dt._locate(Address("N", a.file, a.element + 22))
+        except (DataTableError, ValueError):
+            return [f"PID: the control block needs 23 words from {block} (to N{a.file}:{a.element + 22})"]
+        return []
 
     @staticmethod
     def _range_problems(dt: DataTable, ins: Instr) -> list[str]:
@@ -123,11 +136,26 @@ class Slc500(Profile):
             edge = "CU" if m == "CTU" else "CD"
             return ([("Accum", str(dt.read_word(ops[0] + ".ACC")))],
                     [(edge, dt.read_bit(f"{ops[0]}/{edge}")), ("DN", dt.read_bit(f"{ops[0]}/DN"))])
+        if m == "PID":
+            a = dt.addr(ops[0])
+            w = lambda k: f"N{a.file}:{a.element + k}"
+            return ([("Setpoint", str(dt.read_word(w(2)))), ("Process Variable", str(dt.read_word(w(14)))),
+                     ("Output %", str(dt.read_word(w(16))))],
+                    [("EN", dt.read_bit(w(0) + "/15")), ("DN", dt.read_bit(w(0) + "/13"))])
         ctl = next((o for o in ops if o.upper().startswith("R")), None)
         if ctl and m in ("BSL", "BSR", "SQO", "SQC", "SQL"):
             bits = ("EN", "DN", "FD") if m == "SQC" else ("EN", "DN")
             return [], [(b, dt.read_bit(f"{ctl}/{b}")) for b in bits]
         return [], []
+
+    def forceable(self, dt: DataTable, ref: str) -> str:
+        try:
+            a = dt.addr(ref)
+        except (DataTableError, ValueError) as e:
+            return str(e)
+        if a.type not in ("I", "O") or not a.is_bit:
+            return "only I/O bits can be forced, like I:1/0 or O:2/0"
+        return ""
 
     def analog_name(self, direction: str, channel: int) -> str:
         return f"{direction}:{(ANALOG_IN if direction == 'I' else ANALOG_OUT)[channel]}"

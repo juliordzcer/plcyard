@@ -29,7 +29,9 @@ This exercise uses the **Logix** controller (tags). "New program for this exerci
 
 1. Add tags: `LevelPID` of type PID, and REAL tags for the level and the valve output.
 2. Convert volts to percent: `MUL Local:7:I.Ch0Data 10.0 Level` (and the knob into `LevelPID.SP`).
-3. `PID LevelPID Level ValveOut`, then `DIV ValveOut 10.0 Local:8:O.Ch0Data`.
+3. `PID LevelPID Level 0 ValveOut 0 0 0` (operands as in Studio 5000: PID, process variable,
+   tieback, control variable, master loop, inhold bit, inhold value; 0 leaves one unused), then
+   `DIV ValveOut 10.0 Local:8:O.Ch0Data`.
 4. Tune: set `LevelPID.KP` and `LevelPID.TI` (seconds) with a MOV on the first scan
    (`XIC S:FS`). Start with KP 1 and TI 0 (proportional only): the level settles below the
    setpoint. Then add integral action (TI 30, then 15) and watch the trend.

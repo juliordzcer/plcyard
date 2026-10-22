@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (QCompleter, QFormLayout, QFrame, QInputDialog, QL
                                QMenu, QScrollArea, QVBoxLayout, QWidget)
 
 from ..core import edit, profiles
+from ..core.profiles.base import parse_param
 from ..core.datatable import DataTable
 from ..core.program import Instr, Parallel, Program, ProgramFile, walk
 from . import theme
@@ -107,7 +108,8 @@ class OperandEditor(QFrame):
         return [v or "?" for v in vals]
 
     def _validate(self) -> None:
-        problems = self.canvas.profile.validate(self.ins.mnemonic, self._values(), self.canvas.program)
+        problems = self.canvas.profile.validate(self.ins.mnemonic, self._values(), self.canvas.program,
+                                                self.canvas.file_no)
         self.error.setText("\n".join(problems))
         self.error.setVisible(bool(problems))
         for f in self.fields:
@@ -118,7 +120,8 @@ class OperandEditor(QFrame):
 
     def commit(self) -> None:
         self.canvas.apply_edit("Edit operands",
-                               lambda body: edit.set_operands(body, self.path, self._values(), self.canvas.profile, self.canvas.program),
+                               lambda body: edit.set_operands(body, self.path, self._values(), self.canvas.profile,
+                                                                 self.canvas.program, self.canvas.file_no),
                                self.rung, select=self.path)
         self.close_editor()
 
@@ -188,6 +191,12 @@ class LadderCanvas(QWidget):
     def known_addresses(self) -> set[str]:
         out = set(self.program.symbols) if self.program else set()
         if self.program:
+            out.update(self.program.tags)
+            out.update(f.title for n, f in self.program.files.items() if n != 2 and f.title)
+            f = self.file
+            if f is not None:
+                out.update(("#" if self.program.profile == "s7" else "") + n
+                           for sec in f.interface.values() for n in sec)
             for f in self.program.files.values():
                 for r in f.rungs:
                     for ins in walk(r.body):
@@ -214,7 +223,9 @@ class LadderCanvas(QWidget):
         return True
 
     def _restore(self, program: Program) -> None:
-        self.program.files = copy.deepcopy(program.files)
+        """Undo and redo touch only this routine (and the symbols), not the other open ones."""
+        if self.file_no in program.files:
+            self.program.files[self.file_no] = copy.deepcopy(program.files[self.file_no])
         self.program.symbols = copy.deepcopy(program.symbols)
         self.sel = None
         self._relayout()
@@ -528,11 +539,16 @@ class LadderCanvas(QWidget):
                 spec = self.specs.get(ins.mnemonic)
                 on_ = bool(hit and hit[1]) if is_block(ins, self.specs) else self._energized(spec, ins.operands)
                 sel = self.sel is not None and self.sel[0] == "instr" and self.sel[1] == n and self.sel[2] == pl.path
+                title, ops, labels = ins.mnemonic, ins.operands, list(spec.labels) if spec else None
+                if ins.mnemonic == "CALL" and ops:          # TIA: the block (or its instance) heads the box
+                    params = [parse_param(o) or ("", "", o) for o in ops[1:]]
+                    title, labels = ops[0], [f"{n} {'→' if arrow == '=>' else '←'}" if n else "" for n, arrow, _ in params]
+                    ops = [v for _, _, v in params]
                 paint_instruction(
-                    p, QRectF(left + pl.x, row.rung_y + pl.y, pl.w, pl.h), ins.mnemonic, ins.operands,
+                    p, QRectF(left + pl.x, row.rung_y + pl.y, pl.w, pl.h), title, ops,
                     symbols.get(ins.operands[0], "") if ins.operands else "",
                     energized=on_, selected=sel,
-                    labels=list(spec.labels) if spec else None,
+                    labels=labels,
                     extra=extra, pins=pins, shape=spec.shape if spec else "block",
                     letter=spec.letter if spec else "")
         self._paint_drop(p)
@@ -628,9 +644,20 @@ class LadderCanvas(QWidget):
         menu.addSeparator()
         add("Insert rung below", self.new_rung, True, "Ins")
         add("Edit rung comment…", self.edit_comment, has_rung)
-        if ins and ins.operands and ":" in ins.operands[0]:
+        if ins and ins.operands and ":" in ins.operands[0] and self.profile.name == "slc500":
             menu.addSeparator()
             add("Go to data table", lambda: self.window().show_address(ins.operands[0]))
+        win = self.window()
+        if ins and ins.mnemonic in ("JSR", "CALL") and ins.operands and hasattr(win, "open_routine_named"):
+            menu.addSeparator()
+            add(f"Go to {ins.operands[0]}", lambda: win.open_routine_named(ins.operands[0]))
+        if ins and self.specs.get(ins.mnemonic) and self.specs[ins.mnemonic].shape in ("contact", "contact_nc", "coil") \
+                and ins.operands and ins.operands[0] != "?" and hasattr(win, "force"):
+            menu.addSeparator()
+            op = ins.operands[0]
+            add("Force On", lambda: win.force(op, True))
+            add("Force Off", lambda: win.force(op, False))
+            add("Remove Force", lambda: win.force(op, None))
         menu.exec(at)
 
     # -- keyboard ---------------------------------------------------------

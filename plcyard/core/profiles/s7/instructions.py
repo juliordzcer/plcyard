@@ -8,7 +8,10 @@ IEC timers and counters keep their state in an instance tag (IEC_TIMER / IEC_COU
 
 from __future__ import annotations
 
+import re
+
 from ... import isa, pid
+from ..base import parse_param
 from .memory import STRUCTS, S7Error, S7Memory, parse_time
 
 SPECS: dict[str, isa.Spec] = {}
@@ -330,6 +333,38 @@ def run_pid_compact(ctx, instance: str, setpoint: float, value: float) -> float:
     return el["Output"]
 
 
+# -- block calls ----------------------------------------------------------------------------------------------------
+MAX_PARAMS = 8
+
+
+@instruction("CALL", "Call a function (FC) or function block (FB)", "Program Control",
+             ["block", *["param"] * MAX_PARAMS], ["Block", *[f"Parameter {k + 1}" for k in range(MAX_PARAMS)]],
+             optional=MAX_PARAMS)
+def call(ctx, ops, cond):
+    """FC by name, FB by its instance (`Motor_DB`, or `#Inner` inside a block). Parameters as in a
+    TIA box: `Start := Button` (input) or `Running => Lamp` (output). EN → ENO."""
+    if not cond:
+        return False
+    inputs, outputs = {}, []
+    for p in ops[1:]:
+        name, arrow, operand = parse_param(p)
+        if arrow == ":=":
+            inputs[name] = ctx.value(operand)
+        else:
+            outputs.append((name, operand))
+    result = ctx.call(ops[0], inputs)
+    for name, operand in outputs:
+        ctx.store(operand, result[name.upper()])
+    return True
+
+
+@instruction("RET", "Return", "Program Control", [], [], output=True, shape="coil", letter="RET")
+def ret(ctx, ops, cond):
+    if cond:
+        raise isa.ReturnFromSubroutine()
+    return cond
+
+
 # -- operand checks ---------------------------------------------------------------------------------------------
 KINDS = {
     "bool": "a Bool tag or a bit, like Start or %I0.0",
@@ -340,13 +375,33 @@ KINDS = {
     "counter": "an IEC_COUNTER instance tag, like Parts",
     "element": "an IEC_TIMER or IEC_COUNTER instance",
     "pid": "a PID_Compact instance tag, like LevelPID",
+    "block": "a function (FC) name or a function block instance (its DB), like Scale or Motor_DB",
+    "param": "a parameter like Start := Button or Running => Lamp",
 }
-WANT = {"bool": ("Bool",), "value": ("Bool", "Int", "DInt", "Real", "Time"), "time": ("Time", "DInt", "Int"),
-        "dest": ("Int", "DInt", "Real", "Time"), "timer": ("IEC_TIMER",), "counter": ("IEC_COUNTER",),
+WANT = {"bool": ("Bool",), "value": ("Bool", "Byte", "Int", "DInt", "Real", "Time"), "time": ("Time", "DInt", "Int"),
+        "dest": ("Byte", "Int", "DInt", "Real", "Time"), "timer": ("IEC_TIMER",), "counter": ("IEC_COUNTER",),
         "element": ("IEC_TIMER", "IEC_COUNTER"), "pid": ("PID_Compact",)}
 
 
 def check_operand(mem: S7Memory, kind: str, op: str) -> str | None:
+    if kind == "block":
+        return None if re.fullmatch(r'#?"?[A-Za-z_][A-Za-z0-9_]*"?(?:\.[A-Za-z_]\w*|\[[^\]]+\])*', op.strip()) \
+            else f"{op!r} is not a block name"
+    if kind == "param":
+        p = parse_param(op)
+        if p is None:
+            return f"write a parameter as Name := value (input) or Name => tag (output), not {op!r}"
+        if p[1] == ":=":
+            return check_operand(mem, "value", p[2])
+        return check_operand(mem, "out", p[2])
+    if kind == "out":
+        try:
+            r = mem.ref(op, True)
+        except S7Error as e:
+            return str(e)
+        if not mem.is_scalar(r.type):
+            return f"{op} is a {r.type}; pass one of its members"
+        return f"{op} is read-only" if r.area == "I" or r.tag == "FirstScan" else None
     lit = literal(op)
     if lit is not None:
         if kind == "value" or (kind == "time" and parse_time(op) is not None) or (kind == "bool" and op.lower() in ("true", "false")):
@@ -355,7 +410,7 @@ def check_operand(mem: S7Memory, kind: str, op: str) -> str | None:
             return f"{op} is not a time; write it like T#5s or T#500ms"
         return f"{op} is a constant; needs {KINDS[kind]}"
     try:
-        r = mem.ref(op)
+        r = mem.ref(op, True)
     except S7Error as e:
         if kind == "time" and op[:1].isdigit():
             return f"{op} is not a time; write it like T#5s or T#500ms"

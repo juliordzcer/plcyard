@@ -1,5 +1,6 @@
 """Allen-Bradley Logix (ControlLogix / CompactLogix, Studio 5000): tags instead of a data table,
-millisecond timers, DINT math. I/O modules appear as Local:<slot>:I.Data / Local:<slot>:O.Data."""
+millisecond timers, DINT math, user-defined types and arrays, routines called with JSR. I/O modules
+appear as Local:<slot>:I.Data / Local:<slot>:O.Data."""
 
 from __future__ import annotations
 
@@ -22,35 +23,52 @@ class Logix(Profile):
     memory_fault_code = MEMORY_FAULT
 
     tag_types = TYPES
+    routine_kinds = ("SBR",)
 
-    def check_tags(self, decls: dict[str, dict]) -> str:
-        try:
-            TagTable(decls)
-        except TagError as e:
-            return str(e)
-        return ""
+    def build_memory(self, program: Program) -> TagTable:
+        return TagTable(program.tags, program.types)
 
     def tag_value(self, tags: TagTable, name: str) -> str:
-        t = tags.types[name]
-        if t == "PID":
-            el = tags.values[name]
-            return f"SP {el['SP']:g}  PV {el['PV']:.1f}  CV {el['CV']:.1f}" + ("  MAN" if el["MO"] else "")
-        if t in STRUCTS:
-            el = tags.values[name]
-            return f"ACC {el['ACC']} / PRE {el['PRE']}" + ("  DN" if el["DN"] else "")
-        v = tags.read_word(name)
-        return f"{v:g}" if isinstance(v, float) else str(v)
+        r = tags.ref(name)
+        return value_text(r.type, tags._get(r))
+
+    def forceable(self, tags: TagTable, ref: str) -> str:
+        try:
+            r = tags.ref(ref)
+        except TagError as e:
+            return str(e)
+        if r.type != "BOOL" or not r.base.startswith("Local:") or not r.base[-1] in "IO":
+            return "only I/O points can be forced, like Local:1:I.Data.0"
+        return ""
+
+    def call_problem(self, program: Program, memory, name: str, inputs: list[str], outputs: list[str]) -> str | None:
+        f = program.routine(name)
+        if f is None:
+            return f"routine {name} does not exist"
+        if inputs or outputs:
+            return f"JSR({f.title}): routines take no parameters here"
+        return None
 
     # -- editing -------------------------------------------------------------
-    def validate(self, mnemonic: str, operands: list[str], program: Program | None = None) -> list[str]:
+    def validate(self, mnemonic: str, operands: list[str], program: Program | None = None,
+                 routine: int | None = None) -> list[str]:
         tags = None
         if program is not None:
             try:
-                tags = TagTable(program.tags)
+                tags = self.build_memory(program)
             except TagError:
                 tags = None
-        return isa.validate(mnemonic, operands, self.specs,
-                            check=(lambda k, op: check_operand(tags, k, op)) if tags else _syntax_only)
+        problems = isa.validate(mnemonic, operands, self.specs,
+                                check=(lambda k, op: check_operand(tags, k, op)) if tags else _syntax_only)
+        if program is not None and not problems:
+            problems += self._routine_problems(program, mnemonic, operands)
+        return problems
+
+    @staticmethod
+    def _routine_problems(program: Program, mnemonic: str, operands: list[str]) -> list[str]:
+        if mnemonic == "JSR" and operands and program.routine(operands[0]) is None:
+            return [f"JSR: routine {operands[0]} does not exist"]
+        return []
 
     def new_memory(self) -> TagTable:
         return TagTable()
@@ -83,7 +101,7 @@ class Logix(Profile):
 
     def check(self, program: Program, memory) -> list[Diagnostic]:
         try:
-            tags = TagTable(program.tags)
+            tags = self.build_memory(program)
         except TagError as e:
             return [Diagnostic(2, 0, f"Tags: {e}")]
         problems = self.check_st(program, tags)
@@ -92,12 +110,12 @@ class Logix(Profile):
                 for ins in walk(rung.body):
                     msgs = isa.validate(ins.mnemonic, ins.operands, self.specs,
                                         check=lambda k, op: check_operand(tags, k, op))
+                    msgs = msgs or self._routine_problems(program, ins.mnemonic, ins.operands)
                     problems += [Diagnostic(f.number, i, m) for m in msgs]
-                    if ins.mnemonic in ("JSR", "SBR", "RET"):
-                        problems.append(Diagnostic(f.number, i, f"{ins.mnemonic}: routines are not supported yet"))
         return problems
 
     def load(self, program: Program, tags: TagTable) -> None:
+        tags.udts = dict(program.types)
         tags.clear(program.tags, keep_io=True)
 
     def prescan(self, program: Program, tags: TagTable, ctx) -> None:
@@ -109,10 +127,9 @@ class Logix(Profile):
 
     def reset_timers_counters(self, tags: TagTable) -> None:
         for name in tags.names():
-            if tags.types[name] in ("TIMER", "COUNTER"):
-                pre = tags.values[name]["PRE"]
-                tags.values[name] = {k: (False if isinstance(v, bool) else 0) for k, v in tags.values[name].items()}
-                tags.values[name]["PRE"] = pre
+            for _, t, el in list(tags.walk(name)):
+                if t in ("TIMER", "COUNTER"):
+                    el.update({k: (False if isinstance(v, bool) else 0) for k, v in el.items() if k != "PRE"})
 
     # -- scan ----------------------------------------------------------------
     def begin_scan(self, tags: TagTable, first_pass: bool) -> None:
@@ -129,7 +146,8 @@ class Logix(Profile):
         m, ops = ins.mnemonic, ins.operands
         if m == "PID":
             el = tags.element(ops[0])
-            return [("SP", f"{el['SP']:g}"), ("Output", f"{el['CV']:.1f} %")], [("MAN", bool(el["MO"]))]
+            return ([("Setpoint", f"{el['SP']:g}"), ("Process Variable", f"{el['PV']:.1f}"),
+                     ("Output %", f"{el['CV']:.1f}")], [("MAN", bool(el["MO"]))])
         if m in ("TON", "TOF", "RTO", "CTU", "CTD"):
             el = tags.element(ops[0])
             bits = ("EN", "TT", "DN") if m in ("TON", "TOF", "RTO") else (("CU" if m == "CTU" else "CD"), "DN")
@@ -166,9 +184,26 @@ class Logix(Profile):
             device.set_analog_outputs({0: 0.0})
 
 
+def value_text(t: str, v) -> str:
+    """A value as the tag list shows it."""
+    if t == "PID":
+        return f"SP {v['SP']:g}  PV {v['PV']:.1f}  CV {v['CV']:.1f}" + ("  MAN" if v["MO"] else "")
+    if t in STRUCTS:
+        return f"ACC {v['ACC']} / PRE {v['PRE']}" + ("  DN" if v["DN"] else "")
+    if isinstance(v, dict):
+        return "{…}"
+    if isinstance(v, list):
+        return f"[{len(v)}]"
+    if isinstance(v, bool):
+        return str(int(v))
+    return f"{v:g}" if isinstance(v, float) else str(v)
+
+
 def _syntax_only(kind: str, op: str) -> str | None:
     """Without the tag list (editor preview): only the shape of the reference is checked."""
-    if kind == "value" and isa.parse_literal(op) is not None:
+    if kind in ("value", "value_opt") and isa.parse_literal(op) is not None:
+        return None
+    if kind == "routine" or (kind.endswith("_opt") and op.strip() == "0"):
         return None
     return None if REF.match(op.strip()) else f"{op!r} is not a tag reference"
 

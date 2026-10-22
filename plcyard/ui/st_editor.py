@@ -199,8 +199,10 @@ class StEditor(QWidget):
         except st.StError as e:
             msgs, lines = [str(e)], {e.line}
         else:
-            names = list(dict.fromkeys(n.ref for n in st.walk(body) if isinstance(n, st.Var)))
-            names += [c.instance for c in st.calls(body) if c.instance not in names]
+            names = list(dict.fromkeys(n.ref.replace('"', "") for n in st.walk(body)
+                                       if isinstance(n, st.Var) and not n.index))
+            names += [c.instance.replace('"', "") for c in st.calls(body)
+                      if not c.index and c.instance.replace('"', "") not in names]
             try:
                 mem = prof.new_memory()
                 prof.load(self.program, mem)

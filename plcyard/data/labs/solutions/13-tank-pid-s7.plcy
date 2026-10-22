@@ -1,0 +1,33 @@
+{
+  "format": "plcyard",
+  "version": 1,
+  "profile": "s7",
+  "programs": [
+    {
+      "number": 2,
+      "kind": "LAD",
+      "title": "Main",
+      "language": "LD",
+      "rungs": [
+        {"text": "DIV,%IW64,276.48,Level", "comment": "Level: raw 0-27648 to 0-100 %."},
+        {"text": "DIV,%IW66,276.48,Setpoint", "comment": "Setpoint from the knob."},
+        {"text": "PID_Compact,LevelPID,Setpoint,Level,Valve", "comment": "Gain 4, Ti 15 s (start values of LevelPID)."},
+        {"text": "MUL,Valve,276.48,%QW64", "comment": "Valve: 0-100 % to raw."}
+      ],
+      "end_comment": ""
+    }
+  ],
+  "tags": {
+    "LevelPID": {"type": "PID_Compact", "value": {"Gain": 4.0, "Ti": 15.0}},
+    "Level": {"type": "Real"},
+    "Setpoint": {"type": "Real"},
+    "Valve": {"type": "Real"}
+  },
+  "symbols": {
+    "LevelPID": "Level controller",
+    "Level": "Tank level in %",
+    "Setpoint": "Setpoint in %",
+    "Valve": "Valve command in %"
+  },
+  "tables": {}
+}

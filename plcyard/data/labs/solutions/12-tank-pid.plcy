@@ -22,7 +22,7 @@
           "comment": "Setpoint from the knob."
         },
         {
-          "text": "PID,LevelPID,Level,ValveOut",
+          "text": "PID,LevelPID,Level,0,ValveOut,0,0,0",
           "comment": ""
         },
         {

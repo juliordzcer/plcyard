@@ -131,7 +131,7 @@ def test_F02_E1_line_endings(win, tmp_path, eol):
 
 def test_F02_N1_unsupported_instruction(win, tmp_path):
     p = tmp_path / "x.rsl"
-    p.write_bytes(b"FILE,LAD 2\r\nSOR,0 XIC,I:1/0 PID,N7:0,N7:1,N7:2 EOR,0\r\nRCM,\r\nSOR,1 END,1\r\nRCM,\r\n")
+    p.write_bytes(b"FILE,LAD 2\r\nSOR,0 XIC,I:1/0 PIX,N7:0,N7:1,N7:2 EOR,0\r\nRCM,\r\nSOR,1 END,1\r\nRCM,\r\n")
     win.open(str(p))
     if not win.warnings:
         win.download()
@@ -350,13 +350,13 @@ def test_F10_H1_logix_program_from_scratch(win, qtbot):
     nf = next(a.menu() for a in win.menuBar().actions() if a.text() == "&File")
     sub = next(a.menu() for a in nf.actions() if a.menu() and "controller" in a.text())
     next(a for a in sub.actions() if a.text().startswith("Logix")).trigger()
-    assert win.program.profile == "logix" and win.tabs.tabText(0) == "MainRoutine"
+    assert win.program.profile == "logix" and win.docs.tabText(0) == "MainRoutine"
     assert win.sim_view.switches[(1, 0)].toolTip().startswith("Local:1:I.Data.0")
     win.table_dock.show()
     tv = win.tags_view
     assert win.table_dock.windowTitle() == "Tags"
     tv.add_tag()
-    tv.table.item(0, 0).setText("Motor")
+    tv.item(0, 0).setText("Motor")
     assert list(win.program.tags) == ["Motor"]
     win.bar.picked.emit("RUNG")
     win.bar.picked.emit("XIC")
@@ -374,7 +374,7 @@ def test_F10_H1_logix_program_from_scratch(win, qtbot):
     click(qtbot, win, 1, 0)
     run(win, 50)
     assert win.sim_view.lamps[(2, 0)].on
-    assert tv.table.item(0, 2).text() == "1", "live value in the tag list"
+    assert tv.item(0, tv.col("Value")).text() == "1", "live value in the tag list"
     assert "Local:1:I" in win.panel.io_words.text()
 
 
@@ -390,7 +390,7 @@ def test_F10_N1_logix_unknown_tag_blocks_download(win):
 def test_F10_E1_back_to_slc_after_logix(win, qtbot):
     win.new("logix")
     win.open(str(SAMPLES / "start-stop.rsl"))
-    assert win.table_dock.windowTitle() == "Data table" and win.tabs.count() == 8
+    assert win.table_dock.windowTitle() == "Data table" and win.docs.tabText(0) == "LAD 2"
     win.download()
     go(win, "RUN")
     click(qtbot, win, 1, 0)
@@ -406,8 +406,8 @@ def test_F11_H1_s7_program_with_timer(win, qtbot):
     tv = win.tags_view
     assert "Address" in tv.columns
     tv.add_tag()
-    tv.table.item(0, 0).setText("Delay")
-    tv.table.cellWidget(0, 1).setCurrentText("IEC_TIMER")
+    tv.item(0, 0).setText("Delay")
+    tv.set_type(0, "IEC_TIMER")
     assert win.program.tags == {"Delay": {"type": "IEC_TIMER"}}
     win.bar.picked.emit("RUNG")
     win.bar.picked.emit("XIC")
@@ -436,7 +436,7 @@ def test_F11_N1_s7_bad_address_in_tag_list_is_rejected(win):
     win.table_dock.show()
     tv = win.tags_view
     tv.add_tag()
-    tv.table.item(0, tv.col("Address")).setText("%MW0")      # Bool needs a bit
+    tv.item(0, tv.col("Address")).setText("%MW0")      # Bool needs a bit
     assert "needs a bit address" in tv.message.text() and "address" not in win.program.tags["Tag1"]
 
 
@@ -474,16 +474,16 @@ def test_F13_H1_s7_scl_program(win, qtbot):
     nf = next(a.menu() for a in win.menuBar().actions() if a.text() == "&File")
     sub = next(a.menu() for a in nf.actions() if a.menu() and "controller" in a.text())
     next(a for a in sub.actions() if a.text().startswith("S7") and "structured" in a.text()).trigger()
-    assert win.program.main.language == "ST" and win.editor_stack.currentWidget() is win.st_editor
-    assert win.tabs.tabText(0).endswith("(ST)") and not win.bar.isVisible()
+    assert win.program.main.language == "ST" and win.st_editor is not None
+    assert win.docs.tabText(0).endswith("(SCL)") and not win.bar.isVisible()
     ed = win.st_editor
     ed.edit.setPlainText('"Delay".TON(IN := %I0.0, PT := T#200ms);\n%Q0.0 := "Delay".Q;\n')
     assert "Delay does not exist" in "\n".join(ed.check())
     assert 1 in ed.edit.error_lines
     win.table_dock.show()
     win.tags_view.add_tag()
-    win.tags_view.table.item(0, 0).setText("Delay")
-    win.tags_view.table.cellWidget(0, 1).setCurrentText("IEC_TIMER")
+    win.tags_view.item(0, 0).setText("Delay")
+    win.tags_view.set_type(0, "IEC_TIMER")
     assert ed.check() == [] and not ed.problems.isVisible()
     assert [ed.watch.item(r, 0).text() for r in range(ed.watch.rowCount())] == ["%I0.0", "%Q0.0", "Delay.Q", "Delay"]
     win.download()
@@ -512,3 +512,84 @@ def test_F13_E1_save_and_reopen_st(win, tmp_path, monkeypatch):
     win.save()
     win.open(str(tmp_path / "st.plcy"))
     assert win.st_editor.edit.toPlainText() == "Local:2:O.Data.0 := Local:1:I.Data.0;\n"
+
+
+# -- F14 several routines, blocks, data types, forcing -----------------------------------------------
+def add_routine(win, monkeypatch, name, kind, language="LD"):
+    from plcyard.ui import main_window
+    monkeypatch.setattr(main_window.NewRoutineDialog, "exec", lambda self: main_window.QDialog.Accepted)
+    monkeypatch.setattr(main_window.NewRoutineDialog, "values", lambda self: (name, kind, language))
+    win._tree_action("add_routine", None)
+
+
+def test_F14_H1_logix_main_ladder_calls_an_st_routine(win, qtbot, monkeypatch):
+    win.new("logix")
+    assert win.tree_dock.windowTitle() == "Controller Organizer"
+    add_routine(win, monkeypatch, "Calc", "SBR", "ST")
+    assert win.docs.count() == 2 and win.docs.tabText(1) == "Calc (ST)" and win.st_editor is not None
+    win.st_editor.edit.setPlainText("Local:2:O.Data.0 := Local:1:I.Data.0;\n")
+    win.docs.setCurrentIndex(0)
+    assert win.ladder is not None and win.bar.isVisible()
+    win.bar.picked.emit("RUNG")
+    win.bar.picked.emit("JSR")
+    set_ops(win, "Calc")
+    win.download()
+    assert win.warnings == [], win.warnings
+    go(win, "RUN")
+    click(qtbot, win, 1, 0)
+    run(win, 50)
+    assert win.sim_view.lamps[(2, 0)].on
+    from plcyard.ui.main_window import rename_routine
+    rename_routine(win.program, "Calc", "Compute")
+    assert win.program.main.rungs[0].body.items[0].operands == ["Compute"]
+
+
+def test_F14_H2_s7_function_block_with_interface(win, monkeypatch):
+    win.new("s7")
+    assert win.tree_dock.windowTitle() == "Project tree"
+    add_routine(win, monkeypatch, "Motor", "FB")
+    doc = win.doc
+    assert doc.interface is not None and win.docs.tabText(win.docs.currentIndex()) == "Motor [FB3]"
+    doc.interface.add_member("Input")
+    assert win.program.files[3].interface == {"Input": {"Member1": "Bool"}}
+    win.tags_view.add_tag()
+    win.tags_view.set_type(0, "Motor")
+    assert win.program.tags["Tag1"]["type"] == "Motor"
+    labels = [win.tree.topLevelItem(0).child(0).child(k).text(0) for k in range(win.tree.topLevelItem(0).child(0).childCount())]
+    assert "Motor [FB3]" in labels and "Tag1 [DB]" in labels
+
+
+def test_F14_H3_data_type_and_array_tags(win, monkeypatch):
+    win.new("logix")
+    monkeypatch.setattr("plcyard.ui.main_window.QInputDialog.getText", lambda *a, **k: ("Pump", True))
+    win._tree_action("add_type", None)
+    doc = win.doc
+    doc.add_member()
+    assert win.program.types == {"Pump": {"Member1": "BOOL"}}
+    tv = win.tags_view
+    tv.add_tag()
+    tv.set_type(0, "Pump[2]")
+    assert win.program.tags["Tag1"]["type"] == "Pump[2]" and tv.message.text() == ""
+    tv.row(0).setExpanded(True)
+    assert tv.row(0).childCount() == 2 and tv.row(0).child(1).text(0) == "[1]"
+
+
+def test_F14_H4_force_an_input_from_the_tag_list(win, qtbot):
+    win.open(str(SAMPLES / "start-stop.rsl"))
+    win.download()
+    go(win, "RUN")
+    win.force("I:1/0", True)
+    run(win, 50)
+    win._refresh()
+    assert win.sim_view.lamps[(2, 0)].on and not win.panel.forces.isHidden()
+    win.force("N7:0/0", True)
+    assert "only I/O bits" in win.statusBar().currentMessage()
+    win.remove_forces()
+    assert win.plc.forces == {}
+
+
+def test_F14_N1_bad_names_are_refused(win, monkeypatch):
+    win.new("logix")
+    add_routine(win, monkeypatch, "1bad", "SBR")
+    add_routine(win, monkeypatch, "MainRoutine", "SBR")
+    assert len(win.program.files) == 1 and len(win.warnings) == 2

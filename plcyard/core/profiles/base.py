@@ -8,8 +8,9 @@ and what download and entering RUN do to memory.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from .. import isa
 from ..program import Program
@@ -36,6 +37,47 @@ class Diagnostic:
         return f"{where}, {at}: {self.message}"
 
 
+_LOCAL = re.compile(r'(^|\[)(\s*)(#?)("?)([A-Za-z_][A-Za-z0-9_]*)("?)(?=\s*$|\s*[.\[\]])')
+_PARAM = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(:=|=>)\s*(.*?)\s*$")
+
+
+def parse_param(text: str) -> tuple[str, str, str] | None:
+    """A block call parameter as written in a ladder CALL box: `Start := Button`, `Run => Lamp`."""
+    m = _PARAM.match(text)
+    return (m[1], m[2], m[3]) if m else None
+
+
+def scoped(text: str, instance: str, names: set[str]) -> str:
+    """A reference written inside a function block, made absolute: local names (`#Count`, or a bare
+    `Count` the block declares) become members of the instance; `"Count"` stays global."""
+    p = parse_param(text)
+    if p:
+        return f"{p[0]}{p[1]}{scoped(p[2], instance, names)}"
+
+    def fix(m):
+        lead, ws, hash_, q1, name, q2 = m.groups()
+        if q1 or name.lower() not in names:
+            return m.group()
+        return f"{lead}{ws}{instance}.{name}"
+    return _LOCAL.sub(fix, text)
+
+
+class ScopedMemory:
+    """A controller memory seen from inside a block: references go through `scoped` first."""
+
+    def __init__(self, memory, fix: Callable[[str], str]):
+        self.memory, self.fix = memory, fix
+
+    def ref(self, text: str, *a):
+        return self.memory.ref(self.fix(text), *a)
+
+    def __getattr__(self, name):
+        attr = getattr(self.memory, name)
+        if name in ("read_bit", "write_bit", "read_word", "write_word", "element", "struct", "type_of"):
+            return lambda text, *a: attr(self.fix(text), *a)
+        return attr
+
+
 class Profile:
     name = ""
     title = ""
@@ -46,7 +88,8 @@ class Profile:
     # -- editing -----------------------------------------------------------------
     kinds: dict[str, str] = isa.KINDS          # operand kind → hint shown in the operand editor
 
-    def validate(self, mnemonic: str, operands: list[str], program: Program | None = None) -> list[str]:
+    def validate(self, mnemonic: str, operands: list[str], program: Program | None = None,
+                 routine: int | None = None) -> list[str]:
         """Problems with one instruction as typed; `program` gives declared tags where they matter."""
         return isa.validate(mnemonic, operands, self.specs)
 
@@ -61,7 +104,7 @@ class Profile:
     st_blocks: dict[str, tuple[str, tuple[str, ...]]] = {}   # block → (instruction, instance types)
 
     def check_st(self, program: Program, memory) -> list[Diagnostic]:
-        """Parse every ST routine and check its variables and block calls against `memory`."""
+        """Parse every ST routine and check its variables and calls against `memory`."""
         from .. import st
         problems = []
         for f in program.files.values():
@@ -76,8 +119,22 @@ class Profile:
                 problems.append(Diagnostic(f.number, 0, e.message, e.line))
                 continue
             blocks = {k: types for k, (_, types) in self.st_blocks.items()}
-            problems += [Diagnostic(f.number, 0, m, line) for line, m in st.check(body, memory, blocks)]
+            mem = self.scoped_memory(program, memory, f)
+            routine = lambda name, ins, outs: self.call_problem(program, mem, name, ins, outs)
+            problems += [Diagnostic(f.number, 0, m, line) for line, m in st.check(body, mem, blocks, routine)]
         return problems
+
+    def scoped_memory(self, program: Program, memory, f):
+        """`memory` as code inside routine f sees it (its local names resolved)."""
+        inst = self.block_instance(program, f)
+        if inst is None:
+            return memory
+        names = {n.lower() for sec in f.interface.values() for n in sec}
+        return ScopedMemory(memory, lambda text: scoped(text, inst, names))
+
+    def call_problem(self, program: Program, memory, name: str, inputs: list[str], outputs: list[str]) -> str | None:
+        """Problem with calling a routine or block by name from code, or None."""
+        return f"{name}: {self.title} cannot call routines"
 
     def st_call(self, ctx, instance: str, block: str, inputs: dict) -> dict:
         """Run one block call from structured text; returns its outputs by name."""
@@ -86,10 +143,29 @@ class Profile:
     # -- tag list (tag-based controllers) -------------------------------------------
     tag_types: tuple[str, ...] = ()            # empty: the controller has no tag list (SLC 500)
     tag_fields: tuple[str, ...] = ()           # extra declaration fields shown as columns, e.g. "address"
+    routine_kinds: tuple[str, ...] = ()        # kinds of extra routines: SBR (Logix), FC and FB (S7)
+    interface_sections: tuple[str, ...] = ()   # block interface sections (S7 FC/FB)
 
-    def check_tags(self, decls: dict[str, dict]) -> str:
-        """Problem with a tag list, or "" when it is fine."""
+    def build_memory(self, program: Program):
+        """Memory with the program's declarations; raises one of memory_errors when they are wrong."""
+        return self.new_memory()
+
+    def check_tags(self, program: Program) -> str:
+        """Problem with the tag list, data types or block interfaces, or "" when they are fine."""
+        try:
+            self.build_memory(program)
+        except self.memory_errors as e:
+            return str(e)
         return ""
+
+    def block_instance(self, program: Program, f) -> str | None:
+        """Where a block's local data lives while it is checked or (for an FC) run: None for routines
+        without an interface."""
+        return None
+
+    def forceable(self, memory, ref: str) -> str:
+        """Problem with forcing this reference, or "" when it is an I/O point that can be forced."""
+        return "this controller cannot force"
 
     def tag_value(self, memory, name: str) -> str:
         """A tag's live value as text."""

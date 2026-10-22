@@ -467,3 +467,31 @@ keys:      PID, PID_Compact, analog, tank, level, trend, hysteresis, Ch0Data, %I
   bar hides for ST. Examples `start-stop-st.plcy` (Logix ST) and `tank-pid-scl.plcy` (S7 SCL).
 - Tests: `tests/test_st.py` (20), e2e F13.
 keys:      structured text, ST, SCL, parser, IF, CASE, FOR, watchdog, TON call
+
+## C-023 — Phase 4b: routines, blocks, data types, forcing, commercial-style UI
+2026-10-21 · commits: bd0351b, abe8ef4, 53fb0b6
+- `core/profiles/datatypes.py`: shared type system for tag memories (structures as dicts, 1-D
+  arrays as lists, member/index/bit paths, start values, cycle check). Logix `TagTable` and
+  `S7Memory` rebuilt on it: UDTs / PLC data types, `DINT[10]` / `Array[1..5] of Int`, indexes by tag
+  (`Recipe[Step]`), SINT/Byte, S7 `Count.%X3`; `ref(text, static=True)` checks without reading.
+- `Program.types`, `ProgramFile.interface`; `.plcy` stores both. `Program.routine(name)`.
+- Engine: `_call(target, inputs)` runs SLC files, Logix routines by name, S7 FCs (hidden instance
+  `__Name`) and FB instances; inputs copied in, Temp zeroed, outputs returned; a scope stack makes
+  `#local` / bare local names members of the instance (`profiles.base.scoped`, `ScopedMemory`);
+  prescan and download hooks run once per FB instance. Forces applied after the input scan and
+  before the output scan (`Processor.force`, `Profile.forceable`: only I/O bits).
+- ST: indexes `a[i + 1]`, `JSR(Name)`, routine/FC/FB calls `"Fc"(A := x, B => y)`, `#local` and
+  `"global"` kept by the lexer.
+- Logix: `JSR`/`RET`; `PID` with Studio 5000's seven operands (tieback in manual, master loop sets
+  SP, inhold). S7: `CALL` box (`Name:=operand`, `Name=>operand`, up to 8), `RET`, FC/FB
+  interface checks. SLC: `PID` with the 1747-RM001 control block (23 words in N7, Kc ×0.1, Ti
+  min/repeat, update time, error 11h when unset, manual via word 16).
+- UI: `ui/project_tree.py` (Controller Organizer / Project tree / RSLogix 500 project), documents in
+  closable tabs (`ui/block_editor.py`: `RoutineDoc`, interface above the code, `DataTypeDoc`),
+  per-routine undo via `QUndoGroup`, Project menu, add/rename/delete routines and data types (renames
+  follow calls and types), tag list as a tree with members and forcing, "I/O FORCED" on the panel,
+  CALL boxes drawn with the block on top and parameter pins.
+- Exercise 13 (tank PID on S7). Examples: traffic lights (SLC, Logix LD+ST), silo (SLC, S7 FB),
+  motor starters (S7 FB ×2), recipes (Logix UDT array), SLC PID tank.
+- Tests: `test_routines.py` (28), `test_samples.py` (18), SLC PID (3), e2e F14 (5). 414 in total.
+keys:      JSR, FC, FB, instance DB, UDT, array, forcing, Controller Organizer, project tree, PID
