@@ -653,3 +653,18 @@ keys:      website, wiki, screenshots, headless, shot
 - Tests: `tests/test_webapp.py` (6), including the session without Qt and the build. Checked in a
   real browser (Chromium): example, a program written from scratch, an exercise, phone width.
 keys:      web, pyodide, webapp, webbuild, output image
+
+## C-034 — Web version, step 3: silo, traffic lights and tank
+2026-10-22 · commits: 3e83ee8
+- Simulation menu in the web version: I/O panel, silo, traffic lights, tank level. `webapp.machine()`
+  sends the state of the machine with the address of every device in the current notation;
+  `sim_action()` takes its controls (held buttons, selector, walk buttons, parked cars, setpoint
+  and outlet knobs, reset). `web/sims.js` draws each one in SVG (hopper, belt, boxes filling;
+  crossing with lights, walk lights and cars; tank with pump, valve, level switches and a 2-minute
+  trend) and lists the devices; drag an address onto the ladder.
+- Examples open on their machine (silo, traffic lights, tank on/off and PID); exercises 8-13 open
+  theirs and are checked as on the desktop.
+- `Session.tick` advances the machine scan by scan (one 10 ms physics step per scan).
+- PID and other long labels in ladder boxes are shortened in the web drawing (full text on hover).
+- Tests: 8 in `tests/test_webapp.py`; browser run (Chromium) of every machine.
+keys:      web, silo, traffic, tank, sims.js

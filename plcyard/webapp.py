@@ -15,11 +15,24 @@ from .core.plc import PLC
 from .core.processor import Processor
 from .core.program import Parallel, Program, Series
 from .formats import plcy
+from .sims import silo as silo_sim
+from .sims import traffic as traffic_sim
 from .sims.io_panel import DISPLAY_SLOT, INPUT_SLOTS, OUTPUT_SLOTS, IoPanelModel
+from .sims.silo import SiloModel
+from .sims.tank import HIGH, LOW, TankModel
+from .sims.traffic import TrafficModel
 from .ui import ladder_layout as L
 from .ui import notation
 
-EXAMPLES = {"start-stop": "Start/stop with seal-in", "timer-counter": "Timer and counter"}
+SIMS = {"io": ("I/O panel", IoPanelModel), "silo": ("Silo", SiloModel), "traffic": ("Traffic lights", TrafficModel),
+        "tank": ("Tank level", TankModel)}
+# key → (menu title, simulation, file under data/)
+EXAMPLES = {"start-stop": ("Start/stop with seal-in", "io", "samples/start-stop.plcy"),
+            "timer-counter": ("Timer and counter", "io", "samples/timer-counter.plcy"),
+            "silo": ("Silo filling line", "silo", "samples/silo.plcy"),
+            "traffic-lights": ("Traffic lights", "traffic", "samples/traffic-lights.plcy"),
+            "tank-on-off": ("Tank level, on/off", "tank", "labs/solutions/11-tank-on-off.plcy"),
+            "tank-pid": ("Tank level, PID", "tank", "labs/solutions/12-tank-pid.plcy")}
 MAIN = 2
 
 
@@ -27,6 +40,7 @@ class Session:
     def __init__(self):
         self.plc = Processor()
         self.plc.tracing = True
+        self.sim_kind = "io"
         self.sim = IoPanelModel()
         self.plc.device = self.sim
         self.program = Program.new()
@@ -39,21 +53,31 @@ class Session:
         self.lab: labs.Lab | None = None
 
     # -- files ----------------------------------------------------------------------------------
-    def _open(self, program: Program, lab=None) -> None:
+    def _open(self, program: Program, lab=None, sim: str | None = None) -> None:
         self.program, self.lab, self.sel = program, lab, None
         self.undo.clear()
         self.redo.clear()
-        self.sim = IoPanelModel()
-        self.sim.configure_from_symbols(program.symbols)
-        self.plc.device = self.sim
         self.plc.set_mode(Processor.PGM)
+        self.set_sim(sim or self.sim_kind)
         self.dirty, self.problems, self.message = True, [], ""
+
+    def set_sim(self, kind: str) -> None:
+        """A fresh machine of that kind on the PLC's I/O. The I/O panel is wired from the symbols."""
+        self.sim_kind = kind if kind in SIMS else "io"
+        self.sim = SIMS[self.sim_kind][1]()
+        if self.sim_kind == "io":
+            self.sim.configure_from_symbols(self.program.symbols)
+        self.plc.device = self.sim
 
     def new(self) -> None:
         self._open(Program.new())
 
+    def examples(self) -> list[dict]:
+        return [{"key": k, "title": t} for k, (t, _, _) in EXAMPLES.items()]
+
     def open_example(self, key: str) -> None:
-        self._open(plcy.load(labs.SAMPLES / f"{key}.plcy"))
+        _, sim, path = EXAMPLES[key]
+        self._open(plcy.load(labs.DATA / path), sim=sim)
 
     def open_text(self, text: str) -> str:
         try:
@@ -69,11 +93,11 @@ class Session:
         return plcy.dumps(self.program)
 
     def exercises(self) -> list[dict]:
-        return [{"id": lab.id, "title": lab.title} for lab in labs.load_all() if lab.simulation == "io"]
+        return [{"id": lab.id, "title": lab.title} for lab in labs.load_all() if lab.simulation in SIMS]
 
     def open_exercise(self, lab_id: str) -> dict:
         lab = next(x for x in labs.load_all() if x.id == lab_id)
-        self._open(lab.starter(), lab)
+        self._open(lab.starter(), lab, lab.simulation)
         return self.lab_view()
 
     def lab_view(self) -> dict | None:
@@ -106,10 +130,30 @@ class Session:
         self.message = ""
 
     def tick(self, ms: float) -> None:
-        self.plc.tick(ms)
+        """Advance the machine and the PLC scan by scan, as on the desktop."""
+        while ms > 0:
+            self.plc.tick(min(ms, 10.0))
+            ms -= 10.0
 
     def press(self, slot: int, bit: int, on: bool) -> None:
-        self.sim.set_pressed(slot, bit, on)
+        if self.sim_kind == "io":
+            self.sim.set_pressed(slot, bit, on)
+
+    def sim_action(self, name: str, value=None) -> None:
+        """A control of the machine on screen: buttons, selector, knobs, parked cars, reset."""
+        m, kind = self.sim, self.sim_kind
+        if name == "reset":
+            self.set_sim(kind)
+        elif kind in ("silo", "tank") and name in ("start", "stop"):
+            setattr(m, f"{name}_pressed", bool(value))
+        elif kind == "silo" and name == "selector" and value in ("A", "B", "C"):
+            m.selector = value
+        elif kind == "traffic" and name in ("button_A", "button_B"):
+            m.buttons[name[-1]] = bool(value)
+        elif kind == "traffic" and name in ("park_A", "park_B"):
+            m.cars[name[-1]].parked = bool(value)
+        elif kind == "tank" and name in ("outlet", "setpoint"):
+            setattr(m, "outlet" if name == "outlet" else "setpoint_knob", min(max(float(value), 0.0), 100.0))
 
     def thumbwheel(self, digit: int, value: int) -> None:
         self.sim.thumbwheels[digit] = value % 10
@@ -325,7 +369,47 @@ class Session:
         width = max([width] + [L.natural_width(r.body, self.plc.profile.specs) for r in self.file.rungs])
         return [self._rung(n, width) for n in range(len(self.file.rungs))]
 
-    def io(self) -> dict:
+    def machine(self) -> dict:
+        """What the page draws for the machine on screen, with the address of every device."""
+        m, kind = self.sim, self.sim_kind
+        i = lambda bit: notation.show(PLC.io_name("I", 1, bit))
+        q = lambda bit: notation.show(PLC.io_name("Q", 2, bit))
+        out = {"kind": kind, "events": list(getattr(m, "events", []))[-4:]}
+        if kind == "silo":
+            out.update(
+                belt=silo_sim.CONVEYOR_LEN, box_w=silo_sim.BOX_W, sensor_x=silo_sim.SENSOR_X,
+                boxes=[{"x": b.x, "fill": b.fill, "spilled": b.spilled} for b in m.boxes],
+                motor=m.motor, solenoid=m.solenoid, prox=m.prox(), level=m.level(), selector=m.selector,
+                start=m.start_pressed, stop=m.stop_pressed, lamps=[m.lamp(2), m.lamp(3), m.lamp(4)],
+                shipped=len(m.shipped), full=sum(1 for f in m.shipped if f >= 99.0), spill=m.spill,
+                addr={"start": i(0), "stop": i(1), "prox": i(3), "level": i(4), "selector": f"{i(5)}…{i(7)}",
+                      "motor": q(0), "solenoid": q(1), "run": q(2), "fill": q(3), "full": q(4)})
+        elif kind == "traffic":
+            out.update(
+                road=traffic_sim.ROAD_LEN, stop_line=traffic_sim.STOP_LINE, junction=list(traffic_sim.JUNCTION),
+                car_len=traffic_sim.CAR_LEN, crashed=m.crashed,
+                lights={r: {c: m.light(r, c) for c in ("red", "amber", "green")} | {"walk": m.walk(r)} for r in "AB"},
+                cars={r: {"pos": c.pos, "parked": c.parked, "hidden": c.wait > 0, "passes": c.passes,
+                          "waiting": m.waiting(r)} for r, c in m.cars.items()},
+                buttons=dict(m.buttons),
+                addr={"A": [q(0), q(1), q(2), q(3)], "B": [q(4), q(5), q(6), q(7)],
+                      "button_A": i(0), "button_B": i(1), "car_A": i(2), "car_B": i(3)})
+        elif kind == "tank":
+            pts = list(m.trend)[::5]
+            out.update(
+                level=m.level, outlet=m.outlet, setpoint=m.setpoint_knob, pump=m.pump, valve=m.valve,
+                start=m.start_pressed, stop=m.stop_pressed, high=m.level >= HIGH, low=m.level <= LOW,
+                lamps=[m.lamp(1), m.lamp(2)], high_at=HIGH, low_at=LOW,
+                trend=[[round(t, 1), sp, round(pv, 2), round(cv, 1)] for t, sp, pv, cv in pts],
+                addr={"start": i(0), "stop": i(1), "high": i(2), "low": i(3), "pump": q(0), "run": q(1),
+                      "alarm": q(2), "level": notation.show(PLC.analog_name("I", 0)),
+                      "setpoint": notation.show(PLC.analog_name("I", 1)),
+                      "valve": notation.show(PLC.analog_name("Q", 0))})
+        return out
+
+    def io(self) -> dict | None:
+        if self.sim_kind != "io":
+            return None
         def card(slot, direction):
             pts = []
             for bit in range(16):
@@ -352,7 +436,8 @@ class Session:
             "dirty": self.dirty, "problems": self.problems, "message": self.message,
             "notation": notation.current(), "live": self._live(),
             "sel": [self.sel[0], self.sel[1], list(self.sel[2])] if self.sel and len(self.sel) == 3 else self.sel,
-            "rungs": self.rungs(width), "io": self.io(), "operands": self.selected_operands(),
+            "rungs": self.rungs(width), "io": self.io(), "machine": self.machine(), "sims": [[k, t] for k, (t, _) in SIMS.items()],
+            "operands": self.selected_operands(),
             "can_undo": bool(self.undo), "can_redo": bool(self.redo),
             "lab": {"id": self.lab.id, "title": self.lab.title} if self.lab else None,
         })

@@ -16,6 +16,7 @@
     <button id="b-new" title="New program">New</button>
     <select id="b-example" title="Open an example"><option value="">Examples…</option></select>
     <select id="b-lab" title="Open an exercise"><option value="">Exercises…</option></select>
+    <select id="b-sim" title="The machine wired to the PLC"></select>
     <button id="b-open" title="Open a .plcy file">Open…</button>
     <button id="b-save" title="Save as a .plcy file (opens in the desktop app too)">Save</button>
     <input id="f-open" type="file" accept=".plcy,application/json" hidden>
@@ -41,9 +42,10 @@
 </header>
 
 <main class="work">
-  <section class="sim" aria-label="I/O panel">
+  <section id="simpane" class="sim" aria-label="Simulation">
     <div id="io"></div>
-    <p class="hint">Click a switch to flip it (pushbuttons spring back). Drag an address onto an instruction to use it.</p>
+    <div id="machine"></div>
+    <p id="simhint" class="hint"></p>
   </section>
   <section class="editor" aria-label="Ladder editor">
     <div id="families" class="families" role="tablist"></div>
@@ -70,6 +72,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script src="sims.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

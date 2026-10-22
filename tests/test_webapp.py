@@ -91,3 +91,42 @@ def test_a_new_program_does_not_keep_old_outputs_on():
     s.press(1, 0, True)                            # the new I/O panel starts with every switch open
     s.tick(100)
     assert lamp(s, 0) and not lamp(s, 1)
+
+
+def test_every_example_runs_on_its_machine():
+    from plcyard.webapp import EXAMPLES
+    s = Session()
+    for key, (_, sim, _) in EXAMPLES.items():
+        s.open_example(key)
+        s.set_mode("RUN")
+        s.sim_action("start", True)
+        s.tick(200)
+        s.sim_action("start", False)
+        s.tick(5000)
+        st = json.loads(s.state(800))
+        assert st["machine"]["kind"] == sim and not st["problems"] and not st["fault"], key
+    assert st["machine"]["trend"] and st["machine"]["level"] > 20      # the tank loop fills the tank
+
+
+def test_machine_controls_and_exercise_on_its_machine():
+    s = Session()
+    s.open_example("silo")
+    s.sim_action("selector", "C")
+    s.sim_action("stop", True)
+    assert s.sim.selector == "C" and s.sim.stop_pressed
+    s.sim_action("reset")
+    assert s.sim.selector == "A" and not s.sim.stop_pressed
+    s.set_sim("traffic")
+    s.sim_action("park_B", True)
+    assert s.sim.cars["B"].parked
+    s.set_sim("tank")
+    s.sim_action("outlet", 130)
+    assert s.sim.outlet == 100.0
+    assert {"08", "10", "13"} <= {e["id"] for e in s.exercises()}
+    s.open_exercise("10")
+    assert s.sim_kind == "traffic"
+    from plcyard import labs
+    lab = next(x for x in labs.load_all() if x.id == "10")
+    s.open_text(lab.solution.read_text(encoding="utf-8"))
+    s.lab = lab
+    assert s.check()["passed"]

@@ -22,14 +22,16 @@ async function start() {
     const zip = await (await fetch("plcyard.zip")).arrayBuffer();
     py.unpackArchive(zip, "zip", { extractDir: "/home/pyodide/app" });
     py.runPython("import sys; sys.path.insert(0, '/home/pyodide/app')");
-    S = py.runPython("from plcyard.webapp import Session, EXAMPLES\nSession()");
-    for (const [k, title] of Object.entries(js(py.runPython("EXAMPLES")))) $("b-example").add(new Option(title, k));
+    S = py.runPython("from plcyard.webapp import Session\nSession()");
+    for (const ex of js(S.examples())) $("b-example").add(new Option(ex.title, ex.key));
     for (const lab of js(S.exercises())) $("b-lab").add(new Option(`${lab.id}. ${lab.title}`, lab.id));
     const n = store.get("plcyard.notation");
     if (n === "A" || n === "B") { S.set_notation(n); $("b-notation").value = n; }
     const saved = store.get("plcyard.program");
     if (saved) S.open_text(saved);
     else S.open_example("start-stop");
+    const sim = store.get("plcyard.sim");
+    if (saved && sim) S.set_sim(sim);
     buildPalette();
     wire();
     $("loading").classList.add("gone");
@@ -47,6 +49,7 @@ function loop() {
 
 function changed(msg) {
   store.set("plcyard.program", S.save_text());
+  store.set("plcyard.sim", state ? state.machine.kind : "io");
   say(msg || "");
   render(true);
 }
@@ -75,7 +78,16 @@ function render(force) {
   if (state.fault) say("Fault: " + state.fault, true);
   else if (state.problems.length) say(state.problems.join(" · "), true);
   else if (state.message) say(state.message);
-  renderIo(state.io);
+  const sel = $("b-sim");
+  if (!sel.options.length) for (const [k, t] of state.sims) sel.add(new Option(t, k));
+  if (document.activeElement !== sel) sel.value = state.machine.kind;
+  $("io").hidden = !state.io;
+  $("machine").hidden = !!state.io;
+  $("simhint").textContent = state.io
+    ? "Click a switch to flip it (pushbuttons spring back). Drag an address onto an instruction to use it."
+    : "Hold a button to press it. Drag an address onto an instruction to use it.";
+  if (state.io) renderIo(state.io);
+  else Sims.render($("machine"), state.machine);
   renderLadder(state);
   renderOperands(state);
 }
@@ -144,7 +156,7 @@ function instrSvg(it, n, ox, oy, sel) {
     }
     let ry = by + 26;
     for (const [lab, op, live] of rows) {
-      s += `<text class="lab" x="${bx + 8}" y="${ry + 12}">${esc(lab)}</text>`;
+      s += `<text class="lab" x="${bx + 8}" y="${ry + 12}"><title>${esc(lab)}</title>${esc(lab.length > 11 ? lab.slice(0, 10) + "…" : lab)}</text>`;
       s += `<text class="${op === "" || op === "?" ? "unset" : live ? "live" : ""}" x="${bx + 70}" y="${ry + 12}">${esc(op || "?")}</text>`;
       ry += 17;
     }
@@ -262,7 +274,9 @@ function wire() {
     const text = prompt(`Description of ${a.dataset.addr} (add "NC" for a normally closed switch, "PB" for a pushbutton):`, cur?.symbol || "");
     if (text !== null) { S.set_symbol(a.dataset.addr, text); changed(); }
   });
-  $("io").addEventListener("dragstart", (e) => {
+  Sims.wire($("machine"), (name, value) => { S.sim_action(name, value); render(true); });
+  $("b-sim").onchange = (e) => { S.set_sim(e.target.value); Sims.reset(); store.set("plcyard.sim", e.target.value); render(true); };
+  $("simpane").addEventListener("dragstart", (e) => {
     const a = e.target.closest(".addr");
     if (a) { e.dataTransfer.setData("text/plain", a.dataset.addr); e.dataTransfer.effectAllowed = "copy"; }
   });

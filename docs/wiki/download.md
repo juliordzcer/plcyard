@@ -6,8 +6,9 @@ Python 3.11 or newer.
 ![PLCYard running a start/stop program](img/run-light.png)
 
 Just want to try it? **[PLCYard web](https://juliordz.com/plcyard/app/)** runs in your browser: the
-ladder editor, the I/O panel and exercises 1-7 with their checks. The desktop app has everything
-else: structured text, function block diagrams, routines and all the simulations.
+ladder editor, the I/O panel, the silo, traffic lights and tank simulations, and exercises 1-13 with
+their checks. The desktop app has everything else: structured text, function block diagrams,
+routines and all fifteen simulations.
 
 ## Install
 

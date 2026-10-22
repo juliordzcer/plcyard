@@ -56,7 +56,8 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [ ] Web version: the core, simulations and checker in the browser with Pyodide and a new HTML/JS
       UI (ladder/ST/FBD editors, animations), hosted statically at juliordz.com/plcyard. Step 1 done:
       wiki and download page on the site. Step 2 done: juliordz.com/plcyard/app (ladder editor, I/O
-      panel, exercises 1-7 with checks, notation, open/save .plcy). Next: the other simulations,
+      panel, exercises 1-7 with checks, notation, open/save .plcy). Step 3 done: silo, traffic
+      lights and tank (trend, knobs) with exercises 8-13. Next: the other twelve simulations,
       then structured text, FBD and routines.
 - [ ] Real hardware I/O: Arduino and/or ESP32 as remote I/O over USB serial (then Wi-Fi), to test
       programs with real switches and lamps (docs/ROADMAP.md, "Later").

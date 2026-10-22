@@ -129,3 +129,66 @@ button.ghost { border: none; background: none; }
 .ladder .pintext { font-size: 10px; fill: var(--text-muted); }
 .ladder .pintext.on { fill: var(--bg); }
 .ladder .endtag { font-family: "JetBrains Mono", monospace; fill: var(--text-muted); paint-order: stroke; stroke: var(--bg); stroke-width: 8px; }
+
+.machine { display: flex; flex-direction: column; gap: 8px; }
+.ctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ctl label { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+.group { display: flex; }
+.group button { border-radius: 0; margin-left: -1px; }
+.group button:first-child { border-radius: 4px 0 0 4px; }
+.group button:last-child { border-radius: 0 4px 4px 0; }
+.pbtn { font-weight: 600; touch-action: none; user-select: none; }
+.pbtn.down { background: var(--accent-soft); border-color: var(--accent); }
+.knobs { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.knobs label { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+.knobs input { grid-column: 1 / -1; padding: 0; min-height: 0; }
+.devs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
+.devs h4 { margin: 0 0 2px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.devs ul { list-style: none; margin: 0; padding: 0; }
+.devs li { display: grid; grid-template-columns: auto 1fr; gap: 0 6px; align-items: center; padding: 2px 0; }
+.devs .dname { font-size: 11.5px; line-height: 14px; }
+.devs .addr { grid-column: 2; font: 10.5px "JetBrains Mono", monospace; color: var(--text-muted); cursor: grab; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--lamp-off); grid-row: span 2; }
+.dot.on { background: var(--energized); box-shadow: 0 0 5px var(--energized); }
+.dot.val { width: auto; height: auto; border-radius: 3px; background: none; font: 10px "JetBrains Mono", monospace; color: var(--energized); }
+.events { list-style: none; margin: 0; padding: 0; color: var(--danger); font-size: 12px; }
+.draw { width: 100%; height: auto; display: block; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+.draw .steel, .draw .tank { fill: none; stroke: var(--sim-steel); stroke-width: 3; }
+.draw .product { fill: var(--sim-product); }
+.draw .valve { fill: var(--surface-2); stroke: var(--sim-steel); }
+.draw .valve.on { fill: var(--accent); }
+.draw .valve2 { fill: var(--surface-2); stroke: var(--sim-steel); stroke-width: 2; }
+.draw .sensor { fill: var(--lamp-off); }
+.draw .sensor.on { fill: var(--energized); }
+.draw .box { fill: var(--bg); stroke: var(--rail); stroke-width: 2; }
+.draw .spilled { fill: none; stroke: var(--danger); stroke-width: 3; stroke-dasharray: 6 4; }
+.draw .belt { fill: var(--sim-steel); }
+.draw .roller { fill: var(--bg); }
+.draw .motor { fill: var(--lamp-off); stroke: var(--rail); stroke-width: 2; }
+.draw .motor.on { fill: var(--energized); }
+.draw .cap { font: 12px "JetBrains Mono", monospace; fill: var(--text-muted); }
+.draw .big { font: 700 20px "JetBrains Mono", monospace; fill: var(--text); }
+.draw .crash { font: 700 22px "Inter", sans-serif; fill: var(--danger); }
+.draw .grass { fill: var(--sim-bg); }
+.draw .road { fill: var(--surface-2); }
+.draw .lane { stroke: var(--bg); stroke-width: 2; stroke-dasharray: 12 10; }
+.draw .stop { stroke: var(--text); stroke-width: 4; }
+.draw .zebra { fill: var(--bg); }
+.draw .head { fill: var(--rail); }
+.draw .lt { fill: #3a3f47; }
+.draw .lt.red.on { fill: var(--lamp-red); }
+.draw .lt.amber.on { fill: var(--lamp-amber); }
+.draw .lt.green.on { fill: var(--lamp-green); }
+.draw .walk { fill: #3a3f47; }
+.draw .walk.on { fill: var(--lamp-green); }
+.draw .car.a { fill: var(--accent); }
+.draw .car.b { fill: var(--warning); }
+.draw .pipe { fill: none; stroke: var(--sim-steel); stroke-width: 8; }
+.draw .pipe.flow { stroke: var(--sim-product); }
+.draw .spline { stroke: var(--text); stroke-width: 2; stroke-dasharray: 6 5; }
+.draw.trend { margin-top: 6px; }
+.draw .grid { stroke: var(--border); }
+.draw .t-sp { fill: none; stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.draw .t-pv { fill: none; stroke: var(--sim-product); stroke-width: 2; }
+.draw .t-cv { fill: none; stroke: var(--lamp-amber); stroke-width: 1.5; }
+.draw .k-sp { fill: var(--text); } .draw .k-pv { fill: var(--sim-product); } .draw .k-cv { fill: var(--lamp-amber); }
