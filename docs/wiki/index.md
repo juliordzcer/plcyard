@@ -5,7 +5,8 @@ PLCYard is a free, open-source PLC trainer. You write a program in ladder (LD), 
 check it against the written requirements of an exercise.
 
 - **[Try it in your browser](https://juliordz.com/plcyard/app/)**: ladder, structured text and
-  function blocks, routines, all fifteen simulations and every exercise, nothing to install.
+  function blocks, routines, all fifteen simulations and every exercise, nothing to install
+  ([how it works](web.md)).
 - [Download and install](download.md), then start with [Getting started](getting-started.md).
 - How the PLC runs your program: [The scan cycle](scan-cycle.md).
 - Two ways to write the same program: [Notations](notations.md).

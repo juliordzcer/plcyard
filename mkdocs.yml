@@ -13,6 +13,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Download: download.md
+  - PLCYard in the browser: web.md
   - Getting started: getting-started.md
   - The scan cycle: scan-cycle.md
   - Notations: notations.md

@@ -251,5 +251,5 @@ const Machines = (() => {
     el.querySelector(".events").innerHTML = m.events.map((t) => `<li>⚠ ${e(t)}</li>`).join("");
   }
 
-  return { render, reset: () => { key = ""; } };
+  return { render, reset: () => { key = ""; }, draw: (m) => DRAW[m.kind](m.draw) };
 })();

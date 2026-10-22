@@ -8,7 +8,7 @@ const GUTTER = 48, MARGIN = 12, RUNG_GAP = 18, COMMENT_LINE = 16, WIRE_Y = 26;
 const $ = (id) => document.getElementById(id);
 let py, S, state = null, lastJson = "", family = null, palette = [], opsKey = "", HL = null, stKey = "", tagsKey = "";
 let fbdKey = "", paletteLang = "", routinesKey = "", ifaceKey = "", machineKind = "", showAllIo = false;
-let EXERCISES = [], EXAMPLES = [];
+let EXERCISES = [], EXAMPLES = [], THUMBS = {};
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const store = {
@@ -29,6 +29,7 @@ async function start() {
     EXAMPLES = js(S.examples());
     buildHighlighter(js(S.st_syntax()));
     EXERCISES = js(S.exercises());
+    THUMBS = thumbnails(JSON.parse(S.previews()));
     const n = store.get("plcyard.notation") || "B";          // new visitors start with IEC symbols
     if (n === "A" || n === "B") { S.set_notation(n); $("b-notation").value = n; }
     const saved = store.get("plcyard.program");
@@ -692,6 +693,24 @@ function closeMenus() {
   document.querySelectorAll("details.dd[open]").forEach((d) => { d.open = false; });
 }
 
+// A small picture of every machine as it starts (the I/O panel gets a drawing of its own).
+function thumbnails(previews) {
+  const out = {};
+  for (const [kind, m] of Object.entries(previews)) {
+    let svg = (m.controls ? Machines : Sims).draw(m);
+    svg = svg.slice(0, svg.indexOf("</svg>") + 6).replace('class="draw"', 'class="draw thumb"').replace(/id="drum"/, `id="drum-t"`).replace("url(#drum)", "url(#drum-t)");
+    out[kind] = svg;
+  }
+  let io = "";
+  for (let k = 0; k < 4; k++) {
+    io += `<rect class="box" x="20" y="${18 + k * 34}" width="44" height="24" rx="12"/><circle class="${k === 1 ? "sensor on" : "sensor"}" cx="${k === 1 ? 52 : 32}" cy="${30 + k * 34}" r="9"/>`;
+    io += `<circle class="lt ${k === 0 ? "green on" : "amber"}" cx="160" cy="${30 + k * 34}" r="11"/>`;
+    io += `<line class="steel" x1="78" y1="${30 + k * 34}" x2="140" y2="${30 + k * 34}" stroke-dasharray="4 4"/>`;
+  }
+  out.io = `<svg viewBox="0 0 200 160" class="draw thumb" role="img" aria-label="I/O panel">${io}</svg>`;
+  return out;
+}
+
 function groups(items) {
   const out = new Map();
   for (const it of items) { if (!out.has(it.machine)) out.set(it.machine, []); out.get(it.machine).push(it); }
@@ -701,19 +720,19 @@ function groups(items) {
 function openExercises() {
   const ok = done();
   $("d-ex-progress").textContent = `${EXERCISES.filter((x) => ok.has(x.id)).length} of ${EXERCISES.length} done`;
-  $("d-ex-list").innerHTML = [...groups(EXERCISES)].map(([machine, list]) => `<h3>${esc(machine)}</h3><div class="cardgrid">` +
+  $("d-ex-list").innerHTML = [...groups(EXERCISES)].map(([machine, list]) => `<section class="mgroup"><div class="mhead">${THUMBS[list[0].sim] || ""}<h3>${esc(machine)}</h3></div><div class="cardgrid">` +
     list.map((x) => `<button class="pick${ok.has(x.id) ? " done" : ""}" data-lab="${esc(x.id)}">
       <span class="num">${esc(x.id)}</span><span class="ptitle">${esc(x.title)}</span>
       <span class="lvl" title="Level ${x.level} of 5">${"●".repeat(x.level)}${"○".repeat(5 - x.level)}</span>
-      ${ok.has(x.id) ? `<span class="tick" title="Passed">✔</span>` : ""}</button>`).join("") + `</div>`).join("");
+      ${ok.has(x.id) ? `<span class="tick" title="Passed">✔</span>` : ""}</button>`).join("") + `</div></section>`).join("");
   $("d-exercises").showModal();
 }
 
 function openExamples() {
   const LANG = { LD: "Ladder", ST: "Structured text", FBD: "Function blocks" };
-  $("d-exa-list").innerHTML = [...groups(EXAMPLES)].map(([machine, list]) => `<h3>${esc(machine)}</h3><div class="cardgrid">` +
-    list.map((x) => `<button class="pick" data-example="${esc(x.key)}"><span class="ptitle">${esc(x.title)}</span>
-      <span class="lang">${esc(LANG[x.language])}</span></button>`).join("") + `</div>`).join("");
+  $("d-exa-list").innerHTML = [...groups(EXAMPLES)].map(([machine, list]) => `<section class="mgroup"><div class="mhead">${THUMBS[list[0].sim] || ""}<h3>${esc(machine)}</h3></div><div class="cardgrid">` +
+    list.map((x) => `<button class="pick ex" data-example="${esc(x.key)}"><span class="ptitle">${esc(x.title)}</span>
+      <span class="lang">${esc(x.languages.map((l) => LANG[l]).join(" + "))}</span></button>`).join("") + `</div></section>`).join("");
   $("d-examples").showModal();
 }
 

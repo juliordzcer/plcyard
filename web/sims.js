@@ -197,5 +197,5 @@ const Sims = (() => {
     });
   }
 
-  return { render, reset, wire };
+  return { render, reset, wire, draw: (m) => DRAW[m.kind](m) };
 })();

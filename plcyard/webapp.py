@@ -111,9 +111,8 @@ class Session:
     def examples(self) -> list[dict]:
         out = []
         for k, (t, sim, path) in EXAMPLES.items():
-            lang = "FBD" if ".fbd." in path or path.endswith("-fbd.plcy") else \
-                "ST" if ".st." in path or "-st." in path or "structured-text" in path else "LD"
-            out.append({"key": k, "title": t, "sim": sim, "machine": SIMS[sim][0], "language": lang})
+            langs = sorted({f.language for f in plcy.load(labs.DATA / path).files.values()}, key=LANGUAGES.index)
+            out.append({"key": k, "title": t, "sim": sim, "machine": SIMS[sim][0], "languages": langs})
         return out
 
     def open_example(self, key: str) -> None:
@@ -796,9 +795,13 @@ class Session:
         width = max([width] + [L.natural_width(r.body, self.plc.profile.specs) for r in self.file.rungs])
         return [self._rung(n, width) for n in range(len(self.file.rungs))]
 
-    def machine(self) -> dict:
+    def previews(self) -> str:
+        """Every machine as it starts, for the thumbnails of the exercise and example pickers."""
+        return json.dumps({k: self.machine(model(), k) for k, (_, model) in SIMS.items() if k != "io"})
+
+    def machine(self, m=None, kind: str | None = None) -> dict:
         """What the page draws for the machine on screen, with the address of every device."""
-        m, kind = self.sim, self.sim_kind
+        m, kind = (m, kind) if m is not None else (self.sim, self.sim_kind)
         if kind in webmachines.SPEC:
             return webmachines.view(m, kind)
         i = lambda bit: notation.show(PLC.io_name("I", 1, bit))

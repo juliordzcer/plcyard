@@ -8,7 +8,8 @@ Python 3.11 or newer.
 Just want to try it? **[PLCYard web](https://juliordz.com/plcyard/app/)** runs in your browser: the
 ladder, structured text and function block editors, routines, functions and function blocks, the
 tag list, all fifteen simulations and every exercise with its checks. The desktop app adds data
-types, forcing, the PID setup dialog and single-scan stepping.
+types, forcing, the PID setup dialog and single-scan stepping. See
+[PLCYard in the browser](web.md).
 
 ## Install
 

@@ -808,3 +808,14 @@ keys:      web, usability, welcome, header, exercises picker
   form lists it; FBD blocks with problems show the reason on hover too. (`webapp._ld_check`, cached
   per program, uses the same instruction checks as the download.)
 keys:      web, usability, operand form, suggestions, problems
+
+## C-044 — Machine pictures in the pickers, a wiki page for the web version
+2026-10-22 · commits: d127b87
+- The exercise and example pickers show each machine group with a picture of its machine, drawn
+  by the same code as the live simulation from a fresh model (`Session.previews()`); the I/O panel
+  gets a small switches-and-lamps drawing. Examples list the languages they really use (read from
+  the file, e.g. "Ladder + Structured text").
+- Wiki: new page "PLCYard in the browser" (docs/wiki/web.md): the screen, exercises and examples,
+  writing a program (operand form, suggestions, problems), running and checking, what stays in the
+  desktop app; three screenshots. Linked from the home and download pages and the navigation.
+keys:      web, thumbnails, pickers, wiki

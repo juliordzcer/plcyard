@@ -4,7 +4,7 @@ import sys
 import zipfile
 
 from plcyard import webbuild
-from plcyard.webapp import Session
+from plcyard.webapp import SIMS, Session
 
 
 def lamp(s, bit):
@@ -294,8 +294,10 @@ def test_pickers_and_compact_io_data():
     s = Session()
     ex = s.exercises()
     assert all({"level", "machine", "sim"} <= set(e) for e in ex) and ex[0]["machine"] == "I/O panel"
-    langs = {e["key"]: e["language"] for e in s.examples()}
-    assert langs["start-stop"] == "LD" and langs["start-stop-st"] == "ST" and langs["tank-pid-fbd"] == "FBD"
+    langs = {e["key"]: e["languages"] for e in s.examples()}
+    assert langs["start-stop"] == ["LD"] and langs["start-stop-st"] == ["ST"] and langs["tank-pid-fbd"] == ["FBD"]
+    assert langs["traffic-routines"] == ["LD", "ST"]
+    assert set(json.loads(s.previews())) == set(SIMS) - {"io"}
     assert s.palette()[0]["items"][0]["shape"] == "contact"
     s.open_exercise("06")
     io = json.loads(s.state(800))["io"]

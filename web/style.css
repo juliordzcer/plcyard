@@ -339,3 +339,11 @@ dialog h3 { margin: 14px 0 6px; font-size: 12px; color: var(--text-muted); text-
 .operands.float { position: absolute; z-index: 6; max-width: min(620px, calc(100% - 16px)); border: 1px solid var(--accent);
   border-radius: 8px; box-shadow: 0 6px 22px rgba(0,0,0,.18); }
 .ladder .badbox { fill: color-mix(in srgb, var(--danger) 10%, transparent); stroke: var(--danger); stroke-width: 1.5; stroke-dasharray: 4 3; }
+
+.mgroup { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); align-items: start; }
+.mhead h3 { margin: 6px 0 0; }
+.draw.thumb { width: 150px; height: 100px; pointer-events: none; }
+.pick .lvl ~ .tick, .pick .tick { top: 6px; }
+.cardgrid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+@media (max-width: 640px) { .mgroup { grid-template-columns: 1fr; } .mhead { display: flex; align-items: center; gap: 10px; } .draw.thumb { width: 96px; height: 64px; } }
+.pick.ex { grid-template-columns: 1fr; }
