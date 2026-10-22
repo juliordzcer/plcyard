@@ -7,7 +7,7 @@ const VERSION = document.documentElement.dataset.version;
 const GUTTER = 48, MARGIN = 12, RUNG_GAP = 18, COMMENT_LINE = 16, WIRE_Y = 26;
 const $ = (id) => document.getElementById(id);
 let py, S, state = null, lastJson = "", family = null, palette = [], opsKey = "", HL = null, stKey = "", tagsKey = "";
-let fbdKey = "", paletteLang = "", routinesKey = "", ifaceKey = "";
+let fbdKey = "", paletteLang = "", routinesKey = "", ifaceKey = "", machineKind = "";
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const store = {
@@ -91,7 +91,10 @@ function render(force) {
     ? "Click a switch to flip it (pushbuttons spring back). Drag an address onto an instruction to use it."
     : "Hold a button to press it. Drag an address onto an instruction to use it.";
   if (state.io) renderIo(state.io);
-  else Sims.render($("machine"), state.machine);
+  else {
+    if (machineKind !== state.machine.kind) { machineKind = state.machine.kind; Sims.reset(); Machines.reset(); }
+    (state.machine.controls ? Machines : Sims).render($("machine"), state.machine);
+  }
   const st = state.language === "ST", fb = state.language === "FBD";
   renderRoutines(state);
   renderInterface(state);

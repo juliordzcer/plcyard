@@ -242,3 +242,49 @@ def test_examples_with_routines_run():
     s.tick(300)
     st = json.loads(s.state(800))
     assert st["routine"] == 3 and st["interface"]["rows"] and any(i["on"] for r in st["rungs"] for i in r["instrs"])
+
+
+def test_every_newer_machine_has_controls_devices_and_a_drawing():
+    from plcyard import webmachines
+    s = Session()
+    for kind in webmachines.SPEC:
+        s.set_sim(kind)
+        m = json.loads(s.state(800))["machine"]
+        assert m["kind"] == kind and m["controls"] and m["devices"]["inputs"] and m["devices"]["outputs"] and m["draw"]
+        for c in m["controls"]:
+            s.sim_action(c["act"], c.get("max", True) if c["t"] != "button" else None)
+        s.tick(100)
+        m = json.loads(s.state(800))["machine"]
+        assert all(c["value"] for c in m["controls"] if c["t"] in ("check", "hold")), kind
+        assert all(c["value"] == c["max"] for c in m["controls"] if c["t"] == "slider"), kind
+    s.set_sim("garage")
+    s.sim_action("position", 100)                    # not a control: ignored
+    assert s.sim.position == 0
+
+
+def test_input_points_match_the_machines():
+    from plcyard import webmachines
+    from plcyard.sims import MODELS
+    for kind, (controls, ins, *_) in webmachines.SPEC.items():
+        m = MODELS[kind][1]()
+        for c in controls:
+            if c["t"] in ("hold", "check") and not c["act"].startswith(("hall_", "car_", "fault_")):
+                before = m.input_words()[1]
+                setattr(m, c["act"], not getattr(m, c["act"]))
+                changed = before ^ m.input_words()[1]
+                setattr(m, c["act"], not getattr(m, c["act"]))
+                points = [b for _, b in ins if changed >> b & 1]
+                assert changed == 0 or points, (kind, c["act"])
+
+
+def test_exercises_on_the_newer_machines():
+    from plcyard import labs
+    s = Session()
+    ids = {e["id"] for e in s.exercises()}
+    assert {"14", "15", "16"} <= ids
+    lab = next(x for x in labs.load_all() if x.id == "15")
+    s.open_exercise("15")
+    assert json.loads(s.state(800))["machine"]["kind"] == "garage"
+    s.open_text(lab.solution.read_text(encoding="utf-8"))
+    s.lab = lab
+    assert s.check()["passed"]

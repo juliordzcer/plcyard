@@ -73,7 +73,8 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
       lights and tank (trend, knobs) with exercises 8-13. Step 4 done: structured text (editor,
       errors as you type, watch list), tag list, exercises in ST. Step 5 done: function block
       diagrams (blocks, wires, operands, live values, exercises in FBD). Step 6 done: several
-      routines (SBR, FC, FB in any language, parameters). Next: the other eleven simulations.
+      routines (SBR, FC, FB in any language, parameters). Step 7 done: the other eleven
+      simulations with their examples, exercises 14-16. Left for later: data types in the web.
 - [ ] Real hardware I/O: Arduino and/or ESP32 as remote I/O over USB serial (then Wi-Fi), to test
       programs with real switches and lamps (docs/ROADMAP.md, "Later").
 - [ ] More UI languages (main languages); English only for now.

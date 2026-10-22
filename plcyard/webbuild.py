@@ -14,7 +14,7 @@ PKG = Path(__file__).resolve().parent
 WEB = PKG.parent / "web"
 ASSETS = PKG / "ui" / "assets"
 # what the browser needs: everything but the Qt user interface
-PYTHON = ["__init__.py", "webapp.py", "grader.py", "labs.py", "core", "sims", "formats",
+PYTHON = ["__init__.py", "webapp.py", "webmachines.py", "grader.py", "labs.py", "core", "sims", "formats",
           "ui/__init__.py", "ui/ladder_layout.py", "ui/notation.py"]
 DATA = ["data/labs", "data/samples"]
 

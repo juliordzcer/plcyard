@@ -191,6 +191,20 @@ button.ghost { border: none; background: none; }
 .draw .t-sp { fill: none; stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 5 4; }
 .draw .t-pv { fill: none; stroke: var(--sim-product); stroke-width: 2; }
 .draw .t-cv { fill: none; stroke: var(--lamp-amber); stroke-width: 1.5; }
+.draw .t-b { fill: var(--lamp-amber); opacity: .75; }
+.draw .heat { stroke: var(--lamp-red); stroke-width: 5; }
+.draw .person { fill: var(--warning); }
+.draw .door { fill: var(--surface-2); stroke: var(--sim-steel); }
+.draw .cap2 { fill: var(--sim-steel); } .draw .badcap { fill: var(--danger); }
+.draw .beam { stroke: var(--lamp-red); stroke-dasharray: 3 3; }
+.draw .part { fill: var(--lamp-amber); stroke: var(--rail); }
+.draw .barrier { stroke: var(--lamp-red); stroke-width: 6; stroke-linecap: round; }
+.draw .seg7 { font: 700 26px "JetBrains Mono", monospace; fill: var(--lamp-amber); }
+.draw .fullsign { font: 700 12px "Inter", sans-serif; fill: #3a3f47; } .draw .fullsign.on { fill: var(--lamp-red); }
+.draw .motor.fault { fill: var(--danger); }
+.draw .heater { fill: var(--lamp-red); } .draw .cooler { fill: var(--accent); }
+.draw .winopen { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; }
+.draw .doorring { fill: none; stroke: var(--rail); stroke-width: 6; } .draw .doorring.open { stroke: var(--warning); stroke-dasharray: 10 8; }
 .draw .k-sp { fill: var(--text); } .draw .k-pv { fill: var(--sim-product); } .draw .k-cv { fill: var(--lamp-amber); }
 
 .update { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 20; display: flex; align-items: center; gap: 10px;

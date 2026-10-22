@@ -9,7 +9,7 @@ from __future__ import annotations
 import copy
 import json
 
-from . import grader, labs
+from . import grader, labs, webmachines
 from .core import edit, fbd
 from .core.plc import PLC
 from .core import st
@@ -19,6 +19,7 @@ from .core.program import Parallel, Program, ProgramFile, Series, name_problem, 
 from .formats import plcy
 from .sims import silo as silo_sim
 from .sims import traffic as traffic_sim
+from .sims import MODELS
 from .sims.io_panel import DISPLAY_SLOT, INPUT_SLOTS, OUTPUT_SLOTS, IoPanelModel
 from .sims.silo import SiloModel
 from .sims.tank import HIGH, LOW, TankModel
@@ -27,7 +28,7 @@ from .ui import ladder_layout as L
 from .ui import notation
 
 SIMS = {"io": ("I/O panel", IoPanelModel), "silo": ("Silo", SiloModel), "traffic": ("Traffic lights", TrafficModel),
-        "tank": ("Tank level", TankModel)}
+        "tank": ("Tank level", TankModel), **{k: MODELS[k] for k in webmachines.SPEC}}
 # key → (menu title, simulation, file under data/)
 EXAMPLES = {"start-stop": ("Start/stop with seal-in", "io", "samples/start-stop.plcy"),
             "timer-counter": ("Timer and counter", "io", "samples/timer-counter.plcy"),
@@ -45,7 +46,18 @@ EXAMPLES = {"start-stop": ("Start/stop with seal-in", "io", "samples/start-stop.
             "tank-pid-fbd": ("Tank level PID in function blocks", "tank", "samples/tank-pid-fbd.plcy"),
             "traffic-routines": ("Traffic lights in routines", "traffic", "samples/traffic-lights-routines.plcy"),
             "silo-fb": ("Silo with a function block", "silo", "samples/silo-function-block.plcy"),
-            "motor-fb": ("Motor starters with a function block", "io", "samples/motor-starters-function-block.plcy")}
+            "motor-fb": ("Motor starters with a function block", "io", "samples/motor-starters-function-block.plcy"),
+            "two-tanks": ("Two tanks, cascade PID", "two_tanks", "samples/two-tanks-cascade.plcy"),
+            "garage": ("Garage door", "garage", "samples/garage-door.plcy"),
+            "mixer": ("Batch mixer in structured text", "mixer", "samples/batch-mixer-st.plcy"),
+            "elevator": ("Elevator in structured text", "elevator", "samples/elevator-st.plcy"),
+            "bottles": ("Bottle line in structured text", "bottles", "samples/bottle-line-st.plcy"),
+            "sorter": ("Sorting conveyor in structured text", "sorter", "samples/sorting-conveyor-st.plcy"),
+            "pick-place": ("Pick and place in structured text", "pick_place", "samples/pick-and-place-st.plcy"),
+            "parking": ("Parking garage in structured text", "parking", "samples/parking-garage-st.plcy"),
+            "pumps": ("Pump station in structured text", "pumps", "samples/pump-station-st.plcy"),
+            "hvac": ("Room climate in structured text", "hvac", "samples/room-climate-st.plcy"),
+            "washer": ("Washing machine in structured text", "washer", "samples/washing-machine-st.plcy")}
 LANGUAGES = ("LD", "ST", "FBD")
 KINDS = {"SBR": "Routine", "FC": "Function", "FB": "Function block"}
 MAIN = 2
@@ -172,6 +184,8 @@ class Session:
         m, kind = self.sim, self.sim_kind
         if name == "reset":
             self.set_sim(kind)
+        elif kind in webmachines.SPEC:
+            webmachines.act(m, kind, name, value)
         elif kind in ("silo", "tank") and name in ("start", "stop"):
             setattr(m, f"{name}_pressed", bool(value))
         elif kind == "silo" and name == "selector" and value in ("A", "B", "C"):
@@ -754,6 +768,8 @@ class Session:
     def machine(self) -> dict:
         """What the page draws for the machine on screen, with the address of every device."""
         m, kind = self.sim, self.sim_kind
+        if kind in webmachines.SPEC:
+            return webmachines.view(m, kind)
         i = lambda bit: notation.show(PLC.io_name("I", 1, bit))
         q = lambda bit: notation.show(PLC.io_name("Q", 2, bit))
         out = {"kind": kind, "events": list(getattr(m, "events", []))[-4:]}

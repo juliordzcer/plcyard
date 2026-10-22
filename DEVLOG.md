@@ -730,3 +730,19 @@ keys:      web, function block diagram, fbd, wires, blocks
   delete and undo; FB example runs live. Browser run: add an FB in ST, parameters, rename, traffic
   routines live, silo FB parameters.
 keys:      web, routines, function block, interface, parameters
+
+## C-039 — Web version, step 7: all fifteen simulations
+2026-10-22 · commits: 210a456
+- The eleven newer machines in the browser: two tanks, garage door, batch mixer, elevator, bottle
+  line, sorting conveyor, pick and place, parking garage, pump station, room climate, washing
+  machine. Each with its controls (hold buttons, NC stops, check boxes, sliders, Car arrives/
+  leaves), the device list with addresses (drag onto the program) and live dots or values, an
+  animated drawing, what went wrong, and trends for two tanks and room climate.
+- `plcyard/webmachines.py` describes them as data (controls, wiring per point, drawing state);
+  `web/machines.js` builds the controls and draws them. Controls are checked against the list
+  before they touch the model.
+- Examples for every machine (the samples), exercises 14-16 now in the web.
+- Wiki: the web version now covers ladder, ST, FBD, routines, every simulation and exercise.
+- Tests: `tests/test_webapp.py` (17): every machine's controls, devices and drawing, unknown
+  controls ignored, control points listed, exercise 15 solved; browser run of all 11 examples.
+keys:      web, simulations, machines, elevator, washer, hvac
