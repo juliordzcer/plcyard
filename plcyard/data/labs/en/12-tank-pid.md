@@ -28,10 +28,12 @@ level: 4
 2. Raw counts to percent: `DIV %IW64 276.48 Level` (27648 / 100), and the knob into `LevelPID.SP`.
 3. `PID LevelPID Level ValveOut` (PID, process variable, control variable; the setpoint, tieback,
    master loop and inhold operands are optional), then `MUL ValveOut 276.48 %QW64`.
-4. Tune: set `LevelPID.KP` and `LevelPID.TI` (seconds) with a `MOV` on the first scan
-   (`XIC FirstScan`), or as start values: open `LevelPID` in the tag list. Start with KP 1 and TI 0
-   (proportional only): the level settles below the setpoint. Then add integral action (TI 30,
-   then 15) and watch the trend.
+4. Tune: right-click the PID box → PID Setup. On the Tuning tab start with KP 1 and KI 0
+   (proportional only): the level settles below the setpoint. Then add integral action (KI 0.1,
+   then 0.27 per second) and watch the trend.
+5. Shorter: let the PID scale for you. On the Scaling tab set the unscaled PV to 0-27648, the
+   engineering range to 0-100 and the CV to 0-27648; then `PID LevelPID %IW64 %QW64` with the knob
+   moved into `LevelPID.SP` is the whole program.
 
 ## Think about it
 

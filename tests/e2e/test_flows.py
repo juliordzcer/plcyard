@@ -618,3 +618,26 @@ def test_F16_H2_download_goes_online_in_program_mode(win):
     win.download()
     assert win.panel.online_btn.text() == "Online · Program"
     assert [l.label.text() for l in win.panel.leds.values()] == ["RUN", "FORCE", "FAULT", "I/O"]
+
+
+# -- F17 PID setup ---------------------------------------------------------------------------------------
+def test_F17_H1_pid_setup_writes_start_values_and_the_running_pid(win, monkeypatch):
+    from plcyard.ui.pid_setup import PidSetup
+    win.open(str(LABS["12"].solution))
+    win.download()
+    go(win, "RUN")
+    seen = {}
+
+    def fake_exec(dlg):
+        assert [dlg.tabs.tabText(k) for k in range(dlg.tabs.count())] == ["Tuning", "Configuration", "Alarms", "Scaling"]
+        dlg.fields["KP"].setValue(2.5)
+        dlg.fields["PE"].setCurrentIndex(1)
+        seen["label"] = dlg._label_KI.text()
+        dlg.fields["PVH"].setValue(95.0)
+        dlg.accept()
+    monkeypatch.setattr(PidSetup, "exec", fake_exec)
+    win.pid_setup("LevelPID")
+    assert seen["label"].startswith("Reset time")
+    start = win.program.tags["LevelPID"]["value"]
+    assert start["KP"] == 2.5 and start["PE"] is True and start["PVH"] == 95.0
+    assert win.plc.dt.element("LevelPID")["KP"] == 2.5, "applied to the running PID too"

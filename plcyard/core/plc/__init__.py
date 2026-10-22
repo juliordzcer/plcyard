@@ -13,7 +13,7 @@ import re
 from .. import isa
 from ..program import Program, walk
 from ..profiles.base import Diagnostic, IODevice, Profile, parse_param
-from .instructions import KINDS, SPECS, WANT, Context, literal, run_pid, unused
+from .instructions import KINDS, SPECS, WANT, Context, _cv_out, literal, run_pid, unused
 from .memory import (ANALOG_IN, ANALOG_OUT, FULL_SCALE, INPUT_SLOTS, OUTPUT_SLOTS, STRUCTS, SYSTEM, TYPES,
                      WORD_SLOTS, Memory, PlcMemoryError, _BIT, _MODULE, _SYM, _WORD, parse_time)
 
@@ -75,7 +75,7 @@ def check_operand(mem, kind: str, op: str) -> str | None:
 def value_text(t: str, v) -> str:
     """A value as the tag list shows it."""
     if t == "PID":
-        return f"SP {v['SP']:g}  PV {v['PV']:.1f}  CV {v['CV']:.1f}" + ("  MAN" if v["MO"] else "")
+        return f"SP {v['SP']:g}  PV {v['PV']:.1f}  Out {v['CV']:.1f} %" + ("  MAN" if v["MO"] else "")
     if t in ("TIMER", "COUNTER"):
         return f"ACC {v['ACC']} / PRE {v['PRE']}" + ("  DN" if v["DN"] else "")
     if t == "CONTROL":
@@ -240,7 +240,8 @@ class PlcYard(Profile):
         if block == "PID":
             if "SP" in inputs:
                 el["SP"] = float(inputs["SP"])
-            return {"CV": run_pid(ctx, instance, float(inputs.get("PV", el["PV"])))}
+            out = run_pid(ctx, instance, float(inputs.get("PV", el["PV"])), inputs.get("TIEBACK"))
+            return {"CV": out if out is not None else _cv_out(el, el["CV"]), "OUT": el["CV"]}
         pre = inputs.get("PT", inputs.get("PV", inputs.get("PRE", el["PRE"])))
         if block in ("TON", "TOF", "TP", "RTO"):
             q = SPECS[block].run(ctx, [instance, lit(int(pre))], bool(inputs.get("IN", False)))

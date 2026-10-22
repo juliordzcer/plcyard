@@ -702,6 +702,7 @@ def nop(ctx, ops, cond):
 def _pid_prescan(ctx, ops):
     ctx.timer_marks.pop("pid:" + ops[0].lower(), None)
     ctx.pid_state.pop(ops[0].lower(), None)
+    ctx.element(ops[0])["EN"] = False
 
 
 @instruction("PID", "PID controller", "Process",
@@ -709,41 +710,98 @@ def _pid_prescan(ctx, ops):
              ["PID", "Process variable", "Control variable", "Setpoint", "Tieback", "Master loop", "Inhold bit",
               "Inhold value"], optional=5, on_prescan=_pid_prescan)
 def pid_(ctx, ops, cond):
-    """Runs every scan the rung is true. Optional: a setpoint (else the PID's SP member), a tieback
-    the output follows in manual, a master loop whose output is this loop's setpoint (cascade),
-    and an inhold bit that holds the output at the inhold value."""
+    """Every loop update time (UPD) while the rung is true. The process variable is scaled from
+    MINI..MAXI to MINS..MAXS (engineering units), the output in % goes to the control variable
+    scaled to MINCV..MAXCV. Optional: a setpoint (else the SP member), a tieback the output follows
+    in manual, a master loop whose output (in %) becomes this loop's setpoint (cascade), and an
+    inhold bit that holds the output at the inhold value (bumpless restart). PID Setup in the
+    editor sets the members."""
+    el = ctx.element(ops[0])
     if not cond:
         ctx.timer_marks.pop("pid:" + ops[0].lower(), None)
+        el["EN"] = False
         return False
-    el = ctx.element(ops[0])
+    el["EN"] = True
     opt = lambda k: ops[k] if len(ops) > k and not unused(ops[k]) else None
     if opt(3):
         el["SP"] = float(ctx.value(ops[3]))
     if opt(5):
-        el["SP"] = float(ctx.element(ops[5])["CV"])
+        master = ctx.element(ops[5])
+        el["SP"] = el["MINS"] + master["CV"] * (_span(el) / 100.0)
     tieback = float(ctx.value(ops[4])) if opt(4) else None
     hold = float(ctx.value(ops[7])) if opt(6) and opt(7) and ctx.bit(ops[6]) else None
-    ctx.store(ops[2], run_pid(ctx, ops[0], float(ctx.value(ops[1])), tieback, hold))
+    out = run_pid(ctx, ops[0], float(ctx.value(ops[1])), tieback, hold)
+    if out is not None:
+        ctx.store(ops[2], out)
     return True
 
 
-def run_pid(ctx, instance: str, pv: float, tieback: float | None = None, hold: float | None = None) -> float:
-    """One evaluation of a PID tag; returns CV (also used from structured text)."""
+def _span(el) -> float:
+    return (el["MAXS"] - el["MINS"]) or 100.0
+
+
+def run_pid(ctx, instance: str, raw_pv: float, tieback: float | None = None, hold: float | None = None):
+    """One evaluation of a PID tag; returns the control variable (scaled), or None between loop
+    updates. Also used from structured text."""
     el, key = ctx.element(instance), instance.lower()
     mark_key = "pid:" + key
     last = ctx.timer_marks.get(mark_key)
+    if last is not None and el["UPD"] > 0 and ctx.now_ms - last < el["UPD"] * 1000.0 - 1e-6:
+        return None
     ctx.timer_marks[mark_key] = ctx.now_ms
     dt = 0.0 if last is None else (ctx.now_ms - last) / 1000.0
+    pv = raw_pv
+    if el["MAXI"] != el["MINI"]:
+        pv = el["MINS"] + (raw_pv - el["MINI"]) * (el["MAXS"] - el["MINS"]) / (el["MAXI"] - el["MINI"])
     el["PV"] = pv
+    err = (pv - el["SP"]) if el["CA"] else (el["SP"] - pv)
+    el["ERR"] = err
+    scale = 100.0 / _span(el)                          # error in % of span
+    lo, hi = (el["MINO"], el["MAXO"]) if el["MAXO"] != el["MINO"] else (0.0, 100.0)
     state = ctx.pid_state.setdefault(key, {"CV": el["CV"], "I": el["CV"]})
     if hold is not None:
         state.update(CV=hold, I=hold)
         el["CV"] = hold
-        return hold
-    el["CV"] = pid.step(state, el["SP"], pv, dt, kc=el["KP"], ti=el["TI"], td=el["TD"],
-                        out_min=el["MINO"], out_max=el["MAXO"], manual=el["MO"],
-                        manual_value=tieback if tieback is not None else el["SO"], reverse=el["CA"])
-    return el["CV"]
+        return _cv_out(el, hold)
+    el["EWD"] = el["DB"] > 0 and abs(err) <= el["DB"]
+    if el["PE"]:
+        kp, ki, kd = pid.dependent_to_independent(el["KP"], el["KI"], el["KD"])
+    else:
+        kp, ki, kd = el["KP"], el["KI"], el["KD"]
+    manual = el["MO"]
+    if el["EWD"] and not el["MO"]:
+        cv = el["CV"]                                  # inside the deadband the output stays
+        state["PV1"], state["E1"] = pv * scale, err * scale
+    else:
+        cv = pid.step(state, el["SP"] * scale, pv * scale, dt, kp=kp, ki=ki, kd=kd, bias=el["BIAS"],
+                      out_min=lo, out_max=hi, manual=manual,
+                      manual_value=tieback if tieback is not None else el["SO"], reverse=el["CA"],
+                      d_on_error=el["DOE"])
+    el["CV"] = cv
+    if not el["MO"]:
+        el["SO"] = cv                                  # the set output follows in automatic (bumpless)
+    el["OLH"], el["OLL"] = cv >= hi, cv <= lo
+    _alarms(el, pv, err)
+    return _cv_out(el, cv)
+
+
+def _cv_out(el, percent: float) -> float:
+    if el["MAXCV"] != el["MINCV"]:
+        return el["MINCV"] + percent * (el["MAXCV"] - el["MINCV"]) / 100.0
+    return percent
+
+
+def _alarms(el, pv: float, err: float) -> None:
+    """PV high/low and deviation alarms with their deadbands (0 leaves a limit unused)."""
+    dev = pv - el["SP"]
+    if el["PVH"]:
+        el["PVHA"] = pv >= el["PVH"] or (el["PVHA"] and pv > el["PVH"] - el["PVDB"])
+    if el["PVL"]:
+        el["PVLA"] = pv <= el["PVL"] or (el["PVLA"] and pv < el["PVL"] + el["PVDB"])
+    if el["DVP"]:
+        el["DVPA"] = dev >= el["DVP"] or (el["DVPA"] and dev > el["DVP"] - el["DVDB"])
+    if el["DVN"]:
+        el["DVNA"] = dev <= -el["DVN"] or (el["DVNA"] and dev < -el["DVN"] + el["DVDB"])
 
 
 # -- operand checks ----------------------------------------------------------------------------------

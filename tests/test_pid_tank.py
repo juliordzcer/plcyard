@@ -29,40 +29,40 @@ def loop(seconds, sp=50.0, **gains):
 
 
 def test_proportional_only_leaves_an_offset():
-    pv, _ = loop(60, kc=2.0, ti=0.0, td=0.0)
+    pv, _ = loop(60, kp=2.0, ki=0.0, kd=0.0)
     assert 30 < pv < 40, "P-only settles at Kc/(1+Kc) of the setpoint"
 
 
 def test_integral_removes_the_offset():
-    pv, _ = loop(60, kc=2.0, ti=5.0, td=0.0)
+    pv, _ = loop(60, kp=2.0, ki=0.4, kd=0.0)
     assert abs(pv - 50) < 0.5
 
 
 def test_output_limits_and_anti_windup():
     state = {}
     for _ in range(1000):                      # PV stuck far below SP: output saturates
-        cv = pid.step(state, 100.0, 0.0, 0.1, kc=1.0, ti=1.0, td=0.0)
+        cv = pid.step(state, 100.0, 0.0, 0.1, kp=1.0, ki=1.0, kd=0.0)
     assert cv == 100.0 and state["I"] <= 100.0, "integral stops growing at the limit"
-    cv = pid.step(state, 0.0, 50.0, 0.1, kc=1.0, ti=1.0, td=0.0)
+    cv = pid.step(state, 0.0, 50.0, 0.1, kp=1.0, ki=1.0, kd=0.0)
     assert cv < 100.0, "comes off the limit at once when the error reverses"
 
 
 def test_manual_is_bumpless():
     state = {}
-    pid.step(state, 50, 40, 0.1, kc=2.0, ti=10.0, td=0.0, manual=True, manual_value=30.0)
-    cv = pid.step(state, 50, 40, 0.1, kc=2.0, ti=10.0, td=0.0)
+    pid.step(state, 50, 40, 0.1, kp=2.0, ki=0.2, kd=0.0, manual=True, manual_value=30.0)
+    cv = pid.step(state, 50, 40, 0.1, kp=2.0, ki=0.2, kd=0.0)
     assert abs(cv - 30.0) < 1.0, "back in automatic, CV starts from the manual value"
 
 
 def test_reverse_acting():
     state = {}
-    assert pid.step(state, 50, 60, 0.1, kc=1.0, ti=0.0, td=0.0, reverse=True) == 10.0
+    assert pid.step(state, 50, 60, 0.1, kp=1.0, ki=0.0, kd=0.0, reverse=True) == 10.0
 
 
 def test_derivative_on_pv_has_no_setpoint_kick():
     state = {}
-    pid.step(state, 50, 50, 0.1, kc=1.0, ti=0.0, td=1.0)
-    cv = pid.step(state, 80, 50, 0.1, kc=1.0, ti=0.0, td=1.0)
+    pid.step(state, 50, 50, 0.1, kp=1.0, ki=0.0, kd=1.0)
+    cv = pid.step(state, 80, 50, 0.1, kp=1.0, ki=0.0, kd=1.0)
     assert cv == 30.0, "a setpoint step moves only P"
 
 
@@ -116,7 +116,7 @@ def test_pid_holds_the_level_through_a_disturbance():
         "DIV,%IW64,276.48,PV", "DIV,%IW66,276.48,LevelPID.SP",
         "PID,LevelPID,PV,Out", "MUL,Out,276.48,%QW64"],
         {"PV": {"type": "REAL"}, "Out": {"type": "REAL"},
-         "LevelPID": {"type": "PID", "value": {"KP": 4, "TI": 15}}}))
+         "LevelPID": {"type": "PID", "value": {"KP": 4, "KI": 0.27}}}))
     assert abs(settle(plc, tank, 60) - 60) < 2
     tank.outlet = 90.0
     assert abs(settle(plc, tank, 60) - 60) < 2
@@ -131,7 +131,7 @@ def test_pid_with_setpoint_operand_and_normalize_scale():
         "NORM_X,0.0,Out,100.0,NormOut SCALE_X,0,NormOut,27648,%QW64"],
         {"Norm": {"type": "REAL"}, "Level": {"type": "REAL"}, "NormSp": {"type": "REAL"},
          "Setpoint": {"type": "REAL"}, "Out": {"type": "REAL"}, "NormOut": {"type": "REAL"},
-         "LevelPID": {"type": "PID", "value": {"KP": 4, "TI": 15}}}), sp=40.0)
+         "LevelPID": {"type": "PID", "value": {"KP": 4, "KI": 0.27}}}), sp=40.0)
     assert abs(settle(plc, tank, 80) - 40) < 2
     assert plc.dt.read_word("%IW66") == round(0.4 * 27648)
 

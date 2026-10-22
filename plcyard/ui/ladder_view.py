@@ -652,6 +652,9 @@ class LadderCanvas(QWidget):
         add("Insert rung below", self.new_rung, True, "Ins")
         add("Edit rung comment…", self.edit_comment, has_rung)
         win = self.window()
+        if ins and ins.mnemonic == "PID" and ins.operands and ins.operands[0] != "?" and hasattr(win, "pid_setup"):
+            menu.addSeparator()
+            add("PID Setup…", lambda: win.pid_setup(ins.operands[0]))
         if ins and ins.mnemonic in ("JSR", "CALL") and ins.operands and hasattr(win, "open_routine_named"):
             menu.addSeparator()
             add(f"Go to {ins.operands[0]}", lambda: win.open_routine_named(ins.operands[0]))

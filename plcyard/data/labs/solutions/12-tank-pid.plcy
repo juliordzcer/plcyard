@@ -10,8 +10,8 @@
       "language": "LD",
       "rungs": [
         {
-          "text": "XIC,FirstScan MOV,4.0,LevelPID.KP MOV,15.0,LevelPID.TI",
-          "comment": "Tuning, set once on the first scan: gain 4, integral time 15 s."
+          "text": "XIC,FirstScan MOV,4.0,LevelPID.KP MOV,0.27,LevelPID.KI",
+          "comment": "Tuning, set once on the first scan: proportional gain 4, integral gain 0.27 per second."
         },
         {
           "text": "DIV,%IW64,276.48,Level",

@@ -23,7 +23,7 @@ How and in what order: [docs/ROADMAP.md](docs/ROADMAP.md).
 - [x] Ladder and structured text, several routines per program in either language.
 - [x] PID, analog I/O, tank simulation with trend; exercises 1-13.
 - [x] Forcing I/O; online bar; drag I/O from the simulations onto the ladder; examples.
-- [ ] PID setup dialog (tuning, configuration, scaling, alarms) for the PID instruction.
+- [x] PID setup dialog (tuning, configuration, alarms, scaling) for the PID instruction.
 - [ ] **Next — Phase 5:** function block diagram (FBD), see docs/ROADMAP.md.
 - [ ] Instructions still missing: ramps, CTUD, R_TRIG / F_TRIG boxes, strings, date/time;
       routines with parameters; function return values.

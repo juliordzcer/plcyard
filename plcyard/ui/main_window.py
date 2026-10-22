@@ -104,6 +104,7 @@ class MainWindow(QMainWindow):
         self.tags_view = TagsView()
         self.tags_view.edited.connect(self._edited)
         self.tags_view.force_requested.connect(self.force)
+        self.tags_view.pid_setup.connect(self.pid_setup)
         self.table_dock = QDockWidget("Data table", self)
         self.table_dock.setObjectName("datatable")
         self.table_dock.setWidget(self.tags_view)
@@ -560,6 +561,18 @@ class MainWindow(QMainWindow):
         self._retitle_docs()
         self.tags_view.set_program(self.program)
         self._edited()
+
+    # -- PID setup ----------------------------------------------------------
+    def pid_setup(self, name: str) -> None:
+        from .pid_setup import PidSetup
+        if not any(n.lower() == name.lower() for n in self.program.tags):
+            return self.statusBar().showMessage(f"{name} is not a PID tag of this program", 4000)
+        memory = self.plc.dt if self.online and self.in_sync else None
+        dlg = PidSetup(self, self.program, name, memory)
+        dlg.exec()
+        self.tags_view.set_program(self.program)
+        self.dirty = True
+        self._title()
 
     # -- forcing ------------------------------------------------------------
     def force(self, ref: str, on) -> None:

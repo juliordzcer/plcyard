@@ -18,6 +18,7 @@ MAX_CHILDREN = 200             # rows shown under a big array
 
 class TagsView(QWidget):
     edited = Signal()                      # declarations or descriptions changed (the program is dirty)
+    pid_setup = Signal(str)                # open PID Setup for a PID tag
     force_requested = Signal(str, object)  # reference, True / False / None (remove)
 
     def __init__(self):
@@ -339,6 +340,12 @@ class TagsView(QWidget):
             is_bool = mem is not None and mem.ref(ref).type.lower() == "bool"
         except Exception:
             is_bool = False
+        try:
+            is_pid = mem is not None and mem.ref(ref).type == "PID"
+        except Exception:
+            is_pid = False
+        if is_pid:
+            m.addAction("PID Setup…", lambda: self.pid_setup.emit(ref))
         if is_bool:
             m.addAction("Force On", lambda: self.force_requested.emit(ref, True))
             m.addAction("Force Off", lambda: self.force_requested.emit(ref, False))

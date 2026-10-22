@@ -163,3 +163,63 @@ def test_edge_contacts_and_one_shots():
     panel.set_pressed(1, 0, False)
     run(plc, 20)
     assert plc.dt.read_bit("Count3")
+
+
+# -- PID -------------------------------------------------------------------------------------------
+def pid_rig(rungs, **members):
+    return rig(rungs, {"Loop": {"type": "PID", "value": members}, "Out": {"type": "REAL"}, "Pv": {"type": "REAL"},
+                       "Master": {"type": "PID", "value": {"KP": 0.0, "SO": 30.0, "MO": True}}})
+
+
+def test_pid_scales_input_and_output():
+    plc, _ = pid_rig(["MOV,13824,%MW0", "PID,Loop,%MW0,Out"], MAXI=27648.0, MAXS=100.0, MAXCV=27648.0,
+                     SP=50.0, KP=1.0, UPD=0.0)
+    run(plc, 50)
+    loop = plc.dt.element("Loop")
+    assert loop["PV"] == pytest.approx(50.0) and loop["ERR"] == pytest.approx(0.0)
+
+
+def test_pid_dependent_gains_and_manual_output():
+    plc, _ = pid_rig(["PID,Loop,Pv,Out"], SP=60.0, KP=2.0, KI=0.5, PE=True, UPD=0.0, MO=True, SO=42.0)
+    run(plc, 30)
+    assert plc.dt.read_word("Out") == pytest.approx(42.0), "manual: output = set output"
+    plc.dt.element("Loop")["MO"] = False
+    run(plc, 10)
+    assert abs(plc.dt.read_word("Out") - 42.0) < 3.0, "bumpless back to automatic"
+
+
+def test_pid_loop_update_time_and_deadband():
+    plc, _ = pid_rig(["PID,Loop,Pv,Out"], SP=50.0, KP=1.0, KI=1.0, UPD=0.5, DB=5.0)
+    plc.dt.write_word("Pv", 48.0)
+    run(plc, 2000)
+    assert plc.dt.read_bit("Loop.EWD") and plc.dt.read_word("Out") == pytest.approx(0.0), "inside the deadband"
+    plc.dt.write_word("Pv", 30.0)
+    run(plc, 300)
+    first = plc.dt.read_word("Out")
+    run(plc, 100)
+    assert plc.dt.read_word("Out") == first, "no new output before the loop update time"
+
+
+def test_pid_alarms_and_output_limits():
+    plc, _ = pid_rig(["PID,Loop,Pv,Out"], SP=50.0, KP=10.0, UPD=0.0, PVH=80.0, DVN=10.0, MAXO=70.0)
+    plc.dt.write_word("Pv", 20.0)
+    run(plc, 30)
+    loop = plc.dt.element("Loop")
+    assert loop["DVNA"] and not loop["PVHA"] and loop["OLH"] and plc.dt.read_word("Out") == 70.0
+    plc.dt.write_word("Pv", 90.0)
+    run(plc, 30)
+    assert loop["PVHA"] and loop["OLL"]
+
+
+def test_pid_cascade_master_sets_the_setpoint():
+    plc, _ = pid_rig(["PID,Master,0,%MD20", "PID,Loop,Pv,Out,?,?,Master"], MAXS=200.0, UPD=0.0)
+    run(plc, 30)
+    assert plc.dt.read_word("Loop.SP") == pytest.approx(60.0), "30 % of 0-200"
+
+
+def test_older_pid_times_become_independent_gains():
+    import json
+    from plcyard.formats import plcy
+    old = {"format": "plcyard", "version": 1, "profile": "logix", "tags": {"L": {"type": "PID", "value": {"KP": 4, "TI": 16}}},
+           "programs": [{"number": 2, "rungs": []}]}
+    assert plcy.loads(json.dumps(old)).tags["L"]["value"] == {"KP": 4, "KI": 0.25}

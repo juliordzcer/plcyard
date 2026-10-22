@@ -28,13 +28,16 @@ STRUCTS = {
                 "OV": "BOOL", "UN": "BOOL"},
     "CONTROL": {"LEN": "DINT", "POS": "DINT", "EN": "BOOL", "EU": "BOOL", "DN": "BOOL", "EM": "BOOL",
                 "ER": "BOOL", "UL": "BOOL", "IN": "BOOL", "FD": "BOOL"},
-    # PID: gain KP, integral time TI and derivative time TD in seconds (dependent form), output CV in %,
-    # MO manual mode with output SO, CA reverse acting (E = PV - SP), output limits MINO..MAXO
-    "PID": {"SP": "REAL", "PV": "REAL", "CV": "REAL", "KP": "REAL", "TI": "REAL", "TD": "REAL",
-            "MAXO": "REAL", "MINO": "REAL", "SO": "REAL", "MO": "BOOL", "CA": "BOOL"},
+    # PID (see core/pid.py and the PID instruction): tuning, configuration bits, scaling, alarms, status
+    "PID": {**{m: "REAL" for m in ("SP", "PV", "CV", "ERR", "KP", "KI", "KD", "BIAS", "MAXS", "MINS", "MAXI",
+                                    "MINI", "MAXCV", "MINCV", "MAXO", "MINO", "DB", "SO", "UPD", "PVH", "PVL",
+                                    "DVP", "DVN", "PVDB", "DVDB")},
+            **{m: "BOOL" for m in ("EN", "PE", "CA", "DOE", "MO", "PVHA", "PVLA", "DVPA", "DVNA", "OLH", "OLL",
+                                    "EWD")}},
 }
-START = {"PID": {"MAXO": 100.0, "KP": 1.0}}
-ALIASES = {"TIMER": {"PT": "PRE", "ET": "ACC", "Q": "DN", "IN": "EN"},
+START = {"PID": {"MAXO": 100.0, "MAXS": 100.0, "KP": 1.0, "UPD": 0.1}}
+ALIASES = {"PID": {"OUT": "CV"},
+           "TIMER": {"PT": "PRE", "ET": "ACC", "Q": "DN", "IN": "EN"},
            "COUNTER": {"PV": "PRE", "CV": "ACC", "Q": "DN", "QU": "DN"}}
 SYSTEM = {"FirstScan": "BOOL", "Overflow": "BOOL"}
 SYSTEM_ALIASES = {"s:fs": "FirstScan", "s:v": "Overflow"}

@@ -531,3 +531,21 @@ keys:      drag and drop, a classic trainer, online, offline, upload, Rem Run, L
 - No vendor or product names left in the app, README, site, roadmap, TODO or this log.
 - Tests: `test_plc.py` (19) replaces the per-controller suites; the others ported. 288 in total.
 keys:      one PLC, notation, mnemonics, IEC, convert, Values[5], Timers[0], canonical
+
+## C-026 — PID per the instruction set manuals, PID Setup dialog
+2026-10-22 · commit: 738c552
+- PID tag members follow the general-instructions manual: SP, KP/KI/KD with the PE bit (independent:
+  KI 1/s, KD s; dependent: Kc, Ti min/repeat, Td min), BIAS, scaling MAXI/MINI → MAXS/MINS and
+  MAXCV/MINCV, output limits MAXO/MINO, deadband DB, set output SO, loop update UPD, alarms
+  PVH/PVL/DVP/DVN with deadbands, control action CA, derivative of PV or error (DOE), manual MO,
+  status EN, ERR, PVHA, PVLA, DVPA, DVNA, OLH, OLL, EWD.
+- `core/pid.py`: positional algorithm on the error in % of span, derivative on PV or error,
+  anti-reset windup, bumpless manual (integral or bias back-calculated). Computes once per UPD.
+- `ui/pid_setup.py`: PID Setup with Tuning, Configuration, Alarms and Scaling tabs, from the PID
+  box's or the tag's context menu; writes start values, and the running PID while online.
+- Older PID start values (gain, TI/TD in seconds) convert to independent gains (KI = KP/TI).
+  Exercise 12 explains tuning with PID Setup and scaling inside the PID.
+- Manuals in `docs/*.pdf` are git-ignored (vendor copyright).
+- Tests: PID scaling, gains, manual, update time, deadband, alarms, limits, cascade, conversion,
+  e2e F17. 295 in total.
+keys:      PID Setup, KP KI KD, PE, UPD, MAXI MAXS MAXCV, deadband, alarms, cascade

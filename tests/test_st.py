@@ -192,7 +192,7 @@ def test_pid_call_controls_the_tank():
     %QW64 := REAL_TO_INT("Out" / 100.0 * 27648.0);
     """
     tags = {"Level": {"type": "Real"}, "Sp": {"type": "Real"}, "Out": {"type": "Real"},
-            "LevelPID": {"type": "PID", "value": {"KP": 4, "TI": 15}}}
+            "LevelPID": {"type": "PID", "value": {"KP": 4, "KI": 0.27}}}
     plc, tank = rig(src, tags, TankModel(level=20.0, setpoint_knob=60.0))
     run(plc, 60000)
     assert abs(tank.level - 60.0) < 2.0

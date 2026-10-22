@@ -197,6 +197,9 @@ def _from_slc(prog: Program) -> None:
 
 # -- tag style ---------------------------------------------------------------------------------------------
 def _from_logix(prog: Program) -> None:
+    for d in prog.tags.values():
+        if str(d.get("type", "")).upper() == "PID" and isinstance(d.get("value"), dict):
+            d["value"] = _pid_gains({k.upper(): v for k, v in d["value"].items()})
     def fix(ins: Instr) -> list[Instr]:
         ops = [PLC.normalize(o) for o in ins.operands]
         m = ins.mnemonic
@@ -233,6 +236,19 @@ S7_INSTR = {"MOVE": "MOV", "CMP==": "EQU", "CMP<>": "NEQ", "CMP<": "LES", "CMP<=
             "CMP>=": "GEQ", "IN_RANGE": "LIM", "RESET_TIMER": "RES"}
 
 
+def _pid_gains(v: dict) -> dict:
+    """Earlier PID start values (gain, integral and derivative times in seconds) as independent
+    gains: KI = KP / TI, KD = KP · TD."""
+    v = dict(v)
+    kp = float(v.get("KP", 1.0))
+    ti, td = v.pop("TI", None), v.pop("TD", None)
+    if ti:
+        v["KI"] = kp / float(ti)
+    if td:
+        v["KD"] = kp * float(td)
+    return v
+
+
 def _s7_type(t: str) -> str:
     m = re.match(r"^(Array\s*\[[^\]]*\]\s+of\s+)(\w+)$", t.strip(), re.I)
     if m:
@@ -245,7 +261,7 @@ def _from_s7(prog: Program) -> None:
     for name, d in prog.tags.items():
         d["type"] = _s7_type(str(d.get("type", "")))
         if name in pids and isinstance(d.get("value"), dict):
-            d["value"] = {S7_PID.get(k.lower(), k): v for k, v in d["value"].items()}
+            d["value"] = _pid_gains({S7_PID.get(k.lower(), k): v for k, v in d["value"].items()})
     prog.types = {n: {m: _s7_type(t) for m, t in ms.items()} for n, ms in prog.types.items()}
     for f in prog.files.values():
         f.interface = {s: {n: _s7_type(t) for n, t in ms.items()} for s, ms in f.interface.items()}
